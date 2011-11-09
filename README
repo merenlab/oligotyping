@@ -1,0 +1,19 @@
+Everything is pretty confusing at this moment, sorry about that. I am hoping to
+make it more usable in time.
+
+I had used oligotyping in this paper:
+
+    http://www.plosone.org/article/info:doi/10.1371/journal.pone.0026732
+
+It had worked pretty well for that research, and I've been using it on various
+datasets coming from human gut to sewage samples. I promise that I'll explain
+the oligotyping pipeline at some point step by step :) It will also eventually
+become a part of Viamics:
+
+    https://github.com/meren/viamics
+
+Meanwhile, if you are eager to try it on your datasets please don't hesitate to
+send me an e-mail via meren / mbl.edu.
+
+
+Thanks for your patience.
