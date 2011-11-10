@@ -54,7 +54,7 @@ for sample in samples:
 # lets seee..
 fig = plt.figure(figsize=(20, 10))
 
-plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.80)
+plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.90)
 
 fig.canvas.set_window_title('Sjiz')
 
@@ -96,4 +96,5 @@ plt.setp(ltext, fontsize='small', fontname='arial', family='monospace')    # the
 plt.setp(llines, linewidth=1.5)      # the legend linewidth
 
 
+plt.savefig(sys.argv[1] + '-SBC.png')
 plt.show()
