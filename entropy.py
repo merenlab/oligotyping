@@ -105,6 +105,8 @@ def draw(stuff):
     ax.bar(ind, stuff, color = 'black', lw = 0.5)
     ax.set_xlim([0, end])
     ax.set_ylim([0, y_maximum])
+    plt.xlabel('Nucleotide Position')
+    plt.ylabel('Shannon Entropy')
     plt.savefig(sys.argv[1] + '-ENTROPY.png')
     plt.show()
 
