@@ -77,8 +77,6 @@ def get_PERCENT_samples_dict(samples_dict):
 
 samples_dict = original_samples_dict
 
-print samples_dict
-
 for sample in samples_dict:
     total_reads = sum([x[1] for x in samples_dict[sample].values()])
     print sample, total_reads
