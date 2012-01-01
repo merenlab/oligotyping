@@ -92,7 +92,7 @@ def trim_uninformative_columns_from_alignment(input_file_path):
 
 # ~
 
-fasta = u.SequenceSource(sys.argv[1])
+fasta = u.SequenceSource(sys.argv[1], lazy_init = False)
 column_entropy = [int(x.strip().split()[0]) for x in open(sys.argv[2]).readlines()]
 
 info('Output directory', OUTPUT_DIR)
