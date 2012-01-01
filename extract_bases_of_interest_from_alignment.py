@@ -13,7 +13,9 @@
 import os
 import sys
 import copy
+import shutil
 import cPickle
+import tempfile
 import operator
 
 import fastalib as u
@@ -53,6 +55,40 @@ def pp(n):
             ret.append(',')
     ret.reverse()
     return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
+
+def trim_uninformative_columns_from_alignment(input_file_path):
+    input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
+    input_fasta.next()
+    invalid_columns = range(0, len(input_fasta.seq))
+    input_fasta.reset()
+    
+    while input_fasta.next():
+        for i in invalid_columns:
+            if input_fasta.seq[i] != '-':
+                invalid_columns.remove(i)
+    
+    columns_to_keep = [x for x in range(0, invalid_columns[-1]) if x not in invalid_columns]
+    
+    input_fasta.reset()
+
+    temp_file = tempfile.NamedTemporaryFile(delete = False)
+    temp_file_path = temp_file.name
+    temp_file.close()
+
+    temp_file = u.FastaOutput(temp_file_path)
+
+    while input_fasta.next():
+        new_seq = ''
+        for i in columns_to_keep:
+            new_seq += input_fasta.seq[i]
+        temp_file.write_id(input_fasta.id)
+        temp_file.write_seq(new_seq, split = False)
+    
+    temp_file.close()
+
+    # overwrite the original file with trimmed content
+    shutil.move(temp_file_path, input_file_path)
+
 
 # ~
 
@@ -205,9 +241,11 @@ for abundant_oligo in abundant_oligos:
     f.write('>' + abundant_oligo + '\n')
     f.write(consensus_sequence + '\n')
 f.close()
-os.system('python trim_uninformative_columns_from_alignment.py %s' % representative_oligotypes_file_path)
-os.system('mv %s %s' % (representative_oligotypes_file_path + '-TRIMMED', representative_oligotypes_file_path))
+
+# remove uninformative columns from representative full length consensus sequences
+trim_uninformative_columns_from_alignment(representative_oligotypes_file_path)
 info('Representative sequences for oligotypes', representative_oligotypes_file_path, info_file_obj) 
+
 
 info_file_obj.close()
 # done.
