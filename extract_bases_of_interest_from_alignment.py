@@ -29,10 +29,10 @@ SAMPLE_FROM_DEFLINE                                       = lambda x: "_".join(x
 
 
 OUTPUT_DIR         = os.path.dirname(sys.argv[1]) or '.'
-OUTPUT_FILE_PREFIX = '%s-C%d-S%d-A%d' % (os.path.basename(sys.argv[1]).split('.')[0],
-                                         NUMBER_OF_COMPONENTS_TO_USE,
-                                         MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS,
-                                         MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE)
+OUTPUT_FILE_PREFIX = '%s-C%d-S%d-A%.1f' % (os.path.basename(sys.argv[1]).split('.')[0],
+                                           NUMBER_OF_COMPONENTS_TO_USE,
+                                           MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS,
+                                           MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE)
 
 GEN_OUTPUT_DEST = lambda postfix: os.path.join(OUTPUT_DIR, OUTPUT_FILE_PREFIX + '-' + postfix)
 
@@ -166,6 +166,27 @@ for oligo in non_singleton_oligos:
         abundant_oligos.append(oligo)
 info('Oligotypes after "min % abundance in a sample" elimination', pp(len(abundant_oligos)), info_file_obj)
 
+
+
+# removing oligos from samples that didn't pass
+# MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE and
+# MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS filters.
+samples_dict_copy = copy.deepcopy(samples_dict)
+samples_to_remove = []
+for sample in samples:
+    for oligo in samples_dict_copy[sample]:
+        if oligo not in abundant_oligos:
+            samples_dict[sample].pop(oligo)
+    if not samples_dict[sample]:
+        samples_to_remove.append(sample)
+for sample in samples_to_remove:
+    samples.remove(sample)
+    samples_dict.pop(sample)
+if len(samples_to_remove):
+    info('Samples removed for having 0 oligotypes left after filtering', ', '.join(samples_to_remove), info_file_obj)
+
+
+
 # store abundant oligos
 abundant_oligos_file_path = GEN_OUTPUT_DEST("OLIGOS.fasta")
 f = open(abundant_oligos_file_path, 'w')
@@ -194,8 +215,7 @@ environment_file_path = GEN_OUTPUT_DEST("ENVIRONMENT.txt")
 f = open(environment_file_path, 'w')
 for sample in samples:
     for oligo in samples_dict[sample]:
-        if oligo in abundant_oligos and samples_dict[sample][oligo] > 0:
-            f.write("%s\t%s\t%d\n" % (oligo, sample, samples_dict[sample][oligo]))
+        f.write("%s\t%s\t%d\n" % (oligo, sample, samples_dict[sample][oligo]))
 f.close()
 info('Environment file for Viamics/UniFrac analysis', environment_file_path, info_file_obj)
 
