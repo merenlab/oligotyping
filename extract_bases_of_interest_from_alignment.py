@@ -219,6 +219,33 @@ for sample in samples:
 f.close()
 info('Environment file for Viamics/UniFrac analysis', environment_file_path, info_file_obj)
 
+
+# generate matrices..
+matrix_count_file_path = GEN_OUTPUT_DEST("MATRIX-COUNT.txt")
+matrix_percent_file_path = GEN_OUTPUT_DEST("MATRIX-PERCENT.txt")
+count_file = open(matrix_count_file_path, 'w')
+percent_file = open(matrix_percent_file_path, 'w')
+
+count_file.write('\t'.join([''] + samples) + '\n')
+percent_file.write('\t'.join([''] + samples) + '\n')
+for oligo in abundant_oligos:
+    counts = []
+    percents = []
+    for sample in samples:
+        if samples_dict[sample].has_key(oligo):
+            counts.append(str(samples_dict[sample][oligo]))
+            percents.append(str(samples_dict[sample][oligo] * 100.0 / sum(samples_dict[sample].values())))
+        else:
+            counts.append('0')
+            percents.append('0.0')
+    count_file.write('\t'.join([oligo] + counts) + '\n')
+    percent_file.write('\t'.join([oligo] + percents) + '\n')
+count_file.close()
+percent_file.close()
+info('Data matrix (counts)', matrix_count_file_path, info_file_obj)
+info('Data matrix (percents)', matrix_percent_file_path, info_file_obj)
+
+
 # generate viamics samples dict 
 viamics_samples_dict = {}
 viamics_samples_dict_file_path = GEN_OUTPUT_DEST("ENVIRONMENT.cPickle")
