@@ -79,7 +79,7 @@ for i in range(0, len(oligos)):
 
 plt.ylabel('Oligotype Distribution')
 plt.title('Stacked Bar Charts of Oligotype Distribution Among Samples')
-plt.xticks(ind+width/2., samples, rotation=90)
+plt.xticks(ind+width/2., samples, rotation=90, size='xx-small')
 plt.yticks([])
 plt.ylim(ymax = 100)
 plt.xlim(xmin = -(width) / 2, xmax = len(samples))
