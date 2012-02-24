@@ -24,6 +24,10 @@ COLORS = {'A': 'red',
           'N': 'white', 
           '-': '#CACACA'}
 
+def entropy(l):
+    P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
+    return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
+
 def get_consensus_sequence(alignment_file):
     consensus_sequence = ''
     fasta = u.SequenceSource(alignment_file)
@@ -46,15 +50,6 @@ def get_consensus_sequence(alignment_file):
         consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
     
     return consensus_sequence
-
-def entropy(l):
-    p_a = (len([x for x in l if x.upper() == 'A']) * 1.0 / len(l)) + 0.0000000000000000001
-    p_t = (len([x for x in l if x.upper() == 'T']) * 1.0 / len(l)) + 0.0000000000000000001
-    p_c = (len([x for x in l if x.upper() == 'C']) * 1.0 / len(l)) + 0.0000000000000000001
-    p_g = (len([x for x in l if x.upper() == 'G']) * 1.0 / len(l)) + 0.0000000000000000001
-    p_n = (len([x for x in l if x.upper() == '-']) * 1.0 / len(l)) + 0.0000000000000000001
-
-    return -(p_a*log(p_a) + p_t*log(p_t) + p_c*log(p_c) + p_g*log(p_g) + p_n*log(p_n))
 
 lines = [l for l in open(sys.argv[1]) if not l.startswith('>')]
 
