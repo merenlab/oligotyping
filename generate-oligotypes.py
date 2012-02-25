@@ -213,11 +213,13 @@ class Oligotyping:
         
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one sample)
+        SUM = lambda sample: sum([self.samples_dict[sample][o] for o in non_singleton_oligos \
+                                                                if self.samples_dict[sample].has_key(o)])
         for oligo in non_singleton_oligos:
             percent_abundances = []
             for sample in self.samples:
                 if self.samples_dict[sample].has_key(oligo):
-                    percent_abundances.append(self.samples_dict[sample][oligo] * 100.0 / sum([self.samples_dict[sample][o] for o in non_singleton_oligos if self.samples_dict[sample].has_key(o)]))
+                    percent_abundances.append(self.samples_dict[sample][oligo] * 100.0 / SUM(sample))
             percent_abundances.sort()
             if percent_abundances[-1] >= self.min_percent_abundance:
                 self.abundant_oligos.append(oligo)
