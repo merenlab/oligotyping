@@ -25,6 +25,8 @@ samples_dict = cPickle.load(open(sys.argv[1]))
 oligos_color_dict = cPickle.load(open(sys.argv[2]))
 # FIXME: This viamics dependency should not be here.
 
+legend_on = False if len(sys.argv) == 4 and sys.argv[3] == 'nolegend' else True
+
 samples = [s for s in samples_dict.keys()]
 samples.sort()
 
@@ -56,7 +58,10 @@ for sample in samples:
 
 fig = plt.figure(figsize=(20, 10))
 
-plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.90)
+if legend_on:
+    plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.90)
+else:
+    plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.99)
 
 fig.canvas.set_window_title('Sjiz')
 
@@ -84,16 +89,17 @@ plt.yticks([])
 plt.ylim(ymax = 100)
 plt.xlim(xmin = -(width) / 2, xmax = len(samples))
 
-plt.legend([b[0] for b in bars][::-1], oligos[::-1], bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0, shadow=True, fancybox=True)
-
-leg = plt.gca().get_legend()
-ltext  = leg.get_texts()
-llines = leg.get_lines()
-frame  = leg.get_frame()
-
-frame.set_facecolor('0.80')
-plt.setp(ltext, fontsize='small', fontname='arial', family='monospace')
-plt.setp(llines, linewidth=1.5)
+if legend_on:
+    plt.legend([b[0] for b in bars][::-1], oligos[::-1], bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0, shadow=True, fancybox=True)
+    
+    leg = plt.gca().get_legend()
+    ltext  = leg.get_texts()
+    llines = leg.get_lines()
+    frame  = leg.get_frame()
+    
+    frame.set_facecolor('0.80')
+    plt.setp(ltext, fontsize='small', fontname='arial', family='monospace')
+    plt.setp(llines, linewidth=1.5)
 
 plt.savefig(sys.argv[1] + '-SBC.png')
 plt.show()
