@@ -43,8 +43,10 @@ def get_consensus_sequence(alignment_file):
     fasta.reset()
     
     while fasta.next():
+        seq = fasta.seq.upper()
         for pos in range(0, alignment_length):
-            consensus_dict[pos][fasta.seq[pos]] += 1
+            if seq[pos] in ['A', 'T', 'C', 'G', '-']:
+                consensus_dict[pos][seq[pos]] += 1
     
     for pos in range(0, alignment_length):
         consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
@@ -61,7 +63,7 @@ start = 0
 end = len(lines[0])
 
 for i in range(start, end):
-    sys.stderr.write('\rENTROPY: %d/%d' % (i, end))
+    sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / end)))
     sys.stderr.flush()
 
     if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
