@@ -1,4 +1,3 @@
-===============================================================================
  Readme
 ===============================================================================
 
@@ -16,17 +15,17 @@ oligotyping (this web site is currently under construction, but it will provide
 all necessary information for researchers who wish to try oligotyping on their
 own datasets):
 
-    http://oligotyping.org
+* http://oligotyping.org
 
 
 Oligotyping was first used in this paper, it might give some extra insight:
 
-    http://www.plosone.org/article/info:doi/10.1371/journal.pone.0026732
+* http://www.plosone.org/article/info:doi/10.1371/journal.pone.0026732
 
 
 Oligotyping pipeline is planned to be a part of Viamics:
 
-    https://github.com/meren/viamics
+* https://github.com/meren/viamics
 
 
 If you would like to try oligotyping on your datasets, or if you have questions
@@ -35,7 +34,6 @@ to ask, please don't hesitate to contact me via meren / mbl.edu.
 Thanks for your interest.
 
 
-===============================================================================
  Licence
 ===============================================================================
 
@@ -52,3 +50,13 @@ GNU General Public License for more details.
  You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+ Author
+===============================================================================
+
+I am a post-doctoral researcher at [Marine Biological Laboratory](http://mbl.edu), [The Josephine
+Bay Paul Center for Comparative Molecular Biology and Evolution](http://jbpc.mbl.edu/), in Woods Hole
+Massachusetts, studying microbial ecology under the supervision of [Mitchell L. Sogin](http://jbpc.mbl.edu/research-msogin.html).
+
+
+http://meren.org
