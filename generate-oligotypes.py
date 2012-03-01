@@ -91,6 +91,7 @@ class Oligotyping:
             self.min_number_of_samples = args.min_number_of_samples
             self.min_percent_abundance = args.min_percent_abundance
             self.dataset_name_separator = args.dataset_name_separator
+            self.limit_representative_sequences = args.limit_representative_sequences
 
         self.samples_dict = {}
         self.samples = []
@@ -112,18 +113,28 @@ class Oligotyping:
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
             raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
 
+        if not self.limit_representative_sequences:
+            self.limit_representative_sequences = sys.maxint
+
 
     def dataset_name_from_defline(self, defline):
         return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
 
 
-    def generate_output_destination(self, postfix):
-        output_file_prefix = '%s-C%d-S%d-A%.1f' % (os.path.basename(self.alignment).split('.')[0],
-                                                   self.number_of_components,
-                                                   self.min_number_of_samples,
-                                                   self.min_percent_abundance)
+    def generate_output_destination(self, postfix, directory = False):
+        prefix = '%s-C%d-S%d-A%.1f' % (os.path.basename(self.alignment).split('.')[0],
+                                       self.number_of_components,
+                                       self.min_number_of_samples,
+                                       self.min_percent_abundance)
 
-        return os.path.join(self.output_directory, output_file_prefix + '-' + postfix)
+        return_path = os.path.join(self.output_directory, prefix + '-' + postfix)
+
+        if directory == True:
+            if os.path.exists(return_path):
+                shutil.rmtree(return_path)
+            os.makedirs(return_path)
+
+        return return_path
 
 
     def info(self, label, value):
@@ -161,7 +172,7 @@ class Oligotyping:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
         self._generate_viamics_samples_dict()
-        self._generate_representative_concensus_sequences()
+        self._generate_representative_sequences()
 
         self.info_file_obj.close()
 
@@ -326,45 +337,53 @@ class Oligotyping:
         self.info('Serialized Viamics samples dictionary', viamics_samples_dict_file_path)
 
 
-    def _generate_representative_concensus_sequences(self):
+    def _generate_representative_sequences(self):
         # create a fasta file with a representative full length consensus sequence for every oligotype
 
-        #
-        # FIXME: some of these sequences, especially the ones that are being represented by rare oligotypes
-        #        can be chimeric. it is very normal given the nature of the process. but there should be a way
-        #        to test, and communicate results back to the user.
-        #
-        #
-        representative_oligotypes_file_path = self.generate_output_destination("REPRESENTATIVE-OLIGO-SEQS.fasta")
-        f = open(representative_oligotypes_file_path, 'w')
-        for abundant_oligo in self.abundant_oligos:
-            self.fasta.reset()
-            counter = 0
-            rep_sequences = []
-            while self.fasta.next() and counter < 5000:
-                oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
-                if oligo == abundant_oligo:
-                    rep_sequences.append(self.fasta.seq)
-                    counter += 1
-            
-            consensus_dict = {}
-            consensus_sequence = ''
-            alignment_length = len(rep_sequences[0])
+        # this is what is going on here: we go through all oligotypes, gather sequences that are being
+        # represented by a particular oligotype, unique them and report the top ten unique sequences
+        # ordered by the frequency.
 
-            for i in range(0, alignment_length):
-                consensus_dict[i] = {'A': 0, 'T': 0, 'C': 0, 'G': 0, '-': 0}
-            for sequence in rep_sequences:
-                for pos in range(0, alignment_length):
-                    consensus_dict[pos][sequence[pos]] += 1
-            for pos in range(0, alignment_length):
-                consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
-            f.write('>' + abundant_oligo + '\n')
-            f.write(consensus_sequence + '\n')
-        f.close()
+        output_directory = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
+
+        self.fasta.reset()
+
+        temp_fasta_files = {}
+        for abundant_oligo in self.abundant_oligos:
+            if abundant_oligo not in temp_fasta_files:
+                temp_obj = tempfile.NamedTemporaryFile(delete=False)
+                temp_fasta_files[abundant_oligo] = {'file': temp_obj,
+                                                    'path': temp_obj.name}
+
+        while self.fasta.next():
+            oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
+            if oligo in self.abundant_oligos:
+                temp_fasta_files[oligo]['file'].write('>%s|%s\n' % (self.fasta.id, oligo))
+                temp_fasta_files[oligo]['file'].write('%s\n' % self.fasta.seq)
+            
+        for oligo in self.abundant_oligos:
+            temp_fasta_files[oligo]['file'].close()
+
+            temp_fasta_path = temp_fasta_files[oligo]['path']
+            temp_fasta_source = u.SequenceSource(temp_fasta_path, lazy_init = False, unique = True)
+            dest_fasta = u.FastaOutput(os.path.join(output_directory, oligo))
+
+            while temp_fasta_source.next() and temp_fasta_source.pos <= self.limit_representative_sequences:
+                dest_fasta.write_id('%s_%d|total_unique:%d|freq:%d' % (oligo,
+                                                                       temp_fasta_source.pos,
+                                                                       temp_fasta_source.total_seq,
+                                                                       len(temp_fasta_source.ids)))
+                dest_fasta.write_seq(temp_fasta_source.seq, split = False)
         
-        # remove uninformative columns from representative full length consensus sequences
-        trim_uninformative_columns_from_alignment(representative_oligotypes_file_path)
-        self.info('Representative sequences for oligotypes', representative_oligotypes_file_path) 
+                # remove uninformative columns from representative full length consensus sequences
+                # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
+            
+
+        for oligo in self.abundant_oligos:
+            os.remove(temp_fasta_files[oligo]['path'])
+
+        
+        self.info('Representative sequences for oligotypes directory', output_directory) 
         
         
  
@@ -397,6 +416,13 @@ if __name__ == '__main__':
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
                                 (which is the default character).')
+    parser.add_argument('-l', '--limit-representative-sequences', type=int, default=None,
+                        help = 'At the end of the oligotyping sequences that are being represented by the same\
+                                oligotype are being uniqued and stored in separate files. The number of sequences\
+                                to keep from the frequency ordered list can be defined with this parameter (e.g.\
+                                -l 10 would make it possible that only first 10 sequence would be stored). Default\
+                                is 0, which stores everything, but when the dataset size is too big, this could\
+                                take up disk space.')
 
     oligotyping = Oligotyping(parser.parse_args())
 
