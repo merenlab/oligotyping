@@ -54,36 +54,38 @@ def get_consensus_sequence(alignment_file):
     
     return consensus_sequence
 
-lines = [l for l in open(sys.argv[1]) if not l.startswith('>')]
-
-entropy_tpls = []
-
-consensus_sequence = get_consensus_sequence(sys.argv[1])
-
-start = 0
-end = len(lines[0])
-
-for i in range(start, end):
-    sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / end)))
-    sys.stderr.flush()
-
-    if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
-        entropy_tpls.append((i, 0.0),)
-    else:
-        column = "".join([x[i] for x in lines])
-        e = entropy(column)
-        if e < 0.00001:
+def entropy_analysis(alignment, output_file):
+    lines = [l for l in open(alignment) if not l.startswith('>')]
+    
+    entropy_tpls = [] 
+    
+    for i in range(0, len(lines[0])):
+        sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
+        sys.stderr.flush()
+    
+        if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
             entropy_tpls.append((i, 0.0),)
         else:
-            entropy_tpls.append((i, e),)
-print
+            column = "".join([x[i] for x in lines])
+            e = entropy(column)
+            if e < 0.00001:
+                entropy_tpls.append((i, 0.0),)
+            else:
+                entropy_tpls.append((i, e),)
+    print
+    
+    entropy_output = open(output_file, 'w')
+    for _component, _entropy in sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True):
+        entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
+    entropy_output.close()
+    
+    return [x[1] for x in entropy_tpls]
 
-stuff = [x[1] for x in entropy_tpls]
-
-def draw(stuff):
+def visualize_distribution(alignment, entropy_values, output_file):
     import matplotlib.pyplot as plt
     import numpy as np
 
+    consensus_sequence = get_consensus_sequence(alignment)
     fig = plt.figure(figsize = (len(consensus_sequence) / 20, 10))
 
     plt.rcParams.update({'axes.linewidth' : 0.1})
@@ -94,27 +96,30 @@ def draw(stuff):
 
     ax = fig.add_subplot(111)
 
-    y_maximum = max(stuff) + (max(stuff) / 10.0)
+    y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
     for i in range(0, len(consensus_sequence)):
         for y in range(int(y_maximum * 100), 0, -3):
-            plt.text(i, y / 100.0, consensus_sequence[i],  alpha = y / (y_maximum * 100.0), fontsize = 5, color = COLORS[consensus_sequence[i]])
+            plt.text(i, y / 100.0, consensus_sequence[i],  alpha = y / (y_maximum * 100.0),\
+                                fontsize = 5, color = COLORS[consensus_sequence[i]])
 
-    ind = np.arange(len(stuff))
-    ax.bar(ind, stuff, color = 'black', lw = 0.5)
-    ax.set_xlim([0, end])
+    ind = np.arange(len(entropy_values))
+    ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
+    ax.set_xlim([0, len(consensus_sequence)])
     ax.set_ylim([0, y_maximum])
     plt.xlabel('Nucleotide Position')
     plt.ylabel('Shannon Entropy')
     plt.savefig(sys.argv[1] + '-ENTROPY.png')
     plt.show()
 
-e = sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True)
 
-entropy_output = open(sys.argv[1] + '-ENTROPY.txt', 'w')
+if __name__ == '__main__':
+    import argparse
 
-for _component, _entropy in sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True):
-    entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
+    parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
+    parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
+                         that contains all samples and sequences in FASTA format')
 
-entropy_output.close()
+    alignment = parser.parse_args().alignment
+    entropy_values = entropy_analysis(alignment, output_file = alignment + '-ENTROPY.txt')
+    visualize_distribution(alignment, entropy_values, output_file = alignment + '-ENTROPY.png')
 
-draw(stuff)
