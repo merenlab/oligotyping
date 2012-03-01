@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2010 - 2011, A. Murat Eren
+# Copyright (C) 2010 - 2012, A. Murat Eren
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -29,6 +29,7 @@ def entropy(l):
     P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
     return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
 
+
 def get_consensus_sequence(alignment_file):
     consensus_sequence = ''
     fasta = u.SequenceSource(alignment_file)
@@ -53,6 +54,7 @@ def get_consensus_sequence(alignment_file):
         consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
     
     return consensus_sequence
+
 
 def entropy_analysis(alignment, output_file):
     lines = [l for l in open(alignment) if not l.startswith('>')]
@@ -80,6 +82,7 @@ def entropy_analysis(alignment, output_file):
     entropy_output.close()
     
     return [x[1] for x in entropy_tpls]
+
 
 def visualize_distribution(alignment, entropy_values, output_file, display = True):
     import matplotlib.pyplot as plt
