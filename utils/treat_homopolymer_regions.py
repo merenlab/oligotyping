@@ -149,9 +149,9 @@ def treat_homopolymer_noise(query, target):
 
 
 if __name__ == '__main__':
-    sys.path.append('..')
     import argparse
-    import fasta as u
+    sys.path.append('../lib')
+    import fastalib as u
     
     parser = argparse.ArgumentParser(description='Homopoylmer Region Treatment')
 

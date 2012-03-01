@@ -18,7 +18,9 @@ import cPickle
 import tempfile
 import operator
 
+sys.path.append('lib')
 import fastalib as u
+
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -82,6 +84,7 @@ class Oligotyping:
         self.min_number_of_samples = 5
         self.min_percent_abundance = 1.0
         self.dataset_name_separator = '_'
+        self.limit_representative_sequences = sys.maxint
 
         if args:
             self.alignment = args.alignment
@@ -91,7 +94,7 @@ class Oligotyping:
             self.min_number_of_samples = args.min_number_of_samples
             self.min_percent_abundance = args.min_percent_abundance
             self.dataset_name_separator = args.dataset_name_separator
-            self.limit_representative_sequences = args.limit_representative_sequences
+            self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
 
         self.samples_dict = {}
         self.samples = []
@@ -112,9 +115,6 @@ class Oligotyping:
         
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
             raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
-
-        if not self.limit_representative_sequences:
-            self.limit_representative_sequences = sys.maxint
 
 
     def dataset_name_from_defline(self, defline):

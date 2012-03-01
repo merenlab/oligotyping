@@ -2,7 +2,7 @@
 
 import sys
 
-sys.path.append('..')
+sys.path.append('../lib')
 import fastalib as u
 
 # eh..

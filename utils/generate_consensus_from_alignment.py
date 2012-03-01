@@ -13,6 +13,7 @@ import sys
 import os
 import operator
 
+sys.path.append('../lib')
 import fastalib as u
 
 consensus_sequence = ''

@@ -15,6 +15,7 @@ import operator
 from scipy import log2 as log
 import numpy as np
 
+sys.path.append('lib')
 import fastalib as u
 
 COLORS = {'A': 'red',
