@@ -81,7 +81,7 @@ def entropy_analysis(alignment, output_file):
     
     return [x[1] for x in entropy_tpls]
 
-def visualize_distribution(alignment, entropy_values, output_file):
+def visualize_distribution(alignment, entropy_values, output_file, display = True):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -108,8 +108,10 @@ def visualize_distribution(alignment, entropy_values, output_file):
     ax.set_ylim([0, y_maximum])
     plt.xlabel('Nucleotide Position')
     plt.ylabel('Shannon Entropy')
-    plt.savefig(sys.argv[1] + '-ENTROPY.png')
-    plt.show()
+    plt.savefig(output_file)
+
+    if display:
+        plt.show()
 
 
 if __name__ == '__main__':
