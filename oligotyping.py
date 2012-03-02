@@ -151,8 +151,9 @@ class Oligotyping:
 
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
-       
+
         self.info('Output directory', self.output_directory)
+        self.info('Command line', ' '.join(sys.argv))
         self.info('Extraction info output file', self.info_file_path)
         self.info('Input FASTA file', self.alignment)
         self.info('Input entropy file', self.entropy)
@@ -164,7 +165,7 @@ class Oligotyping:
         # locations of interest based on the entropy scores
         self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_components)])
         self.info('Bases of interest', ', '.join([str(x) for x in self.bases_of_interest_locs]))
-       
+
         self._construct_samples_dict()
         self._contrive_abundant_oligos()
         self._refine_samples_dict()
@@ -213,7 +214,7 @@ class Oligotyping:
                     count += 1
             oligo_abundance.append((count, oligo),)
         oligo_abundance.sort()
-        
+
         # eliminate singleton/doubleton oligos (any oligo required to appear in at least
         # 'self.min_number_of_samples' samples)
         non_singleton_oligos = []
@@ -230,10 +231,21 @@ class Oligotyping:
             percent_abundances = []
             for sample in self.samples:
                 if self.samples_dict[sample].has_key(oligo):
-                    percent_abundances.append(self.samples_dict[sample][oligo] * 100.0 / SUM(sample))
-            percent_abundances.sort()
-            if percent_abundances[-1] >= self.min_percent_abundance:
-                self.abundant_oligos.append(oligo)
+                    percent_abundances.append((self.samples_dict[sample][oligo] * 100.0 / SUM(sample), self.samples_dict[sample][oligo], SUM(sample)))
+            percent_abundances.sort(reverse = True)
+
+            # NOTE: if a dataset has less than 100 sequences, percent abundance doesn't mean much.
+            #       if user wants to eliminate oligotypes that doesn't appear in at least one dataset
+            #       more than 1% abundance, a singleton of that oligotype that appears in a dataset
+            #       which has 50 sequences would make that oligotype pass the filter. I think if an
+            #       oligotype passes the percent filter, sample size and actual count of the oligotype
+            #       should also be considered before considering it as an abundant oligotype:
+
+            for abundance_percent, abundance_count, sample_size in percent_abundances:
+                if abundance_percent >= self.min_percent_abundance and (sample_size > 100 or abundance_count > self.min_percent_abundance):
+                    self.abundant_oligos.append(oligo)
+                    break
+
         self.info('Oligotypes after "min % abundance in a sample" elimination', pp(len(self.abundant_oligos)))
  
         # store abundant oligos
@@ -261,6 +273,14 @@ class Oligotyping:
         for sample in samples_to_remove:
             self.samples.remove(sample)
             self.samples_dict.pop(sample)
+
+        number_of_reads_in_samples_dict = sum([sum(self.samples_dict[sample].values()) for sample in self.samples_dict]) 
+
+        self.info('Number of sequences represented after quality filtering', '%s of %s (%.2f%%)'\
+                            % (pp(number_of_reads_in_samples_dict),
+                               pp(self.fasta.total_seq),
+                               number_of_reads_in_samples_dict * 100.0 / self.fasta.total_seq))
+
         if len(samples_to_remove):
             self.info('Samples removed for having 0 oligotypes left after filtering', ', '.join(samples_to_remove))
         
