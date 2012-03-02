@@ -21,6 +21,7 @@ import operator
 sys.path.append('lib')
 import fastalib as u
 
+from utils.vis_frequency_curve_of_unique_sequences import vis_freq_curve
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -406,7 +407,8 @@ class Oligotyping:
 
             temp_fasta_path = temp_fasta_files[oligo]['path']
             temp_fasta_source = u.SequenceSource(temp_fasta_path, lazy_init = False, unique = True)
-            dest_fasta = u.FastaOutput(os.path.join(output_directory, oligo))
+            dest_fasta_path = os.path.join(output_directory, oligo)
+            dest_fasta = u.FastaOutput(dest_fasta_path)
 
             while temp_fasta_source.next() and temp_fasta_source.pos <= self.limit_representative_sequences:
                 dest_fasta.write_id('%s_%d|total_unique:%d|freq:%d' % (oligo,
@@ -417,7 +419,9 @@ class Oligotyping:
         
                 # remove uninformative columns from representative full length consensus sequences
                 # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
-            
+            dest_fasta.close()       
+
+            vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '-unique-curve.png')
 
         for oligo in self.abundant_oligos:
             os.remove(temp_fasta_files[oligo]['path'])
