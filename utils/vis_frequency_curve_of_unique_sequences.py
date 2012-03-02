@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../lib/'))
 import fastalib as u
 
-def visualize(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None):
+def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None):
    
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
@@ -68,5 +68,5 @@ if __name__ == '__main__':
 
     fasta_file_path = parser.parse_args().fasta
     x_limit = parser.parse_args().x_limit
-    visualize(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + 'unique-curve.png', display = True)
+    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + 'unique-curve.png', display = True)
 
