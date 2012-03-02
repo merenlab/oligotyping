@@ -56,14 +56,15 @@ def get_consensus_sequence(alignment_file):
     return consensus_sequence
 
 
-def entropy_analysis(alignment, output_file):
+def entropy_analysis(alignment, output_file = None, verbose = True):
     lines = [l for l in open(alignment) if not l.startswith('>')]
     
     entropy_tpls = [] 
     
     for i in range(0, len(lines[0])):
-        sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
-        sys.stderr.flush()
+        if verbose:
+            sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
+            sys.stderr.flush()
     
         if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
             entropy_tpls.append((i, 0.0),)
@@ -74,12 +75,15 @@ def entropy_analysis(alignment, output_file):
                 entropy_tpls.append((i, 0.0),)
             else:
                 entropy_tpls.append((i, e),)
-    print
     
-    entropy_output = open(output_file, 'w')
-    for _component, _entropy in sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True):
-        entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
-    entropy_output.close()
+    if verbose:
+        print
+   
+    if output_file:
+        entropy_output = open(output_file, 'w')
+        for _component, _entropy in sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True):
+            entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
+        entropy_output.close()
     
     return [x[1] for x in entropy_tpls]
 
