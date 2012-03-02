@@ -371,9 +371,29 @@ class Oligotyping:
         temp_fasta_files = {}
         for abundant_oligo in self.abundant_oligos:
             if abundant_oligo not in temp_fasta_files:
-                temp_obj = tempfile.NamedTemporaryFile(delete=False)
-                temp_fasta_files[abundant_oligo] = {'file': temp_obj,
-                                                    'path': temp_obj.name}
+                try:
+                    temp_obj = tempfile.NamedTemporaryFile(delete=False)
+                    temp_fasta_files[abundant_oligo] = {'file': temp_obj,
+                                                        'path': temp_obj.name}
+                except OSError:
+                    print '\n\t'.join(['',
+                                       'WARNING: Oligotyping process has reached the maximum number of open files',
+                                       'limit defined by the operating system. There are "%d" oligotypes to be'\
+                                                                 % len(self.abundant_oligos),
+                                       'stored. You can learn the actual limit by typing "ulimit -n" in the console.',
+                                       '',
+                                       'You can increase this limit temporarily by typing "ulimit -n NUMBER", and',
+                                       'restart the process. It seems using %d as NUMBER might be a good start.'\
+                                                                % (len(self.abundant_oligos) * 1.1),
+                                       '',
+                                       'Until this issue is solved, representative sequences are not going to be',
+                                       'computed.',
+                                       ''])
+
+                    # clean after yourself..
+                    map(lambda x: x.close(), [temp_fasta_files[o]['file'] for o in temp_fasta_files])
+                    shutil.rmtree(output_directory)
+                    sys.exit()
 
         while self.fasta.next():
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
