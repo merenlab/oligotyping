@@ -21,7 +21,7 @@ import operator
 sys.path.append('lib')
 import fastalib as u
 
-from utils.vis_frequency_curve_of_unique_sequences import vis_freq_curve
+from visualization.frequency_curve_and_entropy import vis_freq_curve
 
 def pp(n):
     """Pretty print function for very big numbers.."""
