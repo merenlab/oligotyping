@@ -12,13 +12,15 @@
 import os
 import sys
 import cPickle
+import numpy as np
 import matplotlib.pyplot as plt
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../'))
+from entropy_analysis import entropy_analysis
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../lib/'))
 import fastalib as u
 
 def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None):
-   
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -35,14 +37,15 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     frequency_list_to_plot = frequency_list[0:x_limit] + [0] * (x_limit - len(frequency_list) \
                                             if len(frequency_list) < x_limit else 0)
     
-    fig = plt.figure(figsize=(20, 8))
-     
-    plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
-  
+    fig = plt.figure(figsize=(24, 10))
+
     plt.grid(True) 
     plt.rcParams.update({'axes.linewidth' : 0.9})
     plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
-
+   
+    plt.subplot(2, 1, 1)
+    plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
+  
     plt.plot(frequency_list_to_plot, lw = 3, c = 'black')
  
     plt.xlabel('Order in the File', size = 'x-large')
@@ -52,11 +55,24 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.xlim(xmin = -0.05, xmax = x_limit - 1)
     plt.xticks(range(0, x_limit), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
     
+    plt.subplot(2, 1, 2)
+    plt.subplots_adjust(left=0.05, bottom = 0.05, top = 0.95, right = 0.99)
+
+    entropy_values = entropy_analysis(fasta_file_path, verbose = False, uniqued = True)
+
+    y_maximum = max(entropy_values) * 1.1
+    y_maximum = 1.1 if y_maximum < 1 else y_maximum
+    ind = np.arange(len(entropy_values))
+    plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
+    plt.xlim([0, len(entropy_values)])
+    plt.ylim([0, y_maximum])
+    plt.xlabel('Nucleotide Position')
+    plt.ylabel('Shannon Entropy', size = 'x-large')
+
     if output_file:
         plt.savefig(output_file)
     if display:
         plt.show()
-        sys.exit()
 
 if __name__ == '__main__':
     import argparse
@@ -68,5 +84,5 @@ if __name__ == '__main__':
 
     fasta_file_path = parser.parse_args().fasta
     x_limit = parser.parse_args().x_limit
-    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + 'unique-curve.png', display = True)
+    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + '.png', display = True)
 
