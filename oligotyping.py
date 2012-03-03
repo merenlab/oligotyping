@@ -244,15 +244,17 @@ class Oligotyping:
 
             for abundance_percent, abundance_count, sample_size in percent_abundances:
                 if abundance_percent >= self.min_percent_abundance and (sample_size > 100 or abundance_count > self.min_percent_abundance):
-                    self.abundant_oligos.append(oligo)
+                    self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
+
+        self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
         self.info('Oligotypes after "min % abundance in a sample" elimination', pp(len(self.abundant_oligos)))
  
         # store abundant oligos
         abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
         f = open(abundant_oligos_file_path, 'w')
-        for oligo in sorted(self.abundant_oligos):
+        for oligo in self.abundant_oligos:
             f.write('>' + oligo + '\n')
             f.write(oligo + '\n')
         f.close()
@@ -294,7 +296,7 @@ class Oligotyping:
             dimensions ntax=%d nchar=%d;
             format datatype=dna interleave=no;
             matrix\n""" % (len(self.abundant_oligos), len(self.abundant_oligos[0])))
-        for oligo in sorted(self.abundant_oligos):
+        for oligo in self.abundant_oligos:
             f.write('    %.20s %s\n' % (oligo, oligo))
         f.write('    ;\n')
         f.write('end;\n')
@@ -407,7 +409,7 @@ class Oligotyping:
 
             temp_fasta_path = temp_fasta_files[oligo]['path']
             temp_fasta_source = u.SequenceSource(temp_fasta_path, lazy_init = False, unique = True)
-            dest_fasta_path = os.path.join(output_directory, oligo)
+            dest_fasta_path = os.path.join(output_directory, '%.5d_' % self.abundant_oligos.index(oligo) + oligo)
             dest_fasta = u.FastaOutput(dest_fasta_path)
 
             while temp_fasta_source.next() and temp_fasta_source.pos <= self.limit_representative_sequences:
@@ -421,7 +423,7 @@ class Oligotyping:
                 # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
             dest_fasta.close()       
 
-            vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '-unique-curve.png')
+            vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '.png')
 
         for oligo in self.abundant_oligos:
             os.remove(temp_fasta_files[oligo]['path'])
