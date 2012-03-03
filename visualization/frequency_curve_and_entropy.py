@@ -74,6 +74,9 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     if display:
         plt.show()
 
+    plt.clf()
+    plt.close('all')
+
 if __name__ == '__main__':
     import argparse
 
