@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
-                         that contains all samples and sequences in FASTA format')
+                         that contains all datasets and sequences in FASTA format')
 
     alignment = parser.parse_args().alignment
     entropy_values = entropy_analysis(alignment, output_file = alignment + '-ENTROPY.txt')
