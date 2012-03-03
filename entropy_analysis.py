@@ -56,9 +56,24 @@ def get_consensus_sequence(alignment_file):
     return consensus_sequence
 
 
-def entropy_analysis(alignment, output_file = None, verbose = True):
-    lines = [l for l in open(alignment) if not l.startswith('>')]
+def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None):
+    if freq_from_defline == None:
+        freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
+
+    lines = []
     
+    alignment = u.SequenceSource(alignment_path)
+    if not uniqued:
+        while alignment.next():
+            lines.append(alignment.seq)
+    else:
+        while alignment.next():
+            frequency = freq_from_defline(alignment.id)
+            for i in range(0, frequency):
+                lines.append(alignment.seq)
+
+    alignment.close()
+
     entropy_tpls = [] 
     
     for i in range(0, len(lines[0])):
