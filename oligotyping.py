@@ -22,6 +22,8 @@ sys.path.append('lib')
 import fastalib as u
 
 from visualization.frequency_curve_and_entropy import vis_freq_curve
+from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
+from utils.random_colors import random_colors
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -80,7 +82,8 @@ class Oligotyping:
     def __init__(self, args = None):
         self.alignment = None
         self.entropy   = None
-        self.output_directory    = None
+        self.project = None
+        self.output_directory = None
         self.number_of_components = 5
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 1.0
@@ -90,17 +93,20 @@ class Oligotyping:
         if args:
             self.alignment = args.alignment
             self.entropy = args.entropy
+            self.project = args.project
             self.output_directory = args.output_directory or os.path.dirname(args.alignment)
             self.number_of_components = args.number_of_components
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
-            self.skip_figures = args.skip_figures
+            self.quick = args.quick
+            self.no_figures = args.no_figures
 
         self.datasets_dict = {}
         self.datasets = []
         self.abundant_oligos = []
+        self.colors_dict = None
 
     def sanity_check(self):
         if not os.path.exists(self.output_directory):
@@ -175,7 +181,11 @@ class Oligotyping:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
         self._generate_viamics_datasets_dict()
-        self._generate_representative_sequences()
+        if not self.quick:
+            self._generate_representative_sequences()
+        self._generate_random_colors()
+        if not self.no_figures:
+            self._generate_stack_bar_figure()
 
         self.info_file_obj.close()
 
@@ -424,7 +434,7 @@ class Oligotyping:
                 # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
             dest_fasta.close()       
 
-            if not self.skip_figures:
+            if (not self.quick) and (not self.no_figures):
                 vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '.png')
 
         for oligo in self.abundant_oligos:
@@ -432,8 +442,19 @@ class Oligotyping:
 
         
         self.info('Representative sequences for oligotypes directory', output_directory) 
-        
-        
+
+
+    def _generate_random_colors(self):
+        output_file_path = self.generate_output_destination('COLORS')
+        self.colors_dict = random_colors(self.abundant_oligos, output_file_path)
+        self.info('Random colors for oligotypes have been stored', output_file_path)
+
+
+    def _generate_stack_bar_figure(self):
+        output_file_path = self.generate_output_destination('STACKBAR.png')
+        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, project_title = self.project)
+        self.info('Oligotype distribution stack bar figure has been stored', output_file_path)
+
  
 if __name__ == '__main__':
     import argparse
@@ -471,9 +492,15 @@ if __name__ == '__main__':
                                 -l 10 would make it possible that only first 10 sequence would be stored). Default\
                                 is 0, which stores everything, but when the dataset size is too big, this could\
                                 take up disk space.')
-    parser.add_argument('--skip-figures', action = 'store_true', default = False,
-                        help = 'Generating figures may take a lot of time. This parameter can be used to skip all\
-                                figure generation steps.')
+    parser.add_argument('--quick', action = 'store_true', default = False,
+                        help = 'Some relatively insignificant parts of the analysis may take a lot of time, such as\
+                                generating figures for representative sequences. When this parameter is set, all\
+                                trivial steps would be skipped to give results as soon as possible.')
+    parser.add_argument('--no-figures', action = 'store_true', default = False,
+                        help = 'When set, no figures will be generated or displayed.')
+    parser.add_argument('--project', default = None, type=str,
+                        help = 'When a project name is set, given name will be used in figures whenever possible.')
+
 
     oligotyping = Oligotyping(parser.parse_args())
 
