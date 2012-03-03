@@ -82,7 +82,7 @@ class Oligotyping:
         self.entropy   = None
         self.output_directory    = None
         self.number_of_components = 5
-        self.min_number_of_samples = 5
+        self.min_number_of_datasets = 5
         self.min_percent_abundance = 1.0
         self.dataset_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
@@ -92,13 +92,13 @@ class Oligotyping:
             self.entropy = args.entropy
             self.output_directory = args.output_directory or os.path.dirname(args.alignment)
             self.number_of_components = args.number_of_components
-            self.min_number_of_samples = args.min_number_of_samples
+            self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
 
-        self.samples_dict = {}
-        self.samples = []
+        self.datasets_dict = {}
+        self.datasets = []
         self.abundant_oligos = []
 
     def sanity_check(self):
@@ -125,7 +125,7 @@ class Oligotyping:
     def generate_output_destination(self, postfix, directory = False):
         prefix = '%s-C%d-S%d-A%.1f' % (os.path.basename(self.alignment).split('.')[0],
                                        self.number_of_components,
-                                       self.min_number_of_samples,
+                                       self.min_number_of_datasets,
                                        self.min_percent_abundance)
 
         return_path = os.path.join(self.output_directory, prefix + '-' + postfix)
@@ -160,48 +160,48 @@ class Oligotyping:
         self.info('Input entropy file', self.entropy)
         self.info('Number of sequences in FASTA', pp(self.fasta.total_seq))
         self.info('Number of entropy components to use', self.number_of_components)
-        self.info('Min number of samples oligotype appears', self.min_number_of_samples)
-        self.info('Min % abundance of oligotype in at least one sample', self.min_percent_abundance)
+        self.info('Min number of datasets oligotype appears', self.min_number_of_datasets)
+        self.info('Min % abundance of oligotype in at least one dataset', self.min_percent_abundance)
         
         # locations of interest based on the entropy scores
         self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_components)])
         self.info('Bases of interest', ', '.join([str(x) for x in self.bases_of_interest_locs]))
 
-        self._construct_samples_dict()
+        self._construct_datasets_dict()
         self._contrive_abundant_oligos()
-        self._refine_samples_dict()
+        self._refine_datasets_dict()
         self._generate_NEXUS_file()
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
-        self._generate_viamics_samples_dict()
+        self._generate_viamics_datasets_dict()
         self._generate_representative_sequences()
 
         self.info_file_obj.close()
 
 
-    def _construct_samples_dict(self):
+    def _construct_datasets_dict(self):
         self.fasta.reset()
         while self.fasta.next():
-            sample = self.dataset_name_from_defline(self.fasta.id)
+            dataset = self.dataset_name_from_defline(self.fasta.id)
             
-            if not self.samples_dict.has_key(sample):
-                self.samples_dict[sample] = {}
-                self.samples.append(sample)
+            if not self.datasets_dict.has_key(dataset):
+                self.datasets_dict[dataset] = {}
+                self.datasets.append(dataset)
         
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
         
-            if self.samples_dict[sample].has_key(oligo):
-                self.samples_dict[sample][oligo] += 1
+            if self.datasets_dict[dataset].has_key(oligo):
+                self.datasets_dict[dataset][oligo] += 1
             else:
-                self.samples_dict[sample][oligo] = 1
-        self.info('Number of samples in FASTA', pp(len(self.samples_dict)))
+                self.datasets_dict[dataset][oligo] = 1
+        self.info('Number of datasets in FASTA', pp(len(self.datasets_dict)))
 
     
     def _contrive_abundant_oligos(self):
         # cat oligos | uniq
         oligos_set = []
-        for sample in self.samples:
-            for oligo in self.samples_dict[sample].keys():
+        for dataset in self.datasets:
+            for oligo in self.datasets_dict[dataset].keys():
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
         self.info('Number of unique oligotypes', pp(len(oligos_set)))
@@ -210,46 +210,46 @@ class Oligotyping:
         oligo_abundance = []
         for oligo in oligos_set:
             count = 0
-            for sample in self.samples:
-                if oligo in self.samples_dict[sample].keys():
+            for dataset in self.datasets:
+                if oligo in self.datasets_dict[dataset].keys():
                     count += 1
             oligo_abundance.append((count, oligo),)
         oligo_abundance.sort()
 
         # eliminate singleton/doubleton oligos (any oligo required to appear in at least
-        # 'self.min_number_of_samples' samples)
+        # 'self.min_number_of_datasets' datasets)
         non_singleton_oligos = []
         for tpl in oligo_abundance:
-            if tpl[0] >= self.min_number_of_samples:
+            if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
-        self.info('Oligotypes after "min number of samples" elimination', pp(len(non_singleton_oligos)))
+        self.info('Oligotypes after "min number of datasets" elimination', pp(len(non_singleton_oligos)))
         
         # eliminate very rare oligos (the percent abundance of every oligo should be
-        # more than 'self.min_percent_abundance' percent in at least one sample)
-        SUM = lambda sample: sum([self.samples_dict[sample][o] for o in non_singleton_oligos \
-                                                                if self.samples_dict[sample].has_key(o)])
+        # more than 'self.min_percent_abundance' percent in at least one dataset)
+        SUM = lambda dataset: sum([self.datasets_dict[dataset][o] for o in non_singleton_oligos \
+                                                                if self.datasets_dict[dataset].has_key(o)])
         for oligo in non_singleton_oligos:
             percent_abundances = []
-            for sample in self.samples:
-                if self.samples_dict[sample].has_key(oligo):
-                    percent_abundances.append((self.samples_dict[sample][oligo] * 100.0 / SUM(sample), self.samples_dict[sample][oligo], SUM(sample)))
+            for dataset in self.datasets:
+                if self.datasets_dict[dataset].has_key(oligo):
+                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / SUM(dataset), self.datasets_dict[dataset][oligo], SUM(dataset)))
             percent_abundances.sort(reverse = True)
 
             # NOTE: if a dataset has less than 100 sequences, percent abundance doesn't mean much.
             #       if user wants to eliminate oligotypes that doesn't appear in at least one dataset
             #       more than 1% abundance, a singleton of that oligotype that appears in a dataset
             #       which has 50 sequences would make that oligotype pass the filter. I think if an
-            #       oligotype passes the percent filter, sample size and actual count of the oligotype
+            #       oligotype passes the percent filter, dataset size and actual count of the oligotype
             #       should also be considered before considering it as an abundant oligotype:
 
-            for abundance_percent, abundance_count, sample_size in percent_abundances:
-                if abundance_percent >= self.min_percent_abundance and (sample_size > 100 or abundance_count > self.min_percent_abundance):
+            for abundance_percent, abundance_count, dataset_size in percent_abundances:
+                if abundance_percent >= self.min_percent_abundance and (dataset_size > 100 or abundance_count > self.min_percent_abundance):
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
 
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
-        self.info('Oligotypes after "min % abundance in a sample" elimination', pp(len(self.abundant_oligos)))
+        self.info('Oligotypes after "min % abundance in a dataset" elimination', pp(len(self.abundant_oligos)))
  
         # store abundant oligos
         abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
@@ -261,31 +261,31 @@ class Oligotyping:
         self.info('Abundant oligotypes file path', abundant_oligos_file_path)
        
 
-    def _refine_samples_dict(self):
-        # removing oligos from samples dictionary that didn't pass
+    def _refine_datasets_dict(self):
+        # removing oligos from datasets dictionary that didn't pass
         # MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE and
         # MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS filters.
-        samples_dict_copy = copy.deepcopy(self.samples_dict)
-        samples_to_remove = []
-        for sample in self.samples:
-            for oligo in samples_dict_copy[sample]:
+        datasets_dict_copy = copy.deepcopy(self.datasets_dict)
+        datasets_to_remove = []
+        for dataset in self.datasets:
+            for oligo in datasets_dict_copy[dataset]:
                 if oligo not in self.abundant_oligos:
-                    self.samples_dict[sample].pop(oligo)
-            if not self.samples_dict[sample]:
-                samples_to_remove.append(sample)
-        for sample in samples_to_remove:
-            self.samples.remove(sample)
-            self.samples_dict.pop(sample)
+                    self.datasets_dict[dataset].pop(oligo)
+            if not self.datasets_dict[dataset]:
+                datasets_to_remove.append(dataset)
+        for dataset in datasets_to_remove:
+            self.datasets.remove(dataset)
+            self.datasets_dict.pop(dataset)
 
-        number_of_reads_in_samples_dict = sum([sum(self.samples_dict[sample].values()) for sample in self.samples_dict]) 
+        number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
         self.info('Number of sequences represented after quality filtering', '%s of %s (%.2f%%)'\
-                            % (pp(number_of_reads_in_samples_dict),
+                            % (pp(number_of_reads_in_datasets_dict),
                                pp(self.fasta.total_seq),
-                               number_of_reads_in_samples_dict * 100.0 / self.fasta.total_seq))
+                               number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
-        if len(samples_to_remove):
-            self.info('Samples removed for having 0 oligotypes left after filtering', ', '.join(samples_to_remove))
+        if len(datasets_to_remove):
+            self.info('Samples removed for having 0 oligotypes left after filtering', ', '.join(datasets_to_remove))
         
         
     def _generate_NEXUS_file(self):
@@ -308,9 +308,9 @@ class Oligotyping:
         # generate environment file
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         f = open(environment_file_path, 'w')
-        for sample in self.samples:
-            for oligo in self.samples_dict[sample]:
-                f.write("%s\t%s\t%d\n" % (oligo, sample, self.samples_dict[sample][oligo]))
+        for dataset in self.datasets:
+            for oligo in self.datasets_dict[dataset]:
+                f.write("%s\t%s\t%d\n" % (oligo, dataset, self.datasets_dict[dataset][oligo]))
         f.close()
         self.info('Environment file for Viamics/UniFrac analysis', environment_file_path)
 
@@ -322,15 +322,15 @@ class Oligotyping:
         count_file = open(matrix_count_file_path, 'w')
         percent_file = open(matrix_percent_file_path, 'w')
         
-        count_file.write('\t'.join([''] + self.samples) + '\n')
-        percent_file.write('\t'.join([''] + self.samples) + '\n')
+        count_file.write('\t'.join([''] + self.datasets) + '\n')
+        percent_file.write('\t'.join([''] + self.datasets) + '\n')
         for oligo in self.abundant_oligos:
             counts = []
             percents = []
-            for sample in self.samples:
-                if self.samples_dict[sample].has_key(oligo):
-                    counts.append(str(self.samples_dict[sample][oligo]))
-                    percents.append(str(self.samples_dict[sample][oligo] * 100.0 / sum(self.samples_dict[sample].values())))
+            for dataset in self.datasets:
+                if self.datasets_dict[dataset].has_key(oligo):
+                    counts.append(str(self.datasets_dict[dataset][oligo]))
+                    percents.append(str(self.datasets_dict[dataset][oligo] * 100.0 / sum(self.datasets_dict[dataset].values())))
                 else:
                     counts.append('0')
                     percents.append('0.0')
@@ -342,22 +342,22 @@ class Oligotyping:
         self.info('Data matrix (percents)', matrix_percent_file_path)
         
    
-    def _generate_viamics_samples_dict(self):
-        # generate viamics samples dict 
-        viamics_samples_dict = {}
-        viamics_samples_dict_file_path = self.generate_output_destination("ENVIRONMENT.cPickle")
-        for sample in self.samples_dict:
-            viamics_samples_dict[sample] = {}
-            viamics_samples_dict[sample]['species'] = {}
-            for oligo in self.samples_dict[sample]:
+    def _generate_viamics_datasets_dict(self):
+        # generate viamics datasets dict 
+        viamics_datasets_dict = {}
+        viamics_datasets_dict_file_path = self.generate_output_destination("ENVIRONMENT.cPickle")
+        for dataset in self.datasets_dict:
+            viamics_datasets_dict[dataset] = {}
+            viamics_datasets_dict[dataset]['species'] = {}
+            for oligo in self.datasets_dict[dataset]:
                 if oligo in self.abundant_oligos:
-                    viamics_samples_dict[sample]['species'][oligo] = self.samples_dict[sample][oligo]
+                    viamics_datasets_dict[dataset]['species'][oligo] = self.datasets_dict[dataset][oligo]
         
-        for sample in viamics_samples_dict:
-            viamics_samples_dict[sample]['tr'] = sum(viamics_samples_dict[sample]['species'].values())
-            viamics_samples_dict[sample]['bases_of_interest_locs'] = self.bases_of_interest_locs
-        cPickle.dump(viamics_samples_dict, open(viamics_samples_dict_file_path, 'w'))
-        self.info('Serialized Viamics samples dictionary', viamics_samples_dict_file_path)
+        for dataset in viamics_datasets_dict:
+            viamics_datasets_dict[dataset]['tr'] = sum(viamics_datasets_dict[dataset]['species'].values())
+            viamics_datasets_dict[dataset]['bases_of_interest_locs'] = self.bases_of_interest_locs
+        cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
+        self.info('Serialized Viamics datasets dictionary', viamics_datasets_dict_file_path)
 
 
     def _generate_representative_sequences(self):
@@ -438,7 +438,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
     parser.add_argument('-i', '--alignment', required=True, metavar = 'INPUT ALIGNMENT',
-                        help = 'Alignment file that contains all samples and sequences in FASTA format')
+                        help = 'Alignment file that contains all datasets and sequences in FASTA format')
     parser.add_argument('-e', '--entropy', required=True, metavar = 'ENTROPY',
                         help = 'File that contains the columns and the entropy values computer previously')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = '.')
@@ -446,18 +446,18 @@ if __name__ == '__main__':
                         help = 'Number of components to use from alignment to generate oligotypes. Default\
                                 is "5", which is a completely arbitrary value. Number of components should\
                                 be determined after the careful examination of entropy figure.')
-    parser.add_argument('-s', '--min-number-of-samples', type=int, required=True,
-                        help = 'Minimum number of samples oligotype expected to appear. The deafult is "5", which\
+    parser.add_argument('-s', '--min-number-of-datasets', type=int, required=True,
+                        help = 'Minimum number of datasets oligotype expected to appear. The deafult is "5", which\
                                 is another completely arbitrary value. This parameter should be defined based\
                                 on the number of datasets included in the analysis. If there are 10 datasets,\
                                 3 might be a good choice, if there are 5 datasets, 1 would be a better one\
                                 depending on the study.')
     parser.add_argument('-a', '--min-percent-abundance', type=float, required=True,
                         help = 'Minimum percent abundance of an oligotype in at least one dataset. The default\
-                                is "1.0". Just like --min-number-of-samples parameter, this parameter too is\
+                                is "1.0". Just like --min-number-of-datasets parameter, this parameter too is\
                                 to eliminate oligotypes that are formed by sequencing errors occured at the\
                                 component of interest. The value should be decided based on the average number\
-                                of sequences every sample has.')
+                                of sequences every dataset has.')
     parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
