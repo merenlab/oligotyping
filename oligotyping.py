@@ -96,6 +96,7 @@ class Oligotyping:
             self.min_percent_abundance = args.min_percent_abundance
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
+            self.skip_figures = args.skip_figures
 
         self.datasets_dict = {}
         self.datasets = []
@@ -423,7 +424,8 @@ class Oligotyping:
                 # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
             dest_fasta.close()       
 
-            vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '.png')
+            if not self.skip_figures:
+                vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '.png')
 
         for oligo in self.abundant_oligos:
             os.remove(temp_fasta_files[oligo]['path'])
@@ -469,6 +471,9 @@ if __name__ == '__main__':
                                 -l 10 would make it possible that only first 10 sequence would be stored). Default\
                                 is 0, which stores everything, but when the dataset size is too big, this could\
                                 take up disk space.')
+    parser.add_argument('--skip-figures', action = 'store_true', default = False,
+                        help = 'Generating figures may take a lot of time. This parameter can be used to skip all\
+                                figure generation steps.')
 
     oligotyping = Oligotyping(parser.parse_args())
 
