@@ -6,4 +6,5 @@
 
 #nonsense
 *.DS_Store
+*ignore*
 *~
