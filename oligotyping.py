@@ -102,6 +102,7 @@ class Oligotyping:
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
             self.no_figures = args.no_figures
+            self.no_display = args.no_display
 
         self.datasets_dict = {}
         self.datasets = []
@@ -452,7 +453,7 @@ class Oligotyping:
 
     def _generate_stack_bar_figure(self):
         output_file_path = self.generate_output_destination('STACKBAR.png')
-        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, project_title = self.project)
+        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, project_title = self.project, display = not self.no_display)
         self.info('Oligotype distribution stack bar figure has been stored', output_file_path)
 
  
@@ -498,6 +499,8 @@ if __name__ == '__main__':
                                 trivial steps would be skipped to give results as soon as possible.')
     parser.add_argument('--no-figures', action = 'store_true', default = False,
                         help = 'When set, no figures will be generated or displayed.')
+    parser.add_argument('--no-display', action = 'store_true', default = False,
+                        help = 'When set, no figures will be shown.')
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
 
