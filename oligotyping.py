@@ -18,7 +18,7 @@ import cPickle
 import tempfile
 import operator
 
-sys.path.append('lib')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
 import fastalib as u
 
 from visualization.frequency_curve_and_entropy import vis_freq_curve
@@ -371,25 +371,26 @@ class Oligotyping:
         cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
         self.info('Serialized Viamics datasets dictionary', viamics_datasets_dict_file_path)
 
-
     def _generate_representative_sequences(self):
         # create a fasta file with a representative full length consensus sequence for every oligotype
 
         # this is what is going on here: we go through all oligotypes, gather sequences that are being
-        # represented by a particular oligotype, unique them and report the top ten unique sequences
+        # represented by a particular oligotype, unique them and report the top ten unique sequences
         # ordered by the frequency.
 
         output_directory = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
 
-        self.fasta.reset()
 
-        temp_fasta_files = {}
-        for abundant_oligo in self.abundant_oligos:
-            if abundant_oligo not in temp_fasta_files:
+        fasta_files_dict = {}
+        unique_files_dict = {}
+        for oligo in self.abundant_oligos:
+            if oligo not in fasta_files_dict:
                 try:
-                    temp_obj = tempfile.NamedTemporaryFile(delete=False)
-                    temp_fasta_files[abundant_oligo] = {'file': temp_obj,
-                                                        'path': temp_obj.name}
+                    fasta_file_path = os.path.join(output_directory, '%.5d_' % self.abundant_oligos.index(oligo) + oligo)
+                    fasta_files_dict[oligo] = {'file': open(fasta_file_path, 'w'),
+                                               'path': fasta_file_path}
+                    unique_files_dict[oligo] = {'file': open(fasta_file_path + '_unique', 'w'),
+                                                'path': fasta_file_path + '_unique'}
                 except OSError:
                     print '\n\t'.join(['',
                                        'WARNING: Oligotyping process has reached the maximum number of open files',
@@ -405,42 +406,37 @@ class Oligotyping:
                                        'computed.',
                                        ''])
 
-                    # clean after yourself..
-                    map(lambda x: x.close(), [temp_fasta_files[o]['file'] for o in temp_fasta_files])
+                    # clean after yourself. close every file, delete directory, exit.
+                    [map(lambda x: x.close(), [g[o]['file'] for o in g]) for g in [fasta_files_dict, unique_files_dict]]
                     shutil.rmtree(output_directory)
                     sys.exit()
 
+        self.fasta.reset()
         while self.fasta.next():
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
-                temp_fasta_files[oligo]['file'].write('>%s|%s\n' % (self.fasta.id, oligo))
-                temp_fasta_files[oligo]['file'].write('%s\n' % self.fasta.seq)
+                fasta_files_dict[oligo]['file'].write('>%s\n' % (self.fasta.id))
+                fasta_files_dict[oligo]['file'].write('%s\n' % self.fasta.seq)
             
         for oligo in self.abundant_oligos:
-            temp_fasta_files[oligo]['file'].close()
+            fasta_files_dict[oligo]['file'].close()
 
-            temp_fasta_path = temp_fasta_files[oligo]['path']
-            temp_fasta_source = u.SequenceSource(temp_fasta_path, lazy_init = False, unique = True)
-            dest_fasta_path = os.path.join(output_directory, '%.5d_' % self.abundant_oligos.index(oligo) + oligo)
-            dest_fasta = u.FastaOutput(dest_fasta_path)
+            fasta_file_path = fasta_files_dict[oligo]['path']
+            fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
 
-            while temp_fasta_source.next() and temp_fasta_source.pos <= self.limit_representative_sequences:
-                dest_fasta.write_id('%s_%d|total_unique:%d|freq:%d' % (oligo,
-                                                                       temp_fasta_source.pos,
-                                                                       temp_fasta_source.total_seq,
-                                                                       len(temp_fasta_source.ids)))
-                dest_fasta.write_seq(temp_fasta_source.seq, split = False)
+            while fasta.next() and fasta.pos <= self.limit_representative_sequences:
+                unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
+                                                                     % (oligo,
+                                                                        fasta.pos,
+                                                                        len(fasta.ids)))
+                unique_files_dict[oligo]['file'].write('%s\n' % fasta.seq)
         
-                # remove uninformative columns from representative full length consensus sequences
-                # trim_uninformative_columns_from_alignment(dest_fasta.output_file_path)
-            dest_fasta.close()       
+            fasta.close()
+            unique_files_dict[oligo]['file'].close()
 
             if (not self.quick) and (not self.no_figures):
-                vis_freq_curve(dest_fasta_path, output_file = dest_fasta_path + '.png')
-
-        for oligo in self.abundant_oligos:
-            os.remove(temp_fasta_files[oligo]['path'])
-
+                unique_fasta_path = unique_files_dict[oligo]['path']
+                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png')
         
         self.info('Representative sequences for oligotypes directory', output_directory) 
 
