@@ -10,12 +10,13 @@
 #
 # Please read the COPYING file.
 
+import os
 import sys
 import operator
 from scipy import log2 as log
 import numpy as np
 
-sys.path.append('lib')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
 import fastalib as u
 
 COLORS = {'A': 'red',
@@ -75,12 +76,12 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     alignment.close()
 
     entropy_tpls = [] 
-    
+   
     for i in range(0, len(lines[0])):
         if verbose:
             sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
             sys.stderr.flush()
-    
+   
         if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
             entropy_tpls.append((i, 0.0),)
         else:
