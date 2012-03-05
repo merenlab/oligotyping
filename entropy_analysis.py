@@ -19,6 +19,14 @@ import numpy as np
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
 import fastalib as u
 
+class EntropyError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        return
+    def __str__(self):
+        return 'Error: %s' % self.e
+
 COLORS = {'A': 'red',
           'T': 'blue', 
           'C': 'green', 
@@ -74,6 +82,9 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
                 lines.append(alignment.seq)
 
     alignment.close()
+
+    if len(list(set([len(line) for line in lines]))) != 1:
+        raise EntropyError, "Not all sequences have the same length."
 
     entropy_tpls = [] 
    
