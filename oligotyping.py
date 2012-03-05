@@ -457,7 +457,7 @@ class Oligotyping:
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
+    parser = argparse.ArgumentParser(description='Start an Oligotyping Process')
     parser.add_argument('-i', '--alignment', required=True, metavar = 'INPUT ALIGNMENT',
                         help = 'Alignment file that contains all datasets and sequences in FASTA format')
     parser.add_argument('-e', '--entropy', required=True, metavar = 'ENTROPY',
