@@ -91,13 +91,13 @@ class Oligotyping:
         self.limit_representative_sequences = sys.maxint
 
         if args:
-            self.alignment = args.alignment
             self.entropy = args.entropy
-            self.project = args.project
-            self.output_directory = args.output_directory or os.path.dirname(args.alignment)
+            self.alignment = args.alignment
             self.number_of_components = args.number_of_components
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
+            self.project = args.project or args.alignment.split('.')[0]
+            self.output_directory = args.output_directory or '-'.join([self.project, self.get_prefix()]) 
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
@@ -130,13 +130,14 @@ class Oligotyping:
         return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
 
 
-    def generate_output_destination(self, postfix, directory = False):
-        prefix = '%s-C%d-S%d-A%.1f' % (os.path.basename(self.alignment).split('.')[0],
-                                       self.number_of_components,
-                                       self.min_number_of_datasets,
-                                       self.min_percent_abundance)
+    def get_prefix(self):
+        return 'C%d-S%d-A%.1f' % (self.number_of_components,
+                                  self.min_number_of_datasets,
+                                  self.min_percent_abundance)
 
-        return_path = os.path.join(self.output_directory, prefix + '-' + postfix)
+
+    def generate_output_destination(self, postfix, directory = False):
+        return_path = os.path.join(self.output_directory, postfix)
 
         if directory == True:
             if os.path.exists(return_path):
@@ -461,7 +462,7 @@ if __name__ == '__main__':
                         help = 'Alignment file that contains all datasets and sequences in FASTA format')
     parser.add_argument('-e', '--entropy', required=True, metavar = 'ENTROPY',
                         help = 'File that contains the columns and the entropy values computer previously')
-    parser.add_argument('-o', '--output-directory', help = 'Output directory', default = '.')
+    parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
     parser.add_argument('-c', '--number-of-components', type=int, required=True,
                         help = 'Number of components to use from alignment to generate oligotypes. Default\
                                 is "5", which is a completely arbitrary value. Number of components should\
