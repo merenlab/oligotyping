@@ -140,7 +140,7 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
+    parser = argparse.ArgumentParser(description='Entropy Analysis')
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
                          that contains all datasets and sequences in FASTA format')
 
