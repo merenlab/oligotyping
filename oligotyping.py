@@ -245,7 +245,7 @@ class Oligotyping:
             percent_abundances = []
             for dataset in self.datasets:
                 if self.datasets_dict[dataset].has_key(oligo):
-                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / SUM(dataset), self.datasets_dict[dataset][oligo], SUM(dataset)))
+                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / SUM(dataset), self.datasets_dict[dataset][oligo], SUM(dataset), dataset))
             percent_abundances.sort(reverse = True)
 
             # NOTE: if a dataset has less than 100 sequences, percent abundance doesn't mean much.
@@ -254,9 +254,11 @@ class Oligotyping:
             #       which has 50 sequences would make that oligotype pass the filter. I think if an
             #       oligotype passes the percent filter, dataset size and actual count of the oligotype
             #       should also be considered before considering it as an abundant oligotype:
+            for abundance_percent, abundance_count, dataset_size, dataset in percent_abundances:
+                PercentAbundance_OK = abundance_percent >= self.min_percent_abundance
+                DatesetSize_OK      = dataset_size > 100 or abundance_count > self.min_percent_abundance
 
-            for abundance_percent, abundance_count, dataset_size in percent_abundances:
-                if abundance_percent >= self.min_percent_abundance and (dataset_size > 100 or abundance_count > self.min_percent_abundance):
+                if PercentAbundance_OK and DatesetSize_OK:
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
 
