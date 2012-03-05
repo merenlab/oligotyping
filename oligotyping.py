@@ -392,7 +392,7 @@ class Oligotyping:
                                                'path': fasta_file_path}
                     unique_files_dict[oligo] = {'file': open(fasta_file_path + '_unique', 'w'),
                                                 'path': fasta_file_path + '_unique'}
-                except OSError:
+                except IOError:
                     print '\n\t'.join(['',
                                        'WARNING: Oligotyping process has reached the maximum number of open files',
                                        'limit defined by the operating system. There are "%d" oligotypes to be'\
