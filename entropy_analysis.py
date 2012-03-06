@@ -88,13 +88,14 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     
     return [x[1] for x in entropy_tpls]
 
+
 def get_unique_sequences(alignment, limit = 10):
     unique_sequences = []
 
-    fasta = u.SequenceSource(alignment, unique = True)
+    fasta = u.SequenceSource(alignment, unique = True, lazy_init = False)
 
     while fasta.next() and fasta.pos < limit:
-        unique_sequences.append(fasta.seq)
+        unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) * 100.0 / fasta.total_seq))
 
     return unique_sequences
 
@@ -106,8 +107,10 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
     y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
     number_of_uniques_to_show = int(y_maximum * 100)
     unique_sequences = get_unique_sequences(alignment, limit = number_of_uniques_to_show)
+    for i in unique_sequences:
+        print i
 
-    fig = plt.figure(figsize = (len(unique_sequences[0]) / 20, 10))
+    fig = plt.figure(figsize = (len(unique_sequences[0][0]) / 20, 10))
 
     plt.rcParams.update({'axes.linewidth' : 0.1})
     plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
@@ -119,7 +122,7 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
 
     current = 0
     for y in range(number_of_uniques_to_show, 0, -3):
-        unique_sequence = unique_sequences[current]
+        unique_sequence = unique_sequences[current][0]
         for i in range(0, len(unique_sequence)):
             plt.text(i, y / 100.0, unique_sequence[i],  \
                                 fontsize = 5, color = COLORS[unique_sequence[i]])
@@ -129,7 +132,7 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
 
     ind = np.arange(len(entropy_values))
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
-    ax.set_xlim([0, len(unique_sequences[0])])
+    ax.set_xlim([0, len(unique_sequences[0][0])])
     ax.set_ylim([0, y_maximum])
     plt.xlabel('Nucleotide Position')
     plt.ylabel('Shannon Entropy')
