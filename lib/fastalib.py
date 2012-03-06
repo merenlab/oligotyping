@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.030112
+# v.120306
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -108,7 +108,7 @@ class SequenceSource:
                         for hash in self.unique_hash_dict], reverse = True)]
 
 
-        self.total_seq = len(self.unique_hash_dict)
+        self.total_unique = len(self.unique_hash_dict)
         self.reset()
  
     def next(self):
