@@ -39,32 +39,6 @@ def entropy(l):
     return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
 
 
-def get_consensus_sequence(alignment_file):
-    consensus_sequence = ''
-    fasta = u.SequenceSource(alignment_file)
-    
-    fasta.next()
-    alignment_length = len(fasta.seq)
-    
-    consensus_dict = {}
-    
-    for i in range(0, alignment_length):
-        consensus_dict[i] = {'A': 0, 'T': 0, 'C': 0, 'G': 0, '-': 0}
-    
-    fasta.reset()
-    
-    while fasta.next():
-        seq = fasta.seq.upper()
-        for pos in range(0, alignment_length):
-            if seq[pos] in ['A', 'T', 'C', 'G', '-']:
-                consensus_dict[pos][seq[pos]] += 1
-    
-    for pos in range(0, alignment_length):
-        consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
-    
-    return consensus_sequence
-
-
 def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
@@ -114,13 +88,26 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     
     return [x[1] for x in entropy_tpls]
 
+def get_unique_sequences(alignment, limit = 10):
+    unique_sequences = []
+
+    fasta = u.SequenceSource(alignment, unique = True)
+
+    while fasta.next() and fasta.pos < limit:
+        unique_sequences.append(fasta.seq)
+
+    return unique_sequences
+
 
 def visualize_distribution(alignment, entropy_values, output_file, display = True):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    consensus_sequence = get_consensus_sequence(alignment)
-    fig = plt.figure(figsize = (len(consensus_sequence) / 20, 10))
+    y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
+    number_of_uniques_to_show = int(y_maximum * 100)
+    unique_sequences = get_unique_sequences(alignment, limit = number_of_uniques_to_show)
+
+    fig = plt.figure(figsize = (len(unique_sequences[0]) / 20, 10))
 
     plt.rcParams.update({'axes.linewidth' : 0.1})
     plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
@@ -130,15 +117,19 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
 
     ax = fig.add_subplot(111)
 
-    y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
-    for i in range(0, len(consensus_sequence)):
-        for y in range(int(y_maximum * 100), 0, -3):
-            plt.text(i, y / 100.0, consensus_sequence[i],  alpha = y / (y_maximum * 100.0),\
-                                fontsize = 5, color = COLORS[consensus_sequence[i]])
+    current = 0
+    for y in range(number_of_uniques_to_show, 0, -3):
+        unique_sequence = unique_sequences[current]
+        for i in range(0, len(unique_sequence)):
+            plt.text(i, y / 100.0, unique_sequence[i],  \
+                                fontsize = 5, color = COLORS[unique_sequence[i]])
+        current += 1
+        if current + 1 > len(unique_sequences):
+            break
 
     ind = np.arange(len(entropy_values))
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
-    ax.set_xlim([0, len(consensus_sequence)])
+    ax.set_xlim([0, len(unique_sequences[0])])
     ax.set_ylim([0, y_maximum])
     plt.xlabel('Nucleotide Position')
     plt.ylabel('Shannon Entropy')
