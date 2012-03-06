@@ -95,20 +95,18 @@ def get_unique_sequences(alignment, limit = 10):
     fasta = u.SequenceSource(alignment, unique = True, lazy_init = False)
 
     while fasta.next() and fasta.pos < limit:
-        unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) * 100.0 / fasta.total_seq))
+        unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) / float(fasta.total_seq)))
 
     return unique_sequences
 
 
-def visualize_distribution(alignment, entropy_values, output_file, display = True):
+def visualize_distribution(alignment, entropy_values, output_file, quick = False, display = True):
     import matplotlib.pyplot as plt
     import numpy as np
 
     y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
     number_of_uniques_to_show = int(y_maximum * 100)
     unique_sequences = get_unique_sequences(alignment, limit = number_of_uniques_to_show)
-    for i in unique_sequences:
-        print i
 
     fig = plt.figure(figsize = (len(unique_sequences[0][0]) / 20, 10))
 
@@ -120,15 +118,23 @@ def visualize_distribution(alignment, entropy_values, output_file, display = Tru
 
     ax = fig.add_subplot(111)
 
-    current = 0
-    for y in range(number_of_uniques_to_show, 0, -3):
-        unique_sequence = unique_sequences[current][0]
-        for i in range(0, len(unique_sequence)):
-            plt.text(i, y / 100.0, unique_sequence[i],  \
-                                fontsize = 5, color = COLORS[unique_sequence[i]])
-        current += 1
-        if current + 1 > len(unique_sequences):
-            break
+    if not quick:
+        current = 0
+        for y in range(number_of_uniques_to_show - 1, 0, -3):
+            unique_sequence = unique_sequences[current][0]
+            count = unique_sequences[current][1]
+            frequency = unique_sequences[current][2]
+            for i in range(0, len(unique_sequence)):
+                plt.text(i, y / 100.0, unique_sequence[i],  \
+                                    fontsize = 5, color = COLORS[unique_sequence[i]])
+
+            percent = int(round(frequency * len(unique_sequence))) or 1
+            plt.fill_between(range(0, percent), (y + 1.15) / 100.0, (y - 0.85) / 100.0, color="green", alpha = 0.2)
+            plt.text(percent + 0.8, (y - 1.2) / 100.0, count, fontsize = 5, color = 'gray')
+
+            current += 1
+            if current + 1 > len(unique_sequences):
+                break
 
     ind = np.arange(len(entropy_values))
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
@@ -148,8 +154,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Entropy Analysis')
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
                          that contains all datasets and sequences in FASTA format')
+    parser.add_argument('--quick', action = 'store_true', default = False,
+                        help = 'When set, entropy values will be shown as fast as\
+                                possible (some visualization steps will be skipped).')
 
-    alignment = parser.parse_args().alignment
-    entropy_values = entropy_analysis(alignment, output_file = alignment + '-ENTROPY.txt')
-    visualize_distribution(alignment, entropy_values, output_file = alignment + '-ENTROPY.png')
+    args = parser.parse_args()
+    entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY.txt')
+    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick)
 
