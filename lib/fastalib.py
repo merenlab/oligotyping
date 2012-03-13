@@ -119,7 +119,7 @@ class SequenceSource:
 
     def next_unique(self):
         if self.unique:
-            if self.total_seq > 0 and self.pos < self.total_seq:
+            if self.total_seq > 0 and self.pos < self.total_unique:
                 hash_entry = self.unique_hash_dict[self.unique_hash_list[self.pos]]
                 
                 self.pos += 1
