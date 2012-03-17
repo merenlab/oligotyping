@@ -28,13 +28,14 @@ def HTMLColorToRGB(colorstring):
 
     return (r / 255.0, g / 255.0, b / 255.0)
 
-def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True):
+def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
     datasets = datasets_dict.keys()
     datasets.sort()
    
-    oligos = []
-    map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
-    oligos = sorted(list(set(oligos)))
+    if oligos == None:
+        oligos = []
+        map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
+        oligos = sorted(list(set(oligos)))
     
     datasets_oligo_vectors = {}
     for dataset in datasets:
@@ -82,11 +83,11 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
         p = plt.bar(ind, values, width, bottom=bottom, color=color)
         bars.append(p)
     
-    plt.ylabel('Oligotype Distribution')
+    plt.ylabel('Oligotype Distribution', size='large')
     plt.title('Stacked Bar Charts of Oligotype Distribution %s' \
                  % (('for "%s"' % project_title) if project_title else ''))
 
-    plt.xticks(ind+width/2., datasets, rotation=90, size='xx-small')
+    plt.xticks(ind+width/2., datasets, rotation=90, size='small')
     plt.yticks([])
     plt.ylim(ymax = 100)
     plt.xlim(xmin = -(width) / 2, xmax = len(datasets))

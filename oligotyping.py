@@ -452,7 +452,7 @@ class Oligotyping:
 
     def _generate_stack_bar_figure(self):
         output_file_path = self.generate_output_destination('STACKBAR.png')
-        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, project_title = self.project, display = not self.no_display)
+        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, oligos = self.abundant_oligos, project_title = self.project, display = not self.no_display)
         self.info('Oligotype distribution stack bar figure has been stored', output_file_path)
 
  
