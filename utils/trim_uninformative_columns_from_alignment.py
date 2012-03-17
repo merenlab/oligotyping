@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 
-sys.path.append('../lib')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../lib'))
 import fastalib as u
 
 # eh..
