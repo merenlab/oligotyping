@@ -21,9 +21,11 @@ import operator
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
 import fastalib as u
 
+from html.generate import generate
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from utils.random_colors import random_colors
+from utils.constants import pretty_names
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -97,7 +99,7 @@ class Oligotyping:
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.project = args.project or args.alignment.split('.')[0]
-            self.output_directory = args.output_directory or '-'.join([self.project, self.get_prefix()]) 
+            self.output_directory = args.output_directory or os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
@@ -108,6 +110,7 @@ class Oligotyping:
         self.datasets = []
         self.abundant_oligos = []
         self.colors_dict = None
+        self.run_info_dict = {}
 
     def sanity_check(self):
         if not os.path.exists(self.output_directory):
@@ -147,10 +150,19 @@ class Oligotyping:
         return return_path
 
 
-    def info(self, label, value):
-        info_line = "%s %s: %s" % (label, '.' * (60 - len(label)), str(value))
+    def info(self, key, value):
+        if pretty_names.has_key(key):
+            label = pretty_names[key]
+        else:
+            label = key
+
+        self.run_info_dict[key] = value
+
+        info_line = "%s %s: %s\n" % (label, '.' * (60 - len(label)), str(value))
         self.info_file_obj.write(info_line + '\n')
-        print info_line
+
+        if not self.no_display:
+            sys.stdout.write(info_line)
 
 
     def run_all(self):
@@ -162,19 +174,19 @@ class Oligotyping:
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
 
-        self.info('Output directory', self.output_directory)
-        self.info('Command line', ' '.join(sys.argv))
-        self.info('Extraction info output file', self.info_file_path)
-        self.info('Input FASTA file', self.alignment)
-        self.info('Input entropy file', self.entropy)
-        self.info('Number of sequences in FASTA', pp(self.fasta.total_seq))
-        self.info('Number of entropy components to use', self.number_of_components)
-        self.info('Min number of datasets oligotype appears', self.min_number_of_datasets)
-        self.info('Min % abundance of oligotype in at least one dataset', self.min_percent_abundance)
+        self.info('output_directory', self.output_directory)
+        self.info('cmd_line', ' '.join(sys.argv))
+        self.info('info_file_path', self.info_file_path)
+        self.info('alignment', self.alignment)
+        self.info('entropy', self.entropy)
+        self.info('total_seq', pp(self.fasta.total_seq))
+        self.info('number_of_components', self.number_of_components)
+        self.info('s', self.min_number_of_datasets)
+        self.info('a', self.min_percent_abundance)
         
         # locations of interest based on the entropy scores
         self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_components)])
-        self.info('Bases of interest', ', '.join([str(x) for x in self.bases_of_interest_locs]))
+        self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
@@ -190,6 +202,12 @@ class Oligotyping:
             self._generate_stack_bar_figure()
 
         self.info_file_obj.close()
+        self._store_run_info_dict()
+
+
+    def _store_run_info_dict(self):
+        info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
+        cPickle.dump(self.run_info_dict, open(info_dict_file_path, 'w'))
 
 
     def _construct_datasets_dict(self):
@@ -207,7 +225,7 @@ class Oligotyping:
                 self.datasets_dict[dataset][oligo] += 1
             else:
                 self.datasets_dict[dataset][oligo] = 1
-        self.info('Number of datasets in FASTA', pp(len(self.datasets_dict)))
+        self.info('num_datasets_in_fasta', pp(len(self.datasets_dict)))
 
     
     def _contrive_abundant_oligos(self):
@@ -217,7 +235,7 @@ class Oligotyping:
             for oligo in self.datasets_dict[dataset].keys():
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
-        self.info('Number of unique oligotypes', pp(len(oligos_set)))
+        self.info('num_unique_oligos', pp(len(oligos_set)))
         
         # count oligo abundance
         oligo_abundance = []
@@ -235,7 +253,7 @@ class Oligotyping:
         for tpl in oligo_abundance:
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
-        self.info('Oligotypes after "min number of datasets" elimination', pp(len(non_singleton_oligos)))
+        self.info('num_oligos_after_s_elim', pp(len(non_singleton_oligos)))
         
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one dataset)
@@ -264,7 +282,7 @@ class Oligotyping:
 
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
-        self.info('Oligotypes after "min % abundance in a dataset" elimination', pp(len(self.abundant_oligos)))
+        self.info('num_oligos_after_a_elim', pp(len(self.abundant_oligos)))
  
         # store abundant oligos
         abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
@@ -273,7 +291,7 @@ class Oligotyping:
             f.write('>' + oligo + '\n')
             f.write(oligo + '\n')
         f.close()
-        self.info('Abundant oligotypes file path', abundant_oligos_file_path)
+        self.info('abundant_oligos_file_path', abundant_oligos_file_path)
        
 
     def _refine_datasets_dict(self):
@@ -294,13 +312,13 @@ class Oligotyping:
 
         number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
-        self.info('Number of sequences represented after quality filtering', '%s of %s (%.2f%%)'\
+        self.info('num_sequences_after_qc', '%s of %s (%.2f%%)'\
                             % (pp(number_of_reads_in_datasets_dict),
                                pp(self.fasta.total_seq),
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
-            self.info('Samples removed for having 0 oligotypes left after filtering', ', '.join(datasets_to_remove))
+            self.info('num_datasets_removed_after_qc', ', '.join(datasets_to_remove))
         
         
     def _generate_NEXUS_file(self):
@@ -316,7 +334,7 @@ class Oligotyping:
         f.write('    ;\n')
         f.write('end;\n')
         f.close()
-        self.info('NEXUS file for oligotypes', oligos_nexus_file_path)
+        self.info('oligos_nexus_file_path', oligos_nexus_file_path)
     
 
     def _generate_ENVIRONMENT_file(self):
@@ -327,7 +345,7 @@ class Oligotyping:
             for oligo in self.datasets_dict[dataset]:
                 f.write("%s\t%s\t%d\n" % (oligo, dataset, self.datasets_dict[dataset][oligo]))
         f.close()
-        self.info('Environment file for Viamics/UniFrac analysis', environment_file_path)
+        self.info('environment_file_path', environment_file_path)
 
 
     def _generate_MATRIX_files(self):
@@ -353,8 +371,8 @@ class Oligotyping:
             percent_file.write('\t'.join([oligo] + percents) + '\n')
         count_file.close()
         percent_file.close()
-        self.info('Data matrix (counts)', matrix_count_file_path)
-        self.info('Data matrix (percents)', matrix_percent_file_path)
+        self.info('matrix_count_file_path', matrix_count_file_path)
+        self.info('matrix_percent_file_path', matrix_percent_file_path)
         
    
     def _generate_viamics_datasets_dict(self):
@@ -372,7 +390,7 @@ class Oligotyping:
             viamics_datasets_dict[dataset]['tr'] = sum(viamics_datasets_dict[dataset]['species'].values())
             viamics_datasets_dict[dataset]['bases_of_interest_locs'] = self.bases_of_interest_locs
         cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
-        self.info('Serialized Viamics datasets dictionary', viamics_datasets_dict_file_path)
+        self.info('viamics_datasets_dict_file_path', viamics_datasets_dict_file_path)
 
     def _generate_representative_sequences(self):
         # create a fasta file with a representative full length consensus sequence for every oligotype
@@ -381,7 +399,7 @@ class Oligotyping:
         # represented by a particular oligotype, unique them and report the top ten unique sequences
         # ordered by the frequency.
 
-        output_directory = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
+        output_directory_for_reps = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
 
 
         fasta_files_dict = {}
@@ -389,7 +407,7 @@ class Oligotyping:
         for oligo in self.abundant_oligos:
             if oligo not in fasta_files_dict:
                 try:
-                    fasta_file_path = os.path.join(output_directory, '%.5d_' % self.abundant_oligos.index(oligo) + oligo)
+                    fasta_file_path = os.path.join(output_directory_for_reps, '%.5d_' % self.abundant_oligos.index(oligo) + oligo)
                     fasta_files_dict[oligo] = {'file': open(fasta_file_path, 'w'),
                                                'path': fasta_file_path}
                     unique_files_dict[oligo] = {'file': open(fasta_file_path + '_unique', 'w'),
@@ -411,7 +429,7 @@ class Oligotyping:
 
                     # clean after yourself. close every file, delete directory, exit.
                     [map(lambda x: x.close(), [g[o]['file'] for o in g]) for g in [fasta_files_dict, unique_files_dict]]
-                    shutil.rmtree(output_directory)
+                    shutil.rmtree(output_directory_for_reps)
                     sys.exit()
 
         self.fasta.reset()
@@ -441,21 +459,23 @@ class Oligotyping:
                 unique_fasta_path = unique_files_dict[oligo]['path']
                 vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png')
         
-        self.info('Representative sequences for oligotypes directory', output_directory) 
+        self.info('output_directory_for_reps', output_directory_for_reps) 
 
 
     def _generate_random_colors(self):
-        output_file_path = self.generate_output_destination('COLORS')
-        self.colors_dict = random_colors(self.abundant_oligos, output_file_path)
-        self.info('Random colors for oligotypes have been stored', output_file_path)
+        random_color_file_path = self.generate_output_destination('COLORS')
+        self.colors_dict = random_colors(self.abundant_oligos, random_color_file_path)
+        self.info('random_color_file_path', random_color_file_path)
 
 
     def _generate_stack_bar_figure(self):
-        output_file_path = self.generate_output_destination('STACKBAR.png')
-        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, output_file_path, oligos = self.abundant_oligos, project_title = self.project, display = not self.no_display)
-        self.info('Oligotype distribution stack bar figure has been stored', output_file_path)
+        stack_bar_file_path = self.generate_output_destination('STACKBAR.png')
+        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, stack_bar_file_path, oligos = self.abundant_oligos, project_title = self.project, display = not self.no_display)
+        self.info('stack_bar_file_path', stack_bar_file_path)
 
- 
+    def _generate_html_output(self):
+        pass
+
 if __name__ == '__main__':
     import argparse
 
