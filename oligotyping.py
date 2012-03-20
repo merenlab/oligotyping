@@ -21,11 +21,11 @@ import operator
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
 import fastalib as u
 
-from html.generate import generate
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from utils.random_colors import random_colors
 from utils.constants import pretty_names
+from utils.html.generate import generate_html_output
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -98,13 +98,14 @@ class Oligotyping:
             self.number_of_components = args.number_of_components
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
-            self.project = args.project or args.alignment.split('.')[0]
+            self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.output_directory = args.output_directory or os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
             self.no_figures = args.no_figures
             self.no_display = args.no_display
+            self.gen_html = args.gen_html
 
         self.datasets_dict = {}
         self.datasets = []
@@ -174,6 +175,7 @@ class Oligotyping:
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
 
+        self.info('project', self.project)
         self.info('output_directory', self.output_directory)
         self.info('cmd_line', ' '.join(sys.argv))
         self.info('info_file_path', self.info_file_path)
@@ -203,6 +205,9 @@ class Oligotyping:
 
         self.info_file_obj.close()
         self._store_run_info_dict()
+
+        if self.gen_html:
+            self._generate_html_output()
 
 
     def _store_run_info_dict(self):
@@ -474,7 +479,10 @@ class Oligotyping:
         self.info('stack_bar_file_path', stack_bar_file_path)
 
     def _generate_html_output(self):
-        pass
+        output_directory_for_html = self.generate_output_destination("HTML-OUTPUT", directory = True)
+        index_page = generate_html_output(self.run_info_dict, output_directory = output_directory_for_html)
+        if not self.no_display:
+            sys.stdout.write('\n\n\tView results in your browser: %s\n\n' % index_page)
 
 if __name__ == '__main__':
     import argparse
@@ -520,6 +528,8 @@ if __name__ == '__main__':
                         help = 'When set, no figures will be generated or displayed.')
     parser.add_argument('--no-display', action = 'store_true', default = False,
                         help = 'When set, no figures will be shown.')
+    parser.add_argument('--gen-html', action = 'store_true', default = False,
+                        help = 'Generate static HTML output to browse analysis results.')
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
 
