@@ -10,6 +10,7 @@
 # Please read the COPYING file.
 
 pretty_names = {'output_directory': 'Output directory',
+                'project': 'Project',
                 'cmd_line': 'Command line',
                 'info_file_path': 'Extraction info output file',
                 'alignment': 'Input FASTA file',
