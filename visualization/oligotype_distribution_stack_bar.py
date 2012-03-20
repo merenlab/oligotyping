@@ -36,7 +36,9 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
         oligos = []
         map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
         oligos = sorted(list(set(oligos)))
-    
+    else:
+        oligos.reverse()
+  
     datasets_oligo_vectors = {}
     for dataset in datasets:
         vector = []
