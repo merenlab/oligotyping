@@ -25,7 +25,6 @@ from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from utils.random_colors import random_colors
 from utils.constants import pretty_names
-from utils.html.generate import generate_html_output
 
 def pp(n):
     """Pretty print function for very big numbers.."""
@@ -92,9 +91,11 @@ class Oligotyping:
         self.dataset_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
 
+        Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
+
         if args:
-            self.entropy = args.entropy
-            self.alignment = args.alignment
+            self.entropy = Absolute(args.entropy)
+            self.alignment = Absolute(args.alignment)
             self.number_of_components = args.number_of_components
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
@@ -176,11 +177,11 @@ class Oligotyping:
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
 
         self.info('project', self.project)
-        self.info('output_directory', self.output_directory)
-        self.info('cmd_line', ' '.join(sys.argv))
-        self.info('info_file_path', self.info_file_path)
         self.info('alignment', self.alignment)
         self.info('entropy', self.entropy)
+        self.info('output_directory', self.output_directory)
+        self.info('info_file_path', self.info_file_path)
+        self.info('cmd_line', ' '.join(sys.argv))
         self.info('total_seq', pp(self.fasta.total_seq))
         self.info('number_of_components', self.number_of_components)
         self.info('s', self.min_number_of_datasets)
@@ -479,10 +480,17 @@ class Oligotyping:
         self.info('stack_bar_file_path', stack_bar_file_path)
 
     def _generate_html_output(self):
+        from utils.html.error import HTMLError
+        try:
+            from utils.html.generate import generate_html_output
+        except HTMLError, e:
+            sys.stdout.write('\n\n\t%s\n\n' % e)
+            sys.exit()
+
         output_directory_for_html = self.generate_output_destination("HTML-OUTPUT", directory = True)
-        index_page = generate_html_output(self.run_info_dict, output_directory = output_directory_for_html)
+        index_page = generate_html_output(self.run_info_dict, html_output_directory = output_directory_for_html)
         if not self.no_display:
-            sys.stdout.write('\n\n\tView results in your browser: %s\n\n' % index_page)
+            sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
 
 if __name__ == '__main__':
     import argparse
