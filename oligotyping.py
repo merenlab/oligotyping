@@ -194,6 +194,7 @@ class Oligotyping:
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
         self._refine_datasets_dict()
+        self._generate_FASTA_file()
         self._generate_NEXUS_file()
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
@@ -289,16 +290,7 @@ class Oligotyping:
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
         self.info('num_oligos_after_a_elim', pp(len(self.abundant_oligos)))
- 
-        # store abundant oligos
-        abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
-        f = open(abundant_oligos_file_path, 'w')
-        for oligo in self.abundant_oligos:
-            f.write('>' + oligo + '\n')
-            f.write(oligo + '\n')
-        f.close()
-        self.info('abundant_oligos_file_path', abundant_oligos_file_path)
-       
+      
 
     def _refine_datasets_dict(self):
         # removing oligos from datasets dictionary that didn't pass
@@ -325,6 +317,17 @@ class Oligotyping:
 
         if len(datasets_to_remove):
             self.info('num_datasets_removed_after_qc', ', '.join(datasets_to_remove))
+
+
+    def _generate_FASTA_file(self): 
+        # store abundant oligos
+        abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
+        f = open(abundant_oligos_file_path, 'w')
+        for oligo in self.abundant_oligos:
+            f.write('>' + oligo + '\n')
+            f.write(oligo + '\n')
+        f.close()
+        self.info('abundant_oligos_file_path', abundant_oligos_file_path)
         
         
     def _generate_NEXUS_file(self):
@@ -470,7 +473,7 @@ class Oligotyping:
 
     def _generate_random_colors(self):
         random_color_file_path = self.generate_output_destination('COLORS')
-        self.colors_dict = random_colors(self.abundant_oligos, random_color_file_path)
+        self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
         self.info('random_color_file_path', random_color_file_path)
 
 
