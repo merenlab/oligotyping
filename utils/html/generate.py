@@ -59,33 +59,24 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header.png'), os.path.join(html_output_directory, 'header.png'))
 
+    def copy_as(source, dest_name):
+        dest = os.path.join(html_output_directory, dest_name)
+        shutil.copy2(source, dest)
+        return dest
+
     # embarrassingly ad-hoc:
-    entropy_figure = os.path.join(html_output_directory, 'entropy.png')
-    shutil.copy2(os.path.join(run_info_dict['entropy'].split('.')[0] + '.png'), entropy_figure)
-    html_dict['entropy_figure'] = entropy_figure
-
-    stackbar_figure = os.path.join(html_output_directory, 'stackbar.png')
-    shutil.copy2(os.path.join(run_info_dict['stack_bar_file_path']), stackbar_figure)
-    html_dict['stackbar_figure'] = stackbar_figure 
-
-    matrix_count_file_path = os.path.join(html_output_directory, 'matrix_counts.txt')
-    shutil.copy2(os.path.join(run_info_dict['matrix_count_file_path']), matrix_count_file_path)
-    html_dict['matrix_count_file_path'] = matrix_count_file_path 
-    
-    matrix_percent_file_path = os.path.join(html_output_directory, 'matrix_percents.txt')
-    shutil.copy2(os.path.join(run_info_dict['matrix_percent_file_path']), matrix_percent_file_path)
-    html_dict['matrix_percent_file_path'] = matrix_percent_file_path 
-
+    html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'].split('.')[0] + '.png'), 'entropy.png')
+    html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
+    html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
+    html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
+    html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
 
     # include pretty names
     html_dict['pretty_names'] = pretty_names
-
     # get colors dict
     html_dict['color_dict'] = get_colors_dict(run_info_dict['random_color_file_path'])
-
     # get abundant oligos list
     html_dict['oligos'] = get_oligos_list(run_info_dict['abundant_oligos_file_path'])
-
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['sequence_dict'] = get_unique_sequences_dict(html_dict)
@@ -93,8 +84,10 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     else:
         html_dict['sequence_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
 
+
     index_page = os.path.join(html_output_directory, 'index.html')
     rendered = render_to_string('index.tmpl', html_dict)
+
     open(index_page, 'w').write(rendered.encode("utf-8"))
 
     return index_page
