@@ -70,13 +70,15 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
+    html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
+    html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
 
     # include pretty names
     html_dict['pretty_names'] = pretty_names
     # get colors dict
     html_dict['color_dict'] = get_colors_dict(run_info_dict['random_color_file_path'])
     # get abundant oligos list
-    html_dict['oligos'] = get_oligos_list(run_info_dict['abundant_oligos_file_path'])
+    html_dict['oligos'] = get_oligos_list(run_info_dict['oligos_fasta_file_path'])
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['sequence_dict'] = get_unique_sequences_dict(html_dict)
