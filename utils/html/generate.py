@@ -58,6 +58,8 @@ def generate_html_output(run_info_dict, html_output_directory = None):
 
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header.png'), os.path.join(html_output_directory, 'header.png'))
+    shutil.copy2(os.path.join(absolute, 'scripts/jquery-1.7.1.js'), os.path.join(html_output_directory, 'jquery-1.7.1.js'))
+    shutil.copy2(os.path.join(absolute, 'scripts/popup.js'), os.path.join(html_output_directory, 'popup.js'))
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
@@ -65,7 +67,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
         return dest
 
     # embarrassingly ad-hoc:
-    html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'].split('.')[0] + '.png'), 'entropy.png')
+    html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
     html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
@@ -81,10 +83,11 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['oligos'] = get_oligos_list(run_info_dict['oligos_fasta_file_path'])
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
-        html_dict['sequence_dict'] = get_unique_sequences_dict(html_dict)
-        html_dict['alignment_length'] = len(html_dict['sequence_dict'].values()[0])
+        html_dict['rep_oligo_seqs_dict'] = get_unique_sequences_dict(html_dict)
+        html_dict['rep_oligo_diversity_dict'] = get_oligo_diversity_dict(html_dict, html_output_directory)
+        html_dict['alignment_length'] = len(html_dict['rep_oligo_seqs_dict'].values()[0])
     else:
-        html_dict['sequence_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
+        html_dict['rep_oligo_seqs_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
 
 
     index_page = os.path.join(html_output_directory, 'index.html')
@@ -107,19 +110,32 @@ def get_oligos_list(oligos_file_path):
         oligos_list.append(fasta.seq)
     return oligos_list
 
+def get_oligo_diversity_dict(html_dict, html_output_directory):
+    oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
+
+    rep_oligo_diversity_dict = {}
+
+    for i in range(0, len(oligos)):
+        diversity_image_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique.png')
+        diversity_image_dest = os.path.join(html_output_directory, os.path.basename(diversity_image_path))
+        shutil.copy2(diversity_image_path, diversity_image_dest)
+        rep_oligo_diversity_dict[oligos[i]] = diversity_image_dest
+    return rep_oligo_diversity_dict
+
+
 def get_unique_sequences_dict(html_dict):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
     entropy_components = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
 
-    sequence_dict = {}
+    rep_oligo_seqs_dict = {}
     
     for i in range(0, len(oligos)):
         unique_file_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique')
         f = u.SequenceSource(unique_file_path)
         f.next()
-        sequence_dict[oligos[i]] = ''.join(map(lambda j: '<span class="c">%s</span>' % f.seq[j] if j in entropy_components else f.seq[j], [j for j in range(len(f.seq))]))
+        rep_oligo_seqs_dict[oligos[i]] = ''.join(map(lambda j: '<span class="c">%s</span>' % f.seq[j] if j in entropy_components else f.seq[j], [j for j in range(len(f.seq))]))
         f.close()
-    return sequence_dict
+    return rep_oligo_seqs_dict
 
 
 if __name__ == '__main__':

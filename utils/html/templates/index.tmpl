@@ -5,6 +5,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="style.css" />
     <title>{{ project }}</title>
+
+    <script type="text/javascript" src="jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="popup.js"></script>
 </head>
 
 <body >
@@ -66,15 +69,12 @@
     <div id='sequences' style="height: auto;"> 
         <div style="width: {{alignment_length|multiply:8}}px; position: relative;">
             {% for oligo in oligos %}
-                <p><span style="background-color:{{color_dict|lookup:oligo}}">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> {{ sequence_dict|lookup:oligo|safe }}</span>
+                <p><span style="background-color:{{color_dict|lookup:oligo}}">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src=&quot;{{rep_oligo_diversity_dict|lookup:oligo}}&quot; width=&quot;790&quot;>', 800)" href="#">{{oligo}}</a></strong> {{ rep_oligo_seqs_dict|lookup:oligo|safe }}</span>
             {% endfor %}
         </div>
     </div>
 </div>
 
-
-<div class="smallhead">Oligotypes</div>
-<p class="smallheadtitle">» Abundant oligotypes after quality control..
 
 </div>
 </div>
