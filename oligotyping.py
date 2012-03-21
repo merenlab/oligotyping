@@ -160,7 +160,7 @@ class Oligotyping:
 
         self.run_info_dict[key] = value
 
-        info_line = "%s %s: %s\n" % (label, '.' * (60 - len(label)), str(value))
+        info_line = "%s %s: %s\n" % (label, '.' * (65 - len(label)), str(value))
         self.info_file_obj.write(info_line + '\n')
 
         if not self.no_display:
@@ -316,7 +316,9 @@ class Oligotyping:
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
-            self.info('num_datasets_removed_after_qc', ', '.join(datasets_to_remove))
+            self.info('datasets_removed_after_qc', datasets_to_remove)
+        else:
+            self.info('datasets_removed_after_qc', datasets_to_remove)
 
 
     def _generate_FASTA_file(self): 
