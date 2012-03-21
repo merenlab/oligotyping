@@ -15,6 +15,10 @@ import sys
 import shutil
 import copy
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
+import lib.fastalib as u
+from utils.constants import pretty_names
+
 from error import HTMLError
 
 try:
@@ -22,6 +26,20 @@ try:
     from django.conf import settings
 except ImportError:
     raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
+
+
+# a snippet from StackOverflow for dict lookups in
+# templates
+from django.template.defaultfilters import register
+@register.filter(name='lookup')
+def lookup(dict, index):
+    if index in dict:
+        return dict[index]
+    return ''
+
+@register.filter(name='multiply') 
+def multiply(value, arg):
+    return int(value) * int(arg) 
 
 absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
@@ -50,11 +68,64 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     shutil.copy2(os.path.join(run_info_dict['stack_bar_file_path']), stackbar_figure)
     html_dict['stackbar_figure'] = stackbar_figure 
 
+    matrix_count_file_path = os.path.join(html_output_directory, 'matrix_counts.txt')
+    shutil.copy2(os.path.join(run_info_dict['matrix_count_file_path']), matrix_count_file_path)
+    html_dict['matrix_count_file_path'] = matrix_count_file_path 
+    
+    matrix_percent_file_path = os.path.join(html_output_directory, 'matrix_percents.txt')
+    shutil.copy2(os.path.join(run_info_dict['matrix_percent_file_path']), matrix_percent_file_path)
+    html_dict['matrix_percent_file_path'] = matrix_percent_file_path 
+
+
+    # include pretty names
+    html_dict['pretty_names'] = pretty_names
+
+    # get colors dict
+    html_dict['color_dict'] = get_colors_dict(run_info_dict['random_color_file_path'])
+
+    # get abundant oligos list
+    html_dict['oligos'] = get_oligos_list(run_info_dict['abundant_oligos_file_path'])
+
+    # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
+    if html_dict.has_key('output_directory_for_reps'):
+        html_dict['sequence_dict'] = get_unique_sequences_dict(html_dict)
+        html_dict['alignment_length'] = len(html_dict['sequence_dict'].values()[0])
+    else:
+        html_dict['sequence_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
+
     index_page = os.path.join(html_output_directory, 'index.html')
     rendered = render_to_string('index.tmpl', html_dict)
     open(index_page, 'w').write(rendered.encode("utf-8"))
 
     return index_page
+
+def get_colors_dict(random_color_file_path):
+    colors_dict = {}
+    for oligo, color in [line.strip().split('\t') for line in open(random_color_file_path).readlines()]:
+        colors_dict[oligo] = color
+    return colors_dict
+
+def get_oligos_list(oligos_file_path):
+    oligos_list = []
+    fasta = u.SequenceSource(oligos_file_path)
+    while fasta.next():
+        oligos_list.append(fasta.seq)
+    return oligos_list
+
+def get_unique_sequences_dict(html_dict):
+    oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
+    entropy_components = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
+
+    sequence_dict = {}
+    
+    for i in range(0, len(oligos)):
+        unique_file_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique')
+        f = u.SequenceSource(unique_file_path)
+        f.next()
+        sequence_dict[oligos[i]] = ''.join(map(lambda j: '<span class="c">%s</span>' % f.seq[j] if j in entropy_components else f.seq[j], [j for j in range(len(f.seq))]))
+        f.close()
+    return sequence_dict
+
 
 if __name__ == '__main__':
     import cPickle

@@ -175,6 +175,10 @@ h1 {
     text-align: left;
 }
 
+.c {
+    background-color: black;
+    color: white;
+}
 
 .error {
     width: 70%;
@@ -223,12 +227,56 @@ h1 {
     text-align: center;
 }
 
+#l {
+ border-bottom: 1px dashed gray;
+ width: 400px;
+ padding-right: 10px;
+}
+
+#r {
+ padding-left: 10px;
+ padding-right: 10px;
+ border-bottom: 1px dashed gray;
+ border-left: 1px dashed #808080;
+ font-weight: bold;
+}
+
+.info_table {
+    padding: 0px;
+    padding-left: 200px;
+    font-size: 1.0em;
+    margin-bottom: 20px;
+}
+
+
 .sampleslist {
-    width: 80%;
+    width: 90%;
     font-size: 0.8em;
     margin: 0 auto;
     margin-bottom: 30px;
 }
+
+.wrap {
+    font-size: 0.8em;
+    font-family: Andale Mono, monospace;
+    width:1210px;
+    margin:0 auto;
+}
+
+#samples {
+    float: left;
+    display: block;
+    width: 15%;
+    border: 1px solid black;
+}
+
+#sequences {
+    width: 100%;
+    border-bottom:1px solid black;
+    overflow: auto;
+    position: relative;
+}
+
 
 .info-page-samples {
     font-style: italic;

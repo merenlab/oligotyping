@@ -10,11 +10,42 @@
 <body >
 <div id="wrapper">
 <div id="content">
-        
 
 <div class="head">Oligotyping Results for "{{ project }}"</div>
-<div class="title">Hi there</div>
+<div class="title">This page shows some preliminary results of your analysis</div>
 <div class="links-bar"><a href="http://oligotyping.org">Oligotyping.org</a></div>
+
+
+<div class="smallhead">General</div>
+<p class="smallheadtitle">» General information about the run
+<div class="info_table">
+<table>
+    <tr><td id="l">{{pretty_names.number_of_components}}</td><td id="r">{{number_of_components}}</td></tr>
+    <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
+    <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
+    <tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.bases_of_interest_locs}}</td><td id="r"> {{bases_of_interest_locs}}</td></tr>
+    <tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.num_unique_oligos}}</td><td id="r"> {{num_unique_oligos}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
+    <tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
+    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}}</td></tr>
+</table>
+</div>
+
+<div class="smallhead">Download</div>
+<p class="smallheadtitle">» Files to analyze results further via third partry applications
+<div class="info_table">
+<table>
+    <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">Sample/oligotype abundance matrix (actual counts)</a></td></tr>
+    <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">Sample/oligotype abundance matrix (percent counts)</a></td></tr>
+</table>
+</div>
+
 
 
 <div class="smallhead">Entropy</div>
@@ -24,6 +55,23 @@
 <div class="smallhead">Stackbar</div>
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
 <p align="center"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="width:1200px" border="0"></a>
+
+<div class="smallhead">Oligotypes</div>
+<p class="smallheadtitle">» Abundant oligotypes after quality control..
+
+<div class="wrap">
+    <div id='sequences' style="height: auto;"> 
+        <div style="width: {{alignment_length|multiply:8}}px; position: relative;">
+            {% for oligo in oligos %}
+                <p><span style="background-color:{{color_dict|lookup:oligo}}">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> {{ sequence_dict|lookup:oligo|safe }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<div class="smallhead">Oligotypes</div>
+<p class="smallheadtitle">» Abundant oligotypes after quality control..
 
 </div>
 </div>
