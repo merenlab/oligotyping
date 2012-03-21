@@ -323,13 +323,13 @@ class Oligotyping:
 
     def _generate_FASTA_file(self): 
         # store abundant oligos
-        abundant_oligos_file_path = self.generate_output_destination("OLIGOS.fasta")
-        f = open(abundant_oligos_file_path, 'w')
+        oligos_fasta_file_path = self.generate_output_destination("OLIGOS.fasta")
+        f = open(oligos_fasta_file_path, 'w')
         for oligo in self.abundant_oligos:
             f.write('>' + oligo + '\n')
             f.write(oligo + '\n')
         f.close()
-        self.info('abundant_oligos_file_path', abundant_oligos_file_path)
+        self.info('oligos_fasta_file_path', oligos_fasta_file_path)
         
         
     def _generate_NEXUS_file(self):
