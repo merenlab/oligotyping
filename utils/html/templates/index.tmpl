@@ -23,7 +23,12 @@
 <p class="smallheadtitle">» General information about the run
 <div class="info_table">
 <table>
-    <tr><td id="l">{{pretty_names.number_of_components}}</td><td id="r">{{number_of_components}}</td></tr>
+    {% if number_of_auto_components %}
+    <tr><td id="l">{{pretty_names.number_of_auto_components}}</td><td id="r">{{number_of_auto_components}}</td></tr>
+    {% else %}
+    <tr><td id="l">{{pretty_names.number_of_selected_components}}</td><td id="r">{{number_of_selected_components}}</td></tr>
+    {% endif %}
+
     <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
     <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
     <tr><td colspan=2>&nbsp;</td></tr>
