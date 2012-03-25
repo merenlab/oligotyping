@@ -85,7 +85,7 @@ class Oligotyping:
         self.entropy   = None
         self.project = None
         self.output_directory = None
-        self.number_of_components = 5
+        self.number_of_auto_components = 5
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 1.0
         self.dataset_name_separator = '_'
@@ -96,11 +96,12 @@ class Oligotyping:
         if args:
             self.entropy = Absolute(args.entropy)
             self.alignment = Absolute(args.alignment)
-            self.number_of_components = args.number_of_components
+            self.number_of_auto_components = args.number_of_auto_components
+            self.selected_components = args.selected_components
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
-            self.output_directory = args.output_directory or os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
+            self.output_directory = args.output_directory
             self.dataset_name_separator = args.dataset_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
@@ -115,6 +116,23 @@ class Oligotyping:
         self.run_info_dict = {}
 
     def sanity_check(self):
+        if self.number_of_auto_components != None and self.selected_components != None:
+            raise ConfigError, "Both 'auto components' (-c) and 'selected components' (-C) has been declared."
+        
+        if self.number_of_auto_components == None and self.selected_components == None:
+            raise ConfigError, "Either only 'auto components' (-c), or only 'selected components' (-C) can be declared."
+
+        if self.selected_components:
+            try:
+                self.selected_components = [int(c) for c in self.selected_components.split(',')]
+            except:
+                raise ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
+
+
+        
+        if not self.output_directory:
+             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
+        
         if not os.path.exists(self.output_directory):
             try:
                 os.makedirs(self.output_directory)
@@ -136,9 +154,14 @@ class Oligotyping:
 
 
     def get_prefix(self):
-        return 'C%d-S%d-A%.1f' % (self.number_of_components,
-                                  self.min_number_of_datasets,
-                                  self.min_percent_abundance)
+        if self.selected_components:
+            return 'sC%d-S%d-A%.1f' % (len(self.selected_components),
+                                       self.min_number_of_datasets,
+                                       self.min_percent_abundance)
+        else:
+            return 'C%d-S%d-A%.1f' % (self.number_of_auto_components,
+                                      self.min_number_of_datasets,
+                                      self.min_percent_abundance)
 
 
     def generate_output_destination(self, postfix, directory = False):
@@ -183,13 +206,18 @@ class Oligotyping:
         self.info('info_file_path', self.info_file_path)
         self.info('cmd_line', ' '.join(sys.argv))
         self.info('total_seq', pp(self.fasta.total_seq))
-        self.info('number_of_components', self.number_of_components)
+        self.info('number_of_auto_components', self.number_of_auto_components or 0)
+        self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.info('s', self.min_number_of_datasets)
         self.info('a', self.min_percent_abundance)
         
-        # locations of interest based on the entropy scores
-        self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_components)])
-        self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
+        if self.number_of_auto_components:
+            # locations of interest based on the entropy scores
+            self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_auto_components)])
+            self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
+        elif self.selected_components:
+            self.bases_of_interest_locs = sorted(self.selected_components)
+            self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
@@ -506,10 +534,12 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--entropy', required=True, metavar = 'ENTROPY',
                         help = 'File that contains the columns and the entropy values computer previously')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
-    parser.add_argument('-c', '--number-of-components', type=int, required=True,
+    parser.add_argument('-c', '--number-of-auto-components', type=int, default=None,
                         help = 'Number of components to use from alignment to generate oligotypes. Default\
                                 is "5", which is a completely arbitrary value. Number of components should\
-                                be determined after the careful examination of entropy figure.')
+                                be determined after a careful examination of entropy figure.')
+    parser.add_argument('-C', '--selected-components', type=str, default=None,
+                        help = 'Comma separated entropy components to be used during the oligotyping process.')
     parser.add_argument('-s', '--min-number-of-datasets', type=int, required=True,
                         help = 'Minimum number of datasets oligotype expected to appear. The deafult is "5", which\
                                 is another completely arbitrary value. This parameter should be defined based\
