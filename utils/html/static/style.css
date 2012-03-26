@@ -206,6 +206,15 @@ h1 {
     text-align: center;
 }
 
+.footer {
+    font-style: italic;
+    padding-top: 200px;
+    padding-bottom: 40px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 0.8em;
+}
+
 .errorinfo {
     width: 80%;
     margin: 0 auto;
