@@ -73,8 +73,9 @@
 <div class="wrap">
     <div id='sequences' style="height: auto;"> 
         <div style="width: {{alignment_length|multiply:8}}px; position: relative;">
+                 <p><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> <strong>{{oligos.0}}</strong> {{ component_reference|safe }}</span>
             {% for oligo in oligos %}
-                <p><span style="background-color:{{color_dict|lookup:oligo}}">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src=&quot;{{rep_oligo_diversity_dict|lookup:oligo}}&quot; width=&quot;790&quot;>', 800)" href="#">{{oligo}}</a></strong> {{ rep_oligo_seqs_dict|lookup:oligo|safe }}</span>
+                <p><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src=&quot;{{rep_oligo_diversity_dict|lookup:oligo}}&quot; width=&quot;790&quot;>', 800)" href="#">{{oligo}}</a></strong> {{ rep_oligo_seqs_dict|lookup:oligo|safe }}</span>
             {% endfor %}
         </div>
     </div>

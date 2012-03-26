@@ -75,6 +75,8 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
 
+    # get alignment length
+    html_dict['alignment_length'] = get_alignment_length(run_info_dict['alignment'])
     # include pretty names
     html_dict['pretty_names'] = pretty_names
     # get colors dict
@@ -85,7 +87,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['rep_oligo_seqs_dict'] = get_unique_sequences_dict(html_dict)
         html_dict['rep_oligo_diversity_dict'] = get_oligo_diversity_dict(html_dict, html_output_directory)
-        html_dict['alignment_length'] = len(html_dict['rep_oligo_seqs_dict'].values()[0])
+        html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
     else:
         html_dict['rep_oligo_seqs_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
 
@@ -122,6 +124,11 @@ def get_oligo_diversity_dict(html_dict, html_output_directory):
         rep_oligo_diversity_dict[oligos[i]] = diversity_image_dest
     return rep_oligo_diversity_dict
 
+
+def get_alignment_length(alignment_path):
+    alignment = u.SequenceSource(alignment_path)
+    alignment.next()
+    return len(alignment.seq)
 
 def get_unique_sequences_dict(html_dict):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
