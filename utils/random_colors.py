@@ -20,9 +20,17 @@ import matplotlib.pyplot as plt
 # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 #
 
+def getColor(name, n):
+    return cm.get_cmap(name, lut=n+2)
+
+def get_hex_color(rgba_color):
+    hex_color = '#'
+    for t in rgba_color[0:3]:
+        h = str(hex(int(t * 255)))[2:]
+        hex_color += '00' if h == '0' else h
+    return hex_color
+
 def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
-    def getColor(name, n):
-        return cm.get_cmap(name, lut=n+2)
 
     color_dict = {}
 
@@ -30,16 +38,25 @@ def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
     colors = getColor(colormap, len(oligotypes))
     for i in range(0, len(oligotypes)):
         rgba_color = colors(i)
-        hex_color = '#'
-        for t in rgba_color[0:3]:
-            h = str(hex(int(t * 255)))[2:]
-            hex_color += '00' if h == '0' else h
-        color_dict[oligotypes[i]] = hex_color
+        color_dict[oligotypes[i]] = get_hex_color(colors(i))
 
     if output_file_path:
         open(output_file_path, 'w').write('\n'.join(['%s\t%s' % (c, color_dict[c]) for c in color_dict]) + '\n')
     
     return color_dict
+
+def get_color_shade_dict_for_list_of_values(values, colormap = 'OrRd'):
+    color_shade_dict = {}
+
+    colors = getColor(colormap, len(values) * 1000)
+
+    max_val = max(values) if max(values) > 1 else 1
+
+    for val in values:
+        i = float(val) / max_val
+        color_shade_dict[val] = get_hex_color(colors(i))
+
+    return color_shade_dict
 
 if __name__ == '__main__':
     import argparse
@@ -61,4 +78,3 @@ if __name__ == '__main__':
     if not args.output_file:
         for oligo in colors_dict:
             print '%s: %s' % (oligo, colors_dict[oligo])
-

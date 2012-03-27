@@ -106,7 +106,6 @@ def generate_html_output(run_info_dict, html_output_directory = None):
 
     open(index_page, 'w').write(rendered.encode("utf-8"))
 
-
     return index_page
 
 def get_colors_dict(random_color_file_path):
@@ -128,22 +127,38 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
     oligo_reps_dict = {}
     oligo_reps_dict['imgs'] = {}
     oligo_reps_dict['seqs'] = {}
+    oligo_reps_dict['component_references'] = {}
 
     for i in range(0, len(oligos)):
         oligo = oligos[i]
 
-        diversity_image_path = os.path.join(rep_dir, '%.5d_' % i + oligo + '_unique.png')
+        alignment_base_path = os.path.join(rep_dir, '%.5d_' % i + oligo)
+
+        diversity_image_path =  alignment_base_path + '_unique.png'
         diversity_image_dest = os.path.join(html_output_directory, os.path.basename(diversity_image_path))
 
         shutil.copy2(diversity_image_path, diversity_image_dest)
         oligo_reps_dict['imgs'][oligo] = diversity_image_dest
 
-        unique_sequences_path = os.path.join(rep_dir, '%.5d_' % i + oligo + '_unique')
+        unique_sequences_path = alignment_base_path + '_unique'
         uniques = u.SequenceSource(unique_sequences_path)
-
         oligo_reps_dict['seqs'][oligo] = []
         while uniques.next() and uniques.pos < 20:
             oligo_reps_dict['seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
+
+
+        try:
+            entropy_file_path = alignment_base_path + '_unique_entropy'
+            entropy_values_per_column = [0] * html_dict['alignment_length']
+            for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
+                entropy_values_per_column[int(column)] = float(entropy)
+
+            color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
+            oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
+        except:
+            oligo_reps_dict['component_references'][oligo] = None
+
+
 
     return oligo_reps_dict
 
