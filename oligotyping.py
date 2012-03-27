@@ -24,6 +24,7 @@ import fastalib as u
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from utils.random_colors import random_colors
+from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
 
 def pp(n):
@@ -199,6 +200,10 @@ class Oligotyping:
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
 
+        self.fasta.next()
+        self.alignment_length = len(self.fasta.seq)
+        self.fasta.reset()
+
         self.info('project', self.project)
         self.info('alignment', self.alignment)
         self.info('entropy', self.entropy)
@@ -206,6 +211,7 @@ class Oligotyping:
         self.info('info_file_path', self.info_file_path)
         self.info('cmd_line', ' '.join(sys.argv))
         self.info('total_seq', pp(self.fasta.total_seq))
+        self.info('alignment_length', pp(self.alignment_length))
         self.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.info('s', self.min_number_of_datasets)
@@ -496,7 +502,24 @@ class Oligotyping:
 
             if (not self.quick) and (not self.no_figures):
                 unique_fasta_path = unique_files_dict[oligo]['path']
-                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = unique_fasta_path + '_entropy')
+                entropy_file_path = unique_fasta_path + '_entropy'
+                color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
+
+                # generate entropy output at 'entropy_file_path' along with the image
+                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
+
+                # use entropy output to generate a color shade for every columns in alignment
+                # for visualization purposes
+                entropy_values_per_column = [0] * self.alignment_length
+                for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
+                    entropy_values_per_column[int(column)] = float(entropy)
+                color_shade_dict = get_color_shade_dict_for_list_of_values(entropy_values_per_column)
+
+                color_per_column = [0] * self.alignment_length
+                for i in range(0, self.alignment_length):
+                    color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
+
+                cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
         
         self.info('output_directory_for_reps', output_directory_for_reps) 
 
