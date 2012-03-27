@@ -496,7 +496,7 @@ class Oligotyping:
 
             if (not self.quick) and (not self.no_figures):
                 unique_fasta_path = unique_files_dict[oligo]['path']
-                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png')
+                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = unique_fasta_path + '_entropy')
         
         self.info('output_directory_for_reps', output_directory_for_reps) 
 

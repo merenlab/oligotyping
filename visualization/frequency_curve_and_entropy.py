@@ -20,7 +20,7 @@ from entropy_analysis import entropy_analysis
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../lib/'))
 import fastalib as u
 
-def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None):
+def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -63,7 +63,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.rcParams.update({'axes.linewidth' : 0.9})
     plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
 
-    entropy_values = entropy_analysis(fasta_file_path, verbose = False, uniqued = True)
+    entropy_values = entropy_analysis(fasta_file_path, output_file = entropy_output_file, verbose = False, uniqued = True)
 
     y_maximum = max(entropy_values) * 1.1
     y_maximum = 1.1 if y_maximum < 1 else y_maximum
