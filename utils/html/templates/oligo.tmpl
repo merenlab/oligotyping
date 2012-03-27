@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="style.css" />
+    <title>{{ project }} :: {{ oligo }}</title>
+
+    <script type="text/javascript" src="jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="popup.js"></script>
+</head>
+
+<body >
+<div id="wrapper">
+<div id="content">
+
+<div class="head">Oligotype {{ oligo }} in "{{ project }}"</div>
+<div class="title">Page that explains diversity within an oligotype.</div>
+<div class="links-bar"><a href="./index.html">Main Analysis Page</a> | <a href="http://oligotyping.org">Oligotyping.org</a></div>
+
+<div class="smallhead">Unique Sequences Curve</div>
+<p class="smallheadtitle">» Abundance curve of unique sequences within oligotype along with entropy values associated with these new set of alignments.
+<p align="center"><a href="{{ oligo_reps_dict.imgs|lookup:oligo }}"><img src="{{ oligo_reps_dict.imgs|lookup:oligo }}" style="width:1200px" border="0"></a>
+
+<div class="smallhead">Sequences</div>
+<p class="smallheadtitle">» First 20 Unique sequences
+
+    <div class="wrap">
+        <div id='sequences' style="height: auto;"> 
+            <div style="width: {{alignment_length|multiply:8}}px; position: relative;">
+                     <p><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> <strong>{{oligos.0}}</strong> {{ component_reference|safe }}</span>
+                {% for sequence in oligo_reps_dict.seqs|lookup:oligo %}
+                    <p><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> {{ sequence|safe }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+<div class="footer"><p>For questions and comments: meren / mbl.edu</div>
+</body>
+</html>
+
+

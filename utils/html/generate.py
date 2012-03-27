@@ -74,6 +74,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
+    html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
 
     # get alignment length
     html_dict['alignment_length'] = get_alignment_length(run_info_dict['alignment'])
@@ -86,16 +87,25 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['rep_oligo_seqs_dict'] = get_unique_sequences_dict(html_dict)
-        html_dict['rep_oligo_diversity_dict'] = get_oligo_diversity_dict(html_dict, html_output_directory)
+        html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
-    else:
-        html_dict['rep_oligo_seqs_dict'] = dict(zip(html_dict['oligos'], ['(representative sequences were not computed during the analysis)'] * len(html_dict['oligos'])))
 
+    # generate individual oligotype pages
+    if html_dict.has_key('output_directory_for_reps'):
+        for oligo in html_dict['oligos']:
+            tmp_dict = copy.deepcopy(html_dict)
+            tmp_dict['oligo'] = oligo
+            oligo_page = os.path.join(html_output_directory, 'oligo_%s.html' % oligo)
+            rendered = render_to_string('oligo.tmpl', tmp_dict)
+    
+            open(oligo_page, 'w').write(rendered.encode("utf-8"))
 
+    # generate index
     index_page = os.path.join(html_output_directory, 'index.html')
     rendered = render_to_string('index.tmpl', html_dict)
 
     open(index_page, 'w').write(rendered.encode("utf-8"))
+
 
     return index_page
 
@@ -112,17 +122,30 @@ def get_oligos_list(oligos_file_path):
         oligos_list.append(fasta.seq)
     return oligos_list
 
-def get_oligo_diversity_dict(html_dict, html_output_directory):
+def get_oligo_reps_dict(html_dict, html_output_directory):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
 
-    rep_oligo_diversity_dict = {}
+    oligo_reps_dict = {}
+    oligo_reps_dict['imgs'] = {}
+    oligo_reps_dict['seqs'] = {}
 
     for i in range(0, len(oligos)):
-        diversity_image_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique.png')
+        oligo = oligos[i]
+
+        diversity_image_path = os.path.join(rep_dir, '%.5d_' % i + oligo + '_unique.png')
         diversity_image_dest = os.path.join(html_output_directory, os.path.basename(diversity_image_path))
+
         shutil.copy2(diversity_image_path, diversity_image_dest)
-        rep_oligo_diversity_dict[oligos[i]] = diversity_image_dest
-    return rep_oligo_diversity_dict
+        oligo_reps_dict['imgs'][oligo] = diversity_image_dest
+
+        unique_sequences_path = os.path.join(rep_dir, '%.5d_' % i + oligo + '_unique')
+        uniques = u.SequenceSource(unique_sequences_path)
+
+        oligo_reps_dict['seqs'][oligo] = []
+        while uniques.next() and uniques.pos < 20:
+            oligo_reps_dict['seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
+
+    return oligo_reps_dict
 
 
 def get_alignment_length(alignment_path):
@@ -132,7 +155,6 @@ def get_alignment_length(alignment_path):
 
 def get_unique_sequences_dict(html_dict):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
-    entropy_components = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
 
     rep_oligo_seqs_dict = {}
     
@@ -140,10 +162,13 @@ def get_unique_sequences_dict(html_dict):
         unique_file_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique')
         f = u.SequenceSource(unique_file_path)
         f.next()
-        rep_oligo_seqs_dict[oligos[i]] = ''.join(map(lambda j: '<span class="c">%s</span>' % f.seq[j] if j in entropy_components else f.seq[j], [j for j in range(len(f.seq))]))
+        rep_oligo_seqs_dict[oligos[i]] = get_decorated_sequence(f.seq, html_dict['entropy_components'])
         f.close()
     return rep_oligo_seqs_dict
 
+def get_decorated_sequence(seq, components):
+    """returns sequence with html decorations"""
+    return ''.join(map(lambda j: '<span class="c">%s</span>' % seq[j] if j in components else seq[j], [j for j in range(len(seq))]))
 
 if __name__ == '__main__':
     import cPickle
