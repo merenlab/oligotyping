@@ -39,12 +39,12 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     
     fig = plt.figure(figsize=(24, 10))
 
+    plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
+  
+    plt.subplot(2, 1, 1)
     plt.grid(True) 
     plt.rcParams.update({'axes.linewidth' : 0.9})
     plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
-   
-    plt.subplot(2, 1, 1)
-    plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
   
     plt.plot(frequency_list_to_plot, lw = 3, c = 'black')
  
@@ -55,8 +55,13 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.xlim(xmin = -0.05, xmax = x_limit - 1)
     plt.xticks(range(0, x_limit), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
     
+
     plt.subplot(2, 1, 2)
-    plt.subplots_adjust(left=0.05, bottom = 0.05, top = 0.95, right = 0.99)
+    plt.subplots_adjust(left=0.05, bottom = 0.1, top = 0.95, right = 0.99)
+
+    plt.grid(axis='y') 
+    plt.rcParams.update({'axes.linewidth' : 0.9})
+    plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
 
     entropy_values = entropy_analysis(fasta_file_path, verbose = False, uniqued = True)
 
@@ -66,7 +71,9 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
     plt.xlim([0, len(entropy_values)])
     plt.ylim([0, y_maximum])
-    plt.xlabel('Nucleotide Position')
+    plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
+    
+    plt.xlabel('Position in the Alignment', size = 'x-large')
     plt.ylabel('Shannon Entropy', size = 'x-large')
 
     if output_file:
@@ -80,7 +87,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert FastQ to FASTA')
+    parser = argparse.ArgumentParser(description='Generate Distribution of Unique Sequences Figure')
     parser.add_argument('fasta', metavar = 'FASTA_FILE', help = 'Sequences file in FASTA format')
     parser.add_argument('-x', '--x-limit', default = 20, type = int, metavar = 'X_LIMIT',\
                         help = 'Number of items to show from frequency list')
