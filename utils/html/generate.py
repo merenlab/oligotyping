@@ -18,7 +18,7 @@ import copy
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
 import lib.fastalib as u
 from utils.constants import pretty_names
-
+from utils.utils import get_datasets_dict_from_environment_file
 from error import HTMLError
 
 try:
@@ -75,6 +75,8 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
+    html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(html_dict['environment_file_path'])
+    html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
 
     # get alignment length
     html_dict['alignment_length'] = get_alignment_length(run_info_dict['alignment'])
@@ -90,6 +92,18 @@ def generate_html_output(run_info_dict, html_output_directory = None):
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
 
+    # get datasets dict
+    if html_dict.has_key('output_directory_for_datasets'):
+        dataset_network_figures = {}
+        for dataset in html_dict['datasets']:
+            src = os.path.join(run_info_dict['output_directory_for_datasets'], dataset + '.png')
+            dest = dataset + '.png'
+            if os.path.exists(src):
+                dataset_network_figures[dataset] = copy_as(src, dest)
+            else:
+                dataset_network_figures[dataset] = None
+        html_dict['dataset_network_figures'] = dataset_network_figures
+        
     # generate individual oligotype pages
     if html_dict.has_key('output_directory_for_reps'):
         for oligo in html_dict['oligos']:
@@ -99,6 +113,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
             rendered = render_to_string('oligo.tmpl', tmp_dict)
     
             open(oligo_page, 'w').write(rendered.encode("utf-8"))
+
 
     # generate index
     index_page = os.path.join(html_output_directory, 'index.html')
@@ -200,4 +215,4 @@ if __name__ == '__main__':
 
     index_page = generate_html_output(run_info_dict, args.output_directory) 
 
-    print '\n\n\tHTML output is ready: "%s"\n' % index_page
+    print '\n\tHTML output is ready: "%s"\n' % index_page

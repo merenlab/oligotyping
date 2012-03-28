@@ -272,6 +272,12 @@ h1 {
     margin:0 auto;
 }
 
+.wrap_regular {
+    font-size: 1em;
+    width:1210px;
+    margin:0 auto;
+}
+
 #samples {
     float: left;
     display: block;

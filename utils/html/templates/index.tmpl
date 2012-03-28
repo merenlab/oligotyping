@@ -67,6 +67,16 @@
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
 <p align="center"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="width:1200px" border="0"></a>
 
+<div class="smallhead">Datasets</div>
+<p class="smallheadtitle">» Overview of datasets.
+
+<div class="wrap_regular"><p style="line-height: 2em;">
+    {% for dataset in datasets %}
+        <span style="padding: 5px; margin-right: 5px; background-color: #EEE;" onmouseover="popup('<img src={{dataset_network_figures|lookup:dataset}} width=&quot;790&quot;>', 800); style.backgroundColor='#AAA';" onmouseout="style.backgroundColor='#EEE';">{{dataset}}&nbsp;</span>
+    {% endfor %}
+</div>
+
+
 <div class="smallhead">Oligotypes</div>
 <p class="smallheadtitle">» Abundant oligotypes after quality control..
 
