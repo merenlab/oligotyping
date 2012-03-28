@@ -39,7 +39,6 @@ def oligotype_network_structure(environment_file_path, output_dir = None):
     
     for dataset in datasets_dict:
         total_reads = sum([x[1] for x in datasets_dict[dataset].values()])
-        print dataset, total_reads
     
         N = len(datasets_dict[dataset].keys()[0])
         ind = np.arange(N) + 1
@@ -97,6 +96,10 @@ def oligotype_network_structure(environment_file_path, output_dir = None):
             plt.savefig(os.path.join(output_dir,  dataset + ".png"))
         else:
             plt.show()
+
+        plt.clf()
+        plt.close('all')
+
 
 if __name__ == '__main__':
     import argparse
