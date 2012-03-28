@@ -10,127 +10,103 @@
 #
 # Please read the COPYING file.
 
-import pylab
-import matplotlib.pyplot as plt
-import numpy as np
+import os
 import sys
-import copy
+import numpy as np
+import matplotlib.pyplot as plt
 
-
-env = sys.argv[1]
-
-tuples = [line.strip().split("\t") for line in open(env)]
-
-original_samples_dict = {}
-
-base_pos = {'-': 5, 'A': 4, 'T': 3, 'C': 2, 'G': 1}
+base_pos    = {'-': 5, 'A': 4, 'T': 3, 'C': 2, 'G': 1}
 base_colors = {'-': 'white', 'A': 'red', 'T': 'green', 'C': 'blue', 'G': 'yellow'}
 
-for tpl in tuples:
-    oligo, sample, count = tpl
 
-    m = []
-    for base in oligo:
-        m.append(base_pos[base])
-
-    if original_samples_dict.has_key(sample):
-        original_samples_dict[sample][oligo] = (m, int(count))
-    else:
-        original_samples_dict[sample] = {oligo: (m, int(count))}
-
-def get_REAL_samples_dict(samples_dict, title, condition):
-    filtered_samples_dict = {}
-    filtered_samples_dict[title] = {}
-
-    temp = {}
-    for sample in samples_dict:
-        if condition(sample):
-            temp[sample] = samples_dict[sample]
-
-    oligos = []
-    for l in [x.keys() for x in temp.values()]:
-        for o in l:
-            oligos.append(o) 
-
-    for oligo in set(oligos):
-        total_oligo = sum([t[oligo][1] for t in [x for x in temp.values()] if t.has_key(oligo)])
+def oligotype_network_structure(environment_file_path, output_dir = None):
+    tuples = [line.strip().split("\t") for line in open(environment_file_path)]
+    
+    datasets_dict = {}
+    
+    for tpl in tuples:
+        oligo, dataset, count = tpl
+    
         m = []
         for base in oligo:
             m.append(base_pos[base])
+    
+        if datasets_dict.has_key(dataset):
+            datasets_dict[dataset][oligo] = (m, int(count))
+        else:
+            datasets_dict[dataset] = {oligo: (m, int(count))}
+    
+    
+    for dataset in datasets_dict:
+        total_reads = sum([x[1] for x in datasets_dict[dataset].values()])
+        print dataset, total_reads
+    
+        N = len(datasets_dict[dataset].keys()[0])
+        ind = np.arange(N) + 1
+    
+        fig = plt.figure(figsize = (N + 2, 6))
+    
+        plt.rcParams.update({'axes.linewidth' : 0.1})
+        plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
+        plt.grid(True)
+    
+        plt.subplots_adjust(hspace = 0, wspace = 0, right = 0.995, left = 0.025, top = 0.92, bottom = 0.05)
+    
+          #left  = 0.125   the left side of the subplots of the figure
+          #right = 0.9     the right side of the subplots of the figure
+          #bottom = 0.1    the bottom of the subplots of the figure
+          #top = 0.9       the top of the subplots of the figure
+          #wspace = 0.2    the amount of width reserved for blank space between subplots
+          #hspace = 0.2    the amount of height reserved for white space between subplots
+    
+        ax = fig.add_subplot(111)
+        ax.plot([0], [0], visible = False)
+        ax.plot([N], [0], visible = False)
+        ax.plot([0], [6], visible = False)
+    
+    
+        for pos in range(0, len(oligo)):
+            bases = {}
+            for oligo in datasets_dict[dataset]:
+                base = oligo[pos]
+                if bases.has_key(base):
+                    bases[base] += datasets_dict[dataset][oligo][1]
+                else:
+                    bases[base] = datasets_dict[dataset][oligo][1]
+            for base in bases:
+                ratio = bases[base] * 1.0 / total_reads
+                ax.plot([pos + 1], [base_pos[base]], 'o', c = 'white', lw = 1, ls="--", alpha = 0.75, ms = ratio * 100)
+                ax.plot([pos + 1], [base_pos[base]], 'o', c = base_colors[base], lw = 1, alpha = ratio / 5, ms = ratio * 100)
+    
+    
+        for oligo in datasets_dict[dataset]:
+            ratio = datasets_dict[dataset][oligo][1] * 1.0 / total_reads
+            ax.plot(ind, datasets_dict[dataset][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 8, alpha = ratio / 5)
+            ax.plot(ind, datasets_dict[dataset][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 6, alpha = ratio / 3)
+            ax.plot(ind, datasets_dict[dataset][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 4, alpha = ratio)
+            ax.plot(ind, datasets_dict[dataset][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 1, alpha = 0.1)
+            ax.plot(ind, datasets_dict[dataset][oligo][0], c = 'white', solid_capstyle = "round", solid_joinstyle = "round", lw = 1, alpha = ratio)
+    
+        plt.yticks(np.arange(6), ('', 'G', 'C', 'T', 'A', '--'), size = 'x-large')
+        plt.title(dataset + " (total reads: %s)" % total_reads)
+    
+        locs = range(0, N + 2)
+        plt.xticks(locs, [''] + ["VL " + str(x) for x in range(0, len(locs))[1:-1]] + [''])
 
-        filtered_samples_dict[title][oligo] = (m, total_oligo)
+        if output_dir:
+            plt.savefig(os.path.join(output_dir,  dataset + ".png"))
+        else:
+            plt.show()
 
-    return filtered_samples_dict
+if __name__ == '__main__':
+    import argparse
 
-def get_PERCENT_samples_dict(samples_dict):
-    filtered_samples_dict = {}
-
-    for sample in samples_dict:
-        temp = {}
-        total_reads = sum([t[1] for t in samples_dict[sample].values()])
-        for oligo in samples_dict[sample]:
-            temp[oligo] = (samples_dict[sample][oligo][0], (samples_dict[sample][oligo][1] * 100 / total_reads) + 1)
-        filtered_samples_dict[sample] = temp
-
-    return filtered_samples_dict
+    parser = argparse.ArgumentParser(description='Oligotype Network Structure Per Sample')
+    parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE', help = 'Environment file generated by oligotyping analysis')
+    parser.add_argument('--output-dir', default = None, metavar = 'OUTPUT_DIR',\
+                        help = 'Directory path in which "[dataset].png" files will be stored for each dataset.')
 
 
-samples_dict = original_samples_dict
+    args = parser.parse_args()
 
-for sample in samples_dict:
-    total_reads = sum([x[1] for x in samples_dict[sample].values()])
-    print sample, total_reads
-
-    N = len(samples_dict[sample].keys()[0])
-    ind = np.arange(N) + 1
-
-    fig = plt.figure(figsize = (N + 2, 6))
-
-    plt.rcParams.update({'axes.linewidth' : 0.1})
-    plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
-    plt.grid(True)
-
-    plt.subplots_adjust(hspace = 0, wspace = 0, right = 0.995, left = 0.025, top = 0.92, bottom = 0.05)
-
-      #left  = 0.125   the left side of the subplots of the figure
-      #right = 0.9     the right side of the subplots of the figure
-      #bottom = 0.1    the bottom of the subplots of the figure
-      #top = 0.9       the top of the subplots of the figure
-      #wspace = 0.2    the amount of width reserved for blank space between subplots
-      #hspace = 0.2    the amount of height reserved for white space between subplots
-
-    ax = fig.add_subplot(111)
-    ax.plot([0], [0], visible = False)
-    ax.plot([N], [0], visible = False)
-    ax.plot([0], [6], visible = False)
-
-
-    for pos in range(0, len(oligo)):
-        bases = {}
-        for oligo in samples_dict[sample]:
-            base = oligo[pos]
-            if bases.has_key(base):
-                bases[base] += samples_dict[sample][oligo][1]
-            else:
-                bases[base] = samples_dict[sample][oligo][1]
-        for base in bases:
-            ratio = bases[base] * 1.0 / total_reads
-            ax.plot([pos + 1], [base_pos[base]], 'o', c = 'white', lw = 1, ls="--", alpha = 0.75, ms = ratio * 100)
-            ax.plot([pos + 1], [base_pos[base]], 'o', c = base_colors[base], lw = 1, alpha = ratio / 5, ms = ratio * 100)
-
-
-    for oligo in samples_dict[sample]:
-        ratio = samples_dict[sample][oligo][1] * 1.0 / total_reads
-        ax.plot(ind, samples_dict[sample][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 8, alpha = ratio / 5)
-        ax.plot(ind, samples_dict[sample][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 6, alpha = ratio / 3)
-        ax.plot(ind, samples_dict[sample][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 4, alpha = ratio)
-        ax.plot(ind, samples_dict[sample][oligo][0], c = 'black', solid_capstyle = "round", solid_joinstyle = "round", lw = 1, alpha = 0.1)
-        ax.plot(ind, samples_dict[sample][oligo][0], c = 'white', solid_capstyle = "round", solid_joinstyle = "round", lw = 1, alpha = ratio)
-
-    pylab.yticks(np.arange(6), ('', 'G', 'C', 'T', 'A', '--'), size = 'x-large')
-    pylab.title(sample + " (total reads: %s)" % total_reads)
-
-    locs = range(0, N + 2)
-    pylab.xticks(locs, [''] + ["VL " + str(x) for x in range(0, len(locs))[1:-1]] + [''])
-
-    plt.savefig(sys.argv[1] + '-' + sample + ".png")
+    sys.exit(oligotype_network_structure(args.environment_file, args.output_dir))   
