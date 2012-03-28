@@ -36,4 +36,5 @@ pretty_names = {'output_directory': 'Output directory',
                 'viamics_datasets_dict_file_path': 'Serialized Viamics datasets dictionary',
                 'output_directory_for_reps': 'Representative sequences for oligotypes directory',
                 'random_color_file_path': 'Random colors for oligotypes',
-                'stack_bar_file_path': 'Oligotype distribution stack bar figure'}
+                'stack_bar_file_path': 'Oligotype distribution stack bar figure',
+                'output_directory_for_datasets': 'Directory to store datasets associted information'}
