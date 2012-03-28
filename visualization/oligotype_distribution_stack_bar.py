@@ -9,13 +9,10 @@
 #
 # Please read the COPYING file.
 
-from matplotlib import mpl
 import numpy as np
 import matplotlib.pyplot as plt
-import pylab
 import cPickle
 import sys
-from scipy import stats
 
 def HTMLColorToRGB(colorstring):
     """ convert #RRGGBB to an (R, G, B) tuple """
