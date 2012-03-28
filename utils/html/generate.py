@@ -78,7 +78,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
         shutil.copy2(source, dest)
-        return dest
+        return os.path.basename(dest)
 
     # embarrassingly ad-hoc:
     html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
@@ -89,7 +89,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
-    html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(html_dict['environment_file_path'])
+    html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
 
     # get alignment length
@@ -168,7 +168,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         diversity_image_dest = os.path.join(html_output_directory, os.path.basename(diversity_image_path))
 
         shutil.copy2(diversity_image_path, diversity_image_dest)
-        oligo_reps_dict['imgs'][oligo] = diversity_image_dest
+        oligo_reps_dict['imgs'][oligo] = os.path.basename(diversity_image_dest)
 
         unique_sequences_path = alignment_base_path + '_unique'
         uniques = u.SequenceSource(unique_sequences_path)
