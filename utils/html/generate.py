@@ -37,9 +37,23 @@ def lookup(dict, index):
         return dict[index]
     return ''
 
+@register.filter(name='get_list_item')
+def get_list_item(l, index):
+    if index < len(l):
+        return l[index]
+    return ''
+
 @register.filter(name='multiply') 
 def multiply(value, arg):
     return int(value) * int(arg) 
+
+@register.filter(name='cleangaps') 
+def celangaps(arg):
+    return arg.replace('-', '')
+
+@register.filter(name='mklist') 
+def celangaps(arg):
+    return range(0, int(arg))
 
 absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
@@ -88,7 +102,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['oligos'] = get_oligos_list(run_info_dict['oligos_fasta_file_path'])
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
-        html_dict['rep_oligo_seqs_dict'] = get_unique_sequences_dict(html_dict)
+        html_dict['rep_oligo_seqs_clean_dict'], html_dict['rep_oligo_seqs_fancy_dict'] = get_unique_sequences_dict(html_dict)
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
 
@@ -141,7 +155,8 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
 
     oligo_reps_dict = {}
     oligo_reps_dict['imgs'] = {}
-    oligo_reps_dict['seqs'] = {}
+    oligo_reps_dict['fancy_seqs'] = {}
+    oligo_reps_dict['clear_seqs'] = {}
     oligo_reps_dict['component_references'] = {}
 
     for i in range(0, len(oligos)):
@@ -157,9 +172,11 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
 
         unique_sequences_path = alignment_base_path + '_unique'
         uniques = u.SequenceSource(unique_sequences_path)
-        oligo_reps_dict['seqs'][oligo] = []
-        while uniques.next() and uniques.pos < 20:
-            oligo_reps_dict['seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
+        oligo_reps_dict['fancy_seqs'][oligo] = []
+        oligo_reps_dict['clear_seqs'][oligo] = []
+        while uniques.next() and uniques.pos <= 20:
+            oligo_reps_dict['clear_seqs'][oligo].append(uniques.seq)
+            oligo_reps_dict['fancy_seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
 
 
         try:
@@ -186,15 +203,17 @@ def get_alignment_length(alignment_path):
 def get_unique_sequences_dict(html_dict):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
 
-    rep_oligo_seqs_dict = {}
+    rep_oligo_seqs_clean_dict = {}
+    rep_oligo_seqs_fancy_dict = {}
     
     for i in range(0, len(oligos)):
         unique_file_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique')
         f = u.SequenceSource(unique_file_path)
         f.next()
-        rep_oligo_seqs_dict[oligos[i]] = get_decorated_sequence(f.seq, html_dict['entropy_components'])
+        rep_oligo_seqs_clean_dict[oligos[i]] = f.seq
+        rep_oligo_seqs_fancy_dict[oligos[i]] = get_decorated_sequence(f.seq, html_dict['entropy_components'])
         f.close()
-    return rep_oligo_seqs_dict
+    return (rep_oligo_seqs_clean_dict, rep_oligo_seqs_fancy_dict)
 
 def get_decorated_sequence(seq, components):
     """returns sequence with html decorations"""

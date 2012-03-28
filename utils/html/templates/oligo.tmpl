@@ -27,9 +27,9 @@
     <div class="wrap">
         <div id='sequences' style="height: auto;"> 
             <div style="width: {{alignment_length|multiply:8}}px; position: relative;">
-                     <p><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> <strong>{{oligos.0}}</strong> {{ oligo_reps_dict.component_references|lookup:oligo|safe }} </span>
-                {% for sequence in oligo_reps_dict.seqs|lookup:oligo %}
-                    <p><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> {{ sequence|safe }}</span>
+                     <p><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> b <strong>{{oligos.0}}</strong> {{ oligo_reps_dict.component_references|lookup:oligo|safe }} </span>
+                {% for i in oligo_reps_dict.fancy_seqs|lookup:oligo|length|mklist %}
+                    <p><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}_{{i}}%0d{{ oligo_reps_dict.clear_seqs|lookup:oligo|get_list_item:i|cleangaps }}">b</a></em> {{ oligo_reps_dict.fancy_seqs|lookup:oligo|get_list_item:i|safe }}</span>
                 {% endfor %}
             </div>
         </div>
