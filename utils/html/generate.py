@@ -12,8 +12,9 @@
 
 import os
 import sys
-import shutil
 import copy
+import shutil
+import cPickle
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
 import lib.fastalib as u
@@ -179,16 +180,13 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
             oligo_reps_dict['fancy_seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
 
 
-        try:
-            entropy_file_path = alignment_base_path + '_unique_entropy'
-            entropy_values_per_column = [0] * html_dict['alignment_length']
-            for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
-                entropy_values_per_column[int(column)] = float(entropy)
+        entropy_file_path = alignment_base_path + '_unique_entropy'
+        entropy_values_per_column = [0] * html_dict['alignment_length']
+        for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
+            entropy_values_per_column[int(column)] = float(entropy)
 
-            color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
-            oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
-        except:
-            oligo_reps_dict['component_references'][oligo] = None
+        color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
+        oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
 
 
@@ -220,7 +218,6 @@ def get_decorated_sequence(seq, components):
     return ''.join(map(lambda j: '<span class="c">%s</span>' % seq[j] if j in components else seq[j], [j for j in range(len(seq))]))
 
 if __name__ == '__main__':
-    import cPickle
     import argparse
 
     parser = argparse.ArgumentParser(description='Generate Static HTML Output from Oligotyping Run')
