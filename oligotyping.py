@@ -23,6 +23,7 @@ import fastalib as u
 
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
+from visualization.oligotype_network_structure import oligotype_network_structure
 from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
@@ -236,6 +237,8 @@ class Oligotyping:
         if not self.quick:
             self._generate_representative_sequences()
         self._generate_random_colors()
+        if (not self.no_figures) and (not self.quick):
+            self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
 
@@ -530,10 +533,17 @@ class Oligotyping:
         self.info('random_color_file_path', random_color_file_path)
 
 
+    def _generate_dataset_oligotype_network_figures(self):
+        output_directory_for_datasets = self.generate_output_destination("DATASETS", directory = True)
+        oligotype_network_structure(self.run_info_dict['environment_file_path'], output_dir = output_directory_for_datasets)
+        self.info('output_directory_for_datasets', output_directory_for_datasets) 
+ 
+
     def _generate_stack_bar_figure(self):
         stack_bar_file_path = self.generate_output_destination('STACKBAR.png')
         oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, stack_bar_file_path, oligos = self.abundant_oligos, project_title = self.project, display = not self.no_display)
         self.info('stack_bar_file_path', stack_bar_file_path)
+
 
     def _generate_html_output(self):
         from utils.html.error import HTMLError
