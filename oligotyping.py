@@ -186,7 +186,7 @@ class Oligotyping:
         self.run_info_dict[key] = value
 
         info_line = "%s %s: %s\n" % (label, '.' * (65 - len(label)), str(value))
-        self.info_file_obj.write(info_line + '\n')
+        self.info_file_obj.write(info_line)
 
         if not self.no_display:
             sys.stdout.write(info_line)
