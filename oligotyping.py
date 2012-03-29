@@ -562,9 +562,9 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Start an Oligotyping Process')
-    parser.add_argument('-i', '--alignment', required=True, metavar = 'INPUT ALIGNMENT',
+    parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
                         help = 'Alignment file that contains all datasets and sequences in FASTA format')
-    parser.add_argument('-e', '--entropy', required=True, metavar = 'ENTROPY',
+    parser.add_argument('entropy', metavar = 'ENTROPY',
                         help = 'File that contains the columns and the entropy values computer previously')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
     parser.add_argument('-c', '--number-of-auto-components', type=int, default=None,
