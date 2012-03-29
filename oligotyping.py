@@ -100,6 +100,7 @@ class Oligotyping:
             self.alignment = Absolute(args.alignment)
             self.number_of_auto_components = args.number_of_auto_components
             self.selected_components = args.selected_components
+            self.limit_oligotypes_to = args.limit_oligotypes_to
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
@@ -130,7 +131,13 @@ class Oligotyping:
             except:
                 raise ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
 
+        if self.limit_oligotypes_to:
+            self.limit_oligotypes_to = [o.strip().upper() for o in self.limit_oligotypes_to.split(',')]
+            if len(self.limit_oligotypes_to) == 1:
+                raise ConfigError, "There must be more than one oligotype for --limit-oligotypes parameter."
 
+            if len([n for n in ''.join(self.limit_oligotypes_to) if n not in ['A', 'T', 'C', 'G', '-']]):
+                raise ConfigError, "Oligotypes defined by --limit-oligotypes parameter seems to have ambiguours characters."
         
         if not self.output_directory:
              self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
@@ -217,6 +224,7 @@ class Oligotyping:
         self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.info('s', self.min_number_of_datasets)
         self.info('a', self.min_percent_abundance)
+        self.info('limit_oligotypes_to', self.limit_oligotypes_to)
         
         if self.number_of_auto_components:
             # locations of interest based on the entropy scores
@@ -327,7 +335,14 @@ class Oligotyping:
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
         self.info('num_oligos_after_a_elim', pp(len(self.abundant_oligos)))
-      
+
+        # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
+        if self.limit_oligotypes_to:
+            self.abundant_oligos = [oligo for oligo in self.abundant_oligos if oligo in self.limit_oligotypes_to]
+            self.info('num_oligos_after_l_elim', pp(len(self.abundant_oligos)))
+            if len(self.abundant_oligos) == 0:
+                raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
+
 
     def _refine_datasets_dict(self):
         # removing oligos from datasets dictionary that didn't pass
@@ -596,6 +611,10 @@ if __name__ == '__main__':
                                 -l 10 would make it possible that only first 10 sequence would be stored). Default\
                                 is 0, which stores everything, but when the dataset size is too big, this could\
                                 take up disk space.')
+    parser.add_argument('--limit-oligotypes-to', type = str, default = None,
+                        help = 'Comma separated list of oligotypes to be taken into account during the analysis.\
+                                All other oligotypes will be discarded if a list of oligotypes is being speficied\
+                                with this parameter.')
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'Some relatively insignificant parts of the analysis may take a lot of time, such as\
                                 generating figures for representative sequences. When this parameter is set, all\
