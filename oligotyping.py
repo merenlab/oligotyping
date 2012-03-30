@@ -229,10 +229,10 @@ class Oligotyping:
         if self.number_of_auto_components:
             # locations of interest based on the entropy scores
             self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_auto_components)])
-            self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
+            self.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
         elif self.selected_components:
             self.bases_of_interest_locs = sorted(self.selected_components)
-            self.info('bases_of_interest_locs', ', '.join([str(x) for x in self.bases_of_interest_locs]))
+            self.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
