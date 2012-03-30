@@ -72,7 +72,7 @@
 
 <div class="wrap_regular"><p style="line-height: 2em;">
     {% for dataset in datasets %}
-        <span style="padding: 5px; margin-right: 5px; background-color: #EEE;" onmouseover="popup('<img src={{dataset_network_figures|lookup:dataset}} width=&quot;790&quot;>', 800); style.backgroundColor='#AAA';" onmouseout="style.backgroundColor='#EEE';">{{dataset}}&nbsp;</span>
+        <span style="padding: 5px; margin-right: 5px; background-color: #EEE;" onmouseover="popup('<img src={{dataset_network_figures|lookup:dataset}} style=max-width:790px;>', 800); style.backgroundColor='#AAA';" onmouseout="style.backgroundColor='#EEE';">{{dataset}}&nbsp;</span>
     {% endfor %}
 </div>
 
