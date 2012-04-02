@@ -27,6 +27,8 @@ from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
 from utils.utils import pretty_print
+
+# FIXME: test whether Biopython is installed or not here.
 from utils.blast_interface import blast_search
 
 
