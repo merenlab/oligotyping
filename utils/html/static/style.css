@@ -272,12 +272,28 @@ h1 {
     margin:0 auto;
 }
 
+.check {
+    display: inline-block;
+    width: 10px;
+    padding-right: 3px;
+    color: green;
+    text-align: right;
+}
+
+.cross {
+    display: inline-block;
+    width: 10px;
+    padding-right: 3px;
+    color: red;
+    text-align: right;
+}
 .frequency {
     display: inline-block;
     width: 50px;
     padding-right: 5px;
     text-align: right;
 }
+
 
 .wrap_regular {
     font-size: 1em;

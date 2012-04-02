@@ -21,6 +21,7 @@ import lib.fastalib as u
 from utils.constants import pretty_names
 from utils.utils import pretty_print
 from utils.utils import get_datasets_dict_from_environment_file
+from utils.blast_interface import get_blast_results_dict
 from error import HTMLError
 
 try:
@@ -168,6 +169,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
     oligo_reps_dict['clear_seqs'] = {}
     oligo_reps_dict['frequency'] = {}
     oligo_reps_dict['component_references'] = {}
+    oligo_reps_dict['blast_results'] = {}
 
     for i in range(0, len(oligos)):
         oligo = oligos[i]
@@ -176,7 +178,6 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
 
         diversity_image_path =  alignment_base_path + '_unique.png'
         diversity_image_dest = os.path.join(html_output_directory, os.path.basename(diversity_image_path))
-
         shutil.copy2(diversity_image_path, diversity_image_dest)
         oligo_reps_dict['imgs'][oligo] = os.path.basename(diversity_image_dest)
 
@@ -190,7 +191,6 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
             oligo_reps_dict['fancy_seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
             oligo_reps_dict['frequency'][oligo].append(pretty_print(uniques.id.split('|')[1].split(':')[1]))
 
-
         entropy_file_path = alignment_base_path + '_unique_entropy'
         entropy_values_per_column = [0] * html_dict['alignment_length']
         for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
@@ -199,7 +199,11 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
         oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
-
+        blast_results_file_path = alignment_base_path + '_unique_BLAST.xml'
+        if os.path.exists(blast_results_file_path):
+            oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 1)
+        else:
+            oligo_reps_dict['blast_results'][oligo] = None
 
     return oligo_reps_dict
 
