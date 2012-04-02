@@ -55,6 +55,11 @@ def get_blast_results_dict(blast_results, num_results = 5):
 
         blast_results_dict[i] = b
 
+    try:
+        blast_results.close()
+    except:
+        pass
+
     return blast_results_dict
 
 def blast_pretty_print(blast_results_dict, num_results = 1):
