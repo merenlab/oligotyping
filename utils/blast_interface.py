@@ -20,7 +20,7 @@ except:
     print "This script requires BioPython (http://biopython.org/wiki/Biopython) to be installed."
     sys.exit()
 
-def blast(sequence, output_file = None):
+def blast_search(sequence, output_file = None):
     result_handle = NCBIWWW.qblast("blastn", "nt", sequence)
 
     result = result_handle.read()
