@@ -63,7 +63,7 @@ settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEM
 from django.template.loader import get_template
 t = get_template('index.tmpl')
 
-def generate_html_output(run_info_dict, html_output_directory = None):
+def generate_html_output(run_info_dict, html_output_directory = None, entropy_figure = None):
     if not html_output_directory:    
         html_output_directory = os.path.join(run_info_dict['output_directory'], 'HTML-OUTPUT')
         
@@ -83,7 +83,10 @@ def generate_html_output(run_info_dict, html_output_directory = None):
         return os.path.basename(dest)
 
     # embarrassingly ad-hoc:
-    html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
+    if entropy_figure:
+        html_dict['entropy_figure'] = copy_as(os.path.join(entropy_figure), 'entropy.png')
+    else:
+        html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
     html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
@@ -232,11 +235,13 @@ if __name__ == '__main__':
     parser.add_argument('run_info_dict_path', metavar = 'DICT', help = 'Serialized run info dictionary (RUNINFO.cPickle)')
     parser.add_argument('-o', '--output-directory', default = None, metavar = 'OUTPUT_DIR',\
                         help = 'Output directory for HTML output to be stored')
+    parser.add_argument('--entropy-figure', default = None, metavar = 'ENTROPY_FIGURE',\
+                        help = 'Path for entropy figure')
 
     args = parser.parse_args()
    
     run_info_dict = cPickle.load(open(args.run_info_dict_path))
 
-    index_page = generate_html_output(run_info_dict, args.output_directory) 
+    index_page = generate_html_output(run_info_dict, args.output_directory, args.entropy_figure) 
 
     print '\n\tHTML output is ready: "%s"\n' % index_page
