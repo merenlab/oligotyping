@@ -27,6 +27,7 @@ from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
 from utils.utils import pretty_print
+from utils.blast_interface import blast_search
 
 
 class ConfigError(Exception):
@@ -66,6 +67,7 @@ class Oligotyping:
             self.quick = args.quick
             self.no_figures = args.no_figures
             self.no_display = args.no_display
+            self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
 
         self.datasets_dict = {}
@@ -463,7 +465,7 @@ class Oligotyping:
 
             fasta_file_path = fasta_files_dict[oligo]['path']
             fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
-
+            
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
                                                                      % (oligo,
@@ -478,6 +480,14 @@ class Oligotyping:
                 unique_fasta_path = unique_files_dict[oligo]['path']
                 entropy_file_path = unique_fasta_path + '_entropy'
                 color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
+
+                if (not self.skip_blast_search):
+                    # perform BLAST search and store results
+                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
+                    unique_fasta = u.SequenceSource(unique_fasta_path)
+                    unique_fasta.next()
+                    blast_search(unique_fasta.seq, oligo_representative_blast_output)
+                    unique_fasta.close()
 
                 # generate entropy output at 'entropy_file_path' along with the image
                 vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
@@ -577,6 +587,8 @@ if __name__ == '__main__':
                                 trivial steps would be skipped to give results as soon as possible.')
     parser.add_argument('--no-figures', action = 'store_true', default = False,
                         help = 'When set, no figures will be generated or displayed.')
+    parser.add_argument('--skip-blast-search', action = 'store_true', default = False,
+                        help = 'When set, BLAST search step will not be performed.')
     parser.add_argument('--no-display', action = 'store_true', default = False,
                         help = 'When set, no figures will be shown.')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
