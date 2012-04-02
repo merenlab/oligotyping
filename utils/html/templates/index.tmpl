@@ -84,9 +84,9 @@
     <div class="wrap">
         <div id='sequences' style="height: auto;"> 
             <div style="width: {{alignment_length|multiply:9}}px; position: relative;">
-                     <p><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> <strong>{{oligos.0}}</strong> b {{ component_reference|safe }}</span>
+                     <p><span class="frequency">&nbsp;</span><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> <strong>{{oligos.0}}</strong> b {{ component_reference|safe }}</span>
                 {% for oligo in oligos %}
-                    <p><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
+                    <p><span class="frequency">{{ frequency|lookup:oligo }}</span><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
                 {% endfor %}
             </div>
         </div>

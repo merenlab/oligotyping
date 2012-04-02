@@ -19,6 +19,7 @@ import cPickle
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
 import lib.fastalib as u
 from utils.constants import pretty_names
+from utils.utils import pretty_print
 from utils.utils import get_datasets_dict_from_environment_file
 from error import HTMLError
 
@@ -101,6 +102,10 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['color_dict'] = get_colors_dict(run_info_dict['random_color_file_path'])
     # get abundant oligos list
     html_dict['oligos'] = get_oligos_list(run_info_dict['oligos_fasta_file_path'])
+    # get oligo frequencies
+    html_dict['frequency'] = {}
+    for oligo in html_dict['oligos']:
+        html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in html_dict['datasets_dict'].values() if d.has_key(oligo)]))
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['rep_oligo_seqs_clean_dict'], html_dict['rep_oligo_seqs_fancy_dict'] = get_unique_sequences_dict(html_dict)
@@ -158,6 +163,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
     oligo_reps_dict['imgs'] = {}
     oligo_reps_dict['fancy_seqs'] = {}
     oligo_reps_dict['clear_seqs'] = {}
+    oligo_reps_dict['frequency'] = {}
     oligo_reps_dict['component_references'] = {}
 
     for i in range(0, len(oligos)):
@@ -175,9 +181,11 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         uniques = u.SequenceSource(unique_sequences_path)
         oligo_reps_dict['fancy_seqs'][oligo] = []
         oligo_reps_dict['clear_seqs'][oligo] = []
+        oligo_reps_dict['frequency'][oligo] = []
         while uniques.next() and uniques.pos <= 20:
             oligo_reps_dict['clear_seqs'][oligo].append(uniques.seq)
             oligo_reps_dict['fancy_seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
+            oligo_reps_dict['frequency'][oligo].append(pretty_print(uniques.id.split('|')[1].split(':')[1]))
 
 
         entropy_file_path = alignment_base_path + '_unique_entropy'

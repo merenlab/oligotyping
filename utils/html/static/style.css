@@ -272,6 +272,13 @@ h1 {
     margin:0 auto;
 }
 
+.frequency {
+    display: inline-block;
+    width: 50px;
+    padding-right: 5px;
+    text-align: right;
+}
+
 .wrap_regular {
     font-size: 1em;
     width:1210px;
