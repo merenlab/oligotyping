@@ -18,9 +18,8 @@ import cPickle
 import tempfile
 import operator
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
-import fastalib as u
 
+from lib import fastalib as u
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from visualization.oligotype_network_structure import oligotype_network_structure
