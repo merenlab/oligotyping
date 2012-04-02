@@ -27,50 +27,7 @@ from visualization.oligotype_network_structure import oligotype_network_structur
 from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
-
-def pp(n):
-    """Pretty print function for very big numbers.."""
-    ret = []
-    n = str(n)
-    for i in range(len(n) - 1, -1, -1):
-        ret.append(n[i])
-        if (len(n) - i) % 3 == 0:
-            ret.append(',')
-    ret.reverse()
-    return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
-
-def trim_uninformative_columns_from_alignment(input_file_path):
-    input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
-    input_fasta.next()
-    invalid_columns = range(0, len(input_fasta.seq))
-    input_fasta.reset()
-    
-    while input_fasta.next():
-        for i in invalid_columns:
-            if input_fasta.seq[i] != '-':
-                invalid_columns.remove(i)
-    
-    columns_to_keep = [x for x in range(0, invalid_columns[-1]) if x not in invalid_columns]
-    
-    input_fasta.reset()
-
-    temp_file = tempfile.NamedTemporaryFile(delete = False)
-    temp_file_path = temp_file.name
-    temp_file.close()
-
-    temp_file = u.FastaOutput(temp_file_path)
-
-    while input_fasta.next():
-        new_seq = ''
-        for i in columns_to_keep:
-            new_seq += input_fasta.seq[i]
-        temp_file.write_id(input_fasta.id)
-        temp_file.write_seq(new_seq, split = False)
-    
-    temp_file.close()
-
-    # overwrite the original file with trimmed content
-    shutil.move(temp_file_path, input_file_path)
+from utils.utils import pretty_print
 
 
 class ConfigError(Exception):
@@ -218,8 +175,8 @@ class Oligotyping:
         self.info('output_directory', self.output_directory)
         self.info('info_file_path', self.info_file_path)
         self.info('cmd_line', ' '.join(sys.argv))
-        self.info('total_seq', pp(self.fasta.total_seq))
-        self.info('alignment_length', pp(self.alignment_length))
+        self.info('total_seq', pretty_print(self.fasta.total_seq))
+        self.info('alignment_length', pretty_print(self.alignment_length))
         self.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.info('s', self.min_number_of_datasets)
@@ -277,7 +234,7 @@ class Oligotyping:
                 self.datasets_dict[dataset][oligo] += 1
             else:
                 self.datasets_dict[dataset][oligo] = 1
-        self.info('num_datasets_in_fasta', pp(len(self.datasets_dict)))
+        self.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
 
     
     def _contrive_abundant_oligos(self):
@@ -287,7 +244,7 @@ class Oligotyping:
             for oligo in self.datasets_dict[dataset].keys():
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
-        self.info('num_unique_oligos', pp(len(oligos_set)))
+        self.info('num_unique_oligos', pretty_print(len(oligos_set)))
         
         # count oligo abundance
         oligo_abundance = []
@@ -305,7 +262,7 @@ class Oligotyping:
         for tpl in oligo_abundance:
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
-        self.info('num_oligos_after_s_elim', pp(len(non_singleton_oligos)))
+        self.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
         
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one dataset)
@@ -334,12 +291,12 @@ class Oligotyping:
 
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
-        self.info('num_oligos_after_a_elim', pp(len(self.abundant_oligos)))
+        self.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
         if self.limit_oligotypes_to:
             self.abundant_oligos = [oligo for oligo in self.abundant_oligos if oligo in self.limit_oligotypes_to]
-            self.info('num_oligos_after_l_elim', pp(len(self.abundant_oligos)))
+            self.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
             if len(self.abundant_oligos) == 0:
                 raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
 
@@ -363,8 +320,8 @@ class Oligotyping:
         number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
         self.info('num_sequences_after_qc', '%s of %s (%.2f%%)'\
-                            % (pp(number_of_reads_in_datasets_dict),
-                               pp(self.fasta.total_seq),
+                            % (pretty_print(number_of_reads_in_datasets_dict),
+                               pretty_print(self.fasta.total_seq),
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
