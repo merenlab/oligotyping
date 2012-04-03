@@ -77,8 +77,7 @@
 </div>
 
 
-<div class="smallhead">Oligotypes</div>
-<p class="smallheadtitle">» Abundant oligotypes after quality control: {{oligos|join:', '}}
+<div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundan oligotypes with their frequencies within the dataset are shown below along with the most frequent sequence within the group of oligotype. {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something duing the BLAST search with 100% identity. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search. <br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %} {{oligo}}, {% endif %}{% endfor %}{% else %}BLAST results are missing for this analysis.{% endif %}
 
 {% if output_directory_for_reps %}
     <div class="wrap">
@@ -91,11 +90,16 @@
                         <span style="color: white;"> <strong>{{oligos.0}}</strong> b {{ component_reference|safe }}</span>
                 {% for oligo in oligos %}
                     <p>
-                        {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}
-                            <span class="check">✓</span>
+                        {% if blast_results_found %}
+                            {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}
+                                <span class="check">✓</span>
+                            {% else %}
+                                <span class="cross">✗</span>
+                            {% endif %}
                         {% else %}
-                            <span class="cross">✗</span>
-                        {% endif %}</span>
+                            <span class="check">&nbsp;</span>
+                        {% endif %}
+                        </span>
                         <span class="frequency">{{ frequency|lookup:oligo }}</span>
                         <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span>
                         <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>

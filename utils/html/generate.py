@@ -97,6 +97,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
     html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
+    html_dict['blast_results_found'] = False
 
     # get alignment length
     html_dict['alignment_length'] = get_alignment_length(run_info_dict['alignment'])
@@ -201,7 +202,8 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
 
         blast_results_file_path = alignment_base_path + '_unique_BLAST.xml'
         if os.path.exists(blast_results_file_path):
-            oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 1)
+            html_dict['blast_results_found'] = True
+            oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 50)
         else:
             oligo_reps_dict['blast_results'][oligo] = None
 

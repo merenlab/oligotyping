@@ -22,6 +22,33 @@
 <p class="smallheadtitle">» Abundance curve of unique sequences within oligotype along with entropy values associated with these new set of alignments.
 <p align="center"><a href="{{ oligo_reps_dict.imgs|lookup:oligo }}"><img src="{{ oligo_reps_dict.imgs|lookup:oligo }}" style="width:1200px" border="0"></a>
 
+
+<div class="smallhead">BLAST Hits</div>
+<p class="smallheadtitle">» Alignments obtained for the most frequent sequence of {{ oligo }} are shown below.
+<div class="wrap">
+{% if oligo_reps_dict.blast_results|lookup:oligo %}
+        <div id='sequences' style="height: 400px;"> 
+            <div style="width: {{alignment_length|multiply:9}}px; position: relative;">
+                {% for i in oligo_reps_dict.blast_results|lookup:oligo|length|mklist %}
+                    <p><strong>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hit_def" }}</strong>
+                    <br />Accession: <a href="{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"ncbi_link" }}">
+                            {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"accession" }}</a></em>
+                    <br />Identity : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"identity"|floatformat:1 }}%</em>
+                    <br />Coverage : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"coverage"|floatformat:1 }}%</em>
+                    <p>&nbsp;
+                    <br /><em>QUERY: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_query" }}</em>
+                    <br /><em>MATCH: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_match" }}</em>
+                    <br /><em>SUBJE: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_subject" }}</em>
+                    <p>&nbsp;
+                    <p>&nbsp;
+                {% endfor %}
+            </div>
+        </div>
+{% else %}
+    <p><em>BLAST results are missing.</em>
+{% endif %}
+</div>
+
 <div class="smallhead">Sequences</div>
 <p class="smallheadtitle">» First 20 Unique sequences
     <div class="wrap">
