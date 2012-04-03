@@ -100,7 +100,7 @@ def get_unique_sequences(alignment, limit = 10):
     return unique_sequences
 
 
-def visualize_distribution(alignment, entropy_values, output_file, quick = False, display = True):
+def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -144,7 +144,7 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
     plt.ylabel('Shannon Entropy')
     plt.savefig(output_file)
 
-    if display:
+    if not no_display:
         plt.show()
 
 
@@ -157,8 +157,10 @@ if __name__ == '__main__':
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'When set, entropy values will be shown as fast as\
                                 possible (some visualization steps will be skipped).')
+    parser.add_argument('--no-display', action = 'store_true', default = False,
+                                help = 'When set, no figures will be shown.')
 
     args = parser.parse_args()
-    entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY.txt')
-    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick)
+    entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY')
+    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick, no_display = args.no_display)
 
