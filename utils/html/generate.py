@@ -87,7 +87,10 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     if entropy_figure:
         html_dict['entropy_figure'] = copy_as(os.path.join(entropy_figure), 'entropy.png')
     else:
-        html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
+        try:
+            html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
+        except:
+            html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'] + '.png'), 'entropy.png')
     html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
