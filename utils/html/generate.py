@@ -46,13 +46,25 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
+@register.filter(name='mod') 
+def mod(value, arg):
+    return value % arg 
+
 @register.filter(name='multiply') 
 def multiply(value, arg):
     return int(value) * int(arg) 
 
+@register.filter(name='var') 
+def multiply(arg):
+    return 'x_' + arg.replace(' ', '_').replace('-', '_').replace('+', '_') 
+
 @register.filter(name='cleangaps') 
 def celangaps(arg):
     return arg.replace('-', '')
+
+@register.filter(name='sumvals') 
+def sumvals(arg):
+    return pretty_print(sum(arg.values()))
 
 @register.filter(name='mklist') 
 def celangaps(arg):
@@ -77,6 +89,9 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     shutil.copy2(os.path.join(absolute, 'static/header.png'), os.path.join(html_output_directory, 'header.png'))
     shutil.copy2(os.path.join(absolute, 'scripts/jquery-1.7.1.js'), os.path.join(html_output_directory, 'jquery-1.7.1.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/popup.js'), os.path.join(html_output_directory, 'popup.js'))
+    shutil.copy2(os.path.join(absolute, 'scripts/g.pie.js'), os.path.join(html_output_directory, 'g.pie.js'))
+    shutil.copy2(os.path.join(absolute, 'scripts/g.raphael.js'), os.path.join(html_output_directory, 'g.raphael.js'))
+    shutil.copy2(os.path.join(absolute, 'scripts/raphael.js'), os.path.join(html_output_directory, 'raphael.js'))
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
@@ -120,18 +135,11 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
 
-    # get datasets dict
-    if html_dict.has_key('output_directory_for_datasets'):
-        dataset_network_figures = {}
-        for dataset in html_dict['datasets']:
-            src = os.path.join(run_info_dict['output_directory_for_datasets'], dataset + '.png')
-            dest = dataset + '.png'
-            if os.path.exists(src):
-                dataset_network_figures[dataset] = copy_as(src, dest)
-            else:
-                dataset_network_figures[dataset] = None
-        html_dict['dataset_network_figures'] = dataset_network_figures
-        
+    # get javascript code for dataset pie-charts
+    html_dict['pie_charts_js'] = render_to_string('pie_charts_js.tmpl', html_dict)
+
+    # FIXME: code below is very inefficient and causes a huge
+    # memory issue. fix it by not using deepcopy.
     # generate individual oligotype pages
     if html_dict.has_key('output_directory_for_reps'):
         for oligo in html_dict['oligos']:

@@ -8,6 +8,12 @@
 
     <script type="text/javascript" src="jquery-1.7.1.js"></script>
     <script type="text/javascript" src="popup.js"></script>
+    <script type="text/javascript" src="raphael.js"></script>
+    <script type="text/javascript" src="g.raphael.js"></script>
+    <script type="text/javascript" src="g.pie.js"></script>
+
+{{ pie_charts_js }}
+
 </head>
 
 <body >
@@ -45,6 +51,7 @@
 </table>
 </div>
 
+
 <div class="smallhead">Download</div>
 <p class="smallheadtitle">» Files to analyze results further via third partry applications
 <div class="info_table">
@@ -67,22 +74,13 @@
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
 <p align="center"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
-<div class="smallhead">Datasets</div>
-<p class="smallheadtitle">» Overview of datasets.
-
-<div class="wrap_regular"><p style="line-height: 2em;">
-    {% for dataset in datasets %}
-        <span style="padding: 5px; margin-right: 5px; background-color: #EEE;" onmouseover="popup('<img src={{dataset_network_figures|lookup:dataset}} style=max-width:790px;>', 800); style.backgroundColor='#AAA';" onmouseout="style.backgroundColor='#EEE';">{{dataset}}&nbsp;</span>
-    {% endfor %}
-</div>
-
 
 <div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundan oligotypes with their frequencies within the dataset are shown below along with the most frequent sequence within the group of oligotype. {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something duing the BLAST search with 100% identity. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search. <br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %} {{oligo}}, {% endif %}{% endfor %}{% else %}BLAST results are missing for this analysis.{% endif %}
 
 {% if output_directory_for_reps %}
     <div class="wrap">
         <div id='sequences' style="height: auto;"> 
-            <div style="width: {{alignment_length|multiply:10}}px; position: relative;">
+            <div style="width: {% if alignment_length|multiply:8 > 800 %}{{alignment_length|multiply:8}}{% else %}800{%endif%}px; position: relative;">
                      <p>
                         <span class="check">&nbsp;</span>
                         <span class="frequency">&nbsp;</span>
@@ -121,6 +119,17 @@
 
 </div>
 </div>
+
+<div class="smallhead">Datasets</div>
+<p class="smallheadtitle">» Overview of datasets.
+{% for dataset in datasets %}
+{% if forloop.counter0|mod:3 == 0 %}
+    <div id="p_container_{{forloop.counter0}}"></div>
+{% endif %}
+{% endfor %}
+
+
+
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>
