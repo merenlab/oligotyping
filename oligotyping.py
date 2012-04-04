@@ -71,6 +71,7 @@ class Oligotyping:
             self.no_display = args.no_display
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
+            self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
 
         self.datasets_dict = {}
         self.datasets = []
@@ -205,7 +206,7 @@ class Oligotyping:
         if not self.quick:
             self._generate_representative_sequences()
         self._generate_random_colors()
-        if (not self.no_figures) and (not self.quick):
+        if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
@@ -595,6 +596,8 @@ if __name__ == '__main__':
                         help = 'When set, no figures will be shown.')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
                         help = 'Generate static HTML output to browse analysis results.')
+    parser.add_argument('--gen-dataset-oligo-networks', action = 'store_true', default = False,
+                        help = 'Generate oligotype network structure figures for each dataset.')
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
 
