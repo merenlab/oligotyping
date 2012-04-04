@@ -10,11 +10,11 @@
                 paper.text({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 20, "{{ dataset }}").attr({ font: "15px sans-serif", "font-weight": "bold" });
                 paper.text({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 260, "{{ datasets_dict|lookup:dataset|sumvals }}").attr({ font: "15px sans-serif" });
                 {{dataset|var}}_pie = paper.piechart({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 140, 100,
-                                    [{% for oligo in datasets_dict|lookup:dataset %}{{datasets_dict|lookup:dataset|lookup:oligo}}{% if not forloop.last %}, {%endif%}{% endfor %}],
-                                    { legend: [{% for oligo in datasets_dict|lookup:dataset %}"{{oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
-                                      colors: [{% for oligo in datasets_dict|lookup:dataset %}"{{color_dict|lookup:oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                    [{% for oligo in datasets_dict|lookup:dataset|sorted_by_value %}{{datasets_dict|lookup:dataset|lookup:oligo}}{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                    { legend: [{% for oligo in datasets_dict|lookup:dataset|sorted_by_value %}"{{oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                      colors: [{% for oligo in datasets_dict|lookup:dataset|sorted_by_value %}"{{color_dict|lookup:oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
                                       legendpos: "east", 
-                                      href: [{% for oligo in datasets_dict|lookup:dataset %}"oligo_{{oligo}}.html"{% if not forloop.last %}, {%endif%}{% endfor %}]});
+                                      href: [{% for oligo in datasets_dict|lookup:dataset|sorted_by_value %}"oligo_{{oligo}}.html"{% if not forloop.last %}, {%endif%}{% endfor %}]});
                 {{dataset|var}}_pie.hover(function () {
                     this.sector.stop();
                     this.sector.scale(1.1, 1.1, this.cx, this.cy);

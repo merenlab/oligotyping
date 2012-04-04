@@ -18,7 +18,7 @@
 
 <body >
 <div id="wrapper">
-<div id="content">
+<div>
 
 <div class="head">Oligotyping Results for "{{ project }}"</div>
 <div class="title">This page shows some preliminary results of your analysis</div>
@@ -68,11 +68,11 @@
 
 <div class="smallhead">Entropy</div>
 <p class="smallheadtitle">» Entropy values that components were picked from
-<p align="center"><a href="{{ entropy_figure }}"><img src="{{ entropy_figure }}" style="max-width:1200px" border="0"></a>
+<p class="content"><a href="{{ entropy_figure }}"><img src="{{ entropy_figure }}" style="max-width:1200px" border="0"></a>
 
 <div class="smallhead">Stackbar</div>
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
-<p align="center"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
+<p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
 
 <div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundan oligotypes with their frequencies within the dataset are shown below along with the most frequent sequence within the group of oligotype. {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something duing the BLAST search with 100% identity. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search. <br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %} {{oligo}}, {% endif %}{% endfor %}{% else %}BLAST results are missing for this analysis.{% endif %}

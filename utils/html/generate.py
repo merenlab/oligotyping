@@ -46,6 +46,10 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
+@register.filter(name='sorted_by_value') 
+def sorted_by_value(d):
+    return sorted(d, key=d.get, reverse=True)
+
 @register.filter(name='mod') 
 def mod(value, arg):
     return value % arg 

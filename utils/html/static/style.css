@@ -102,6 +102,10 @@ h1 {
     text-align: left;
 }
 
+.content {
+    margin-left: 140px;
+}
+
 .toc {
     margin-left: 45px;
     font-size: 0.8em;
@@ -269,7 +273,7 @@ h1 {
     font-size: 0.8em;
     font-family: Andale Mono, monospace;
     width:1210px;
-    margin:0 auto;
+    margin-left: 140px;
 }
 
 .check {
