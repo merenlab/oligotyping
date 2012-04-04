@@ -1,0 +1,40 @@
+{% for dataset in datasets %}
+{% if forloop.first %}
+    <script>
+        window.onload = function () {
+{% endif %}
+
+{% if forloop.counter0|mod:3 == 0 %}
+                var paper = new Raphael(document.getElementById("p_container_{{forloop.counter0}}"), 1600, 320);
+{% endif %}
+                paper.text({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 20, "{{ dataset }}").attr({ font: "15px sans-serif", "font-weight": "bold" });
+                paper.text({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 260, "{{ datasets_dict|lookup:dataset|sumvals }}").attr({ font: "15px sans-serif" });
+                {{dataset|var}}_pie = paper.piechart({% if forloop.counter0|mod:3 == 0 %}250{% endif %}{% if forloop.counter0|mod:3 == 1 %}675{% endif %}{% if forloop.counter0|mod:3 == 2 %}1100{% endif %}, 140, 100,
+                                    [{% for oligo in datasets_dict|lookup:dataset %}{{datasets_dict|lookup:dataset|lookup:oligo}}{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                    { legend: [{% for oligo in datasets_dict|lookup:dataset %}"{{oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                      colors: [{% for oligo in datasets_dict|lookup:dataset %}"{{color_dict|lookup:oligo}}"{% if not forloop.last %}, {%endif%}{% endfor %}],
+                                      legendpos: "east", 
+                                      href: [{% for oligo in datasets_dict|lookup:dataset %}"oligo_{{oligo}}.html"{% if not forloop.last %}, {%endif%}{% endfor %}]});
+                {{dataset|var}}_pie.hover(function () {
+                    this.sector.stop();
+                    this.sector.scale(1.1, 1.1, this.cx, this.cy);
+
+                    if (this.label) {
+                        this.label[0].stop();
+                        this.label[0].attr({ {{ dataset|var }}: 7.5 });
+                        this.label[1].attr({ "font-weight": 800 });
+                    }
+                }, function () {
+                    this.sector.animate({ transform: 's1 1 ' + this.cx + ' ' + this.cy }, 500, "bounce");
+
+                    if (this.label) {
+                        this.label[0].animate({ {{ dataset|var }}: 5 }, 500, "bounce");
+                        this.label[1].attr({ "font-weight": 400 });
+                    }
+                });
+{% if forloop.last %}
+        };
+    </script>
+{% endif %}
+{% endfor %}
+
