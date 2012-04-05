@@ -102,6 +102,12 @@ h1 {
     text-align: left;
 }
 
+#graph {
+  width: 1200px;
+  height: 500px;
+  margin-left: 140px;
+}
+
 .content {
     margin-left: 140px;
 }

@@ -8,6 +8,26 @@
 
     <script type="text/javascript" src="jquery-1.7.1.js"></script>
     <script type="text/javascript" src="popup.js"></script>
+    <script type="text/javascript" src="raphael.js"></script>
+    <script type="text/javascript" src="morris.js"></script>
+    <script>
+        window.onload = function () {
+            var day_data = [
+                {% for dataset in distribution %}
+                {"abundance": "{{ dataset }}", {% for i in distribution|lookup:dataset|length|mklist %}"{{i}}": {{distribution|lookup:dataset|get_list_item:i}}{%if not forloop.last %}, {% endif %}{%endfor%}},
+                {% endfor %}
+            ];
+            Morris.Line({
+              element: 'graph',
+              data: day_data,
+              xkey: 'abundance',
+              ykeys: [{% for i in distribution|values|get_list_item:0|length|mklist %}'{{i}}'{%if not forloop.last %}, {% endif %}{%endfor%}],
+              labels: [{% for i in distribution|values|get_list_item:0|length|mklist %}'Unique Sequence #{{i}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              lineColors: [{% for i in distribution|values|get_list_item:0|length|mklist %}'{{color_dict|lookup:oligo}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              parseTime: false,
+            });
+        };
+    </script>
 </head>
 
 <body >
@@ -21,6 +41,11 @@
 <div class="smallhead">Unique Sequences Curve</div>
 <p class="smallheadtitle">» Abundance curve of unique sequences within oligotype along with entropy values associated with these new set of alignments.
 <p class="content"><a href="{{ oligo_reps_dict.imgs|lookup:oligo }}"><img src="{{ oligo_reps_dict.imgs|lookup:oligo }}" style="width:1200px" border="0"></a>
+
+
+<div class="smallhead">Distribution Among Datasets</div>
+<p class="smallheadtitle">» Graph below shows the distribution of unique sequences concealed with {{ oligo }} among all datasets.
+<div id="graph"></div>
 
 
 <div class="smallhead">BLAST Hits</div>

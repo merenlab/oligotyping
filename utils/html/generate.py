@@ -24,16 +24,15 @@ from utils.utils import get_datasets_dict_from_environment_file
 from utils.blast_interface import get_blast_results_dict
 from error import HTMLError
 
+
 try:
     from django.template.loader import render_to_string
     from django.conf import settings
+    from django.template.defaultfilters import register
 except ImportError:
     raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
 
 
-# a snippet from StackOverflow for dict lookups in
-# templates
-from django.template.defaultfilters import register
 @register.filter(name='lookup')
 def lookup(dict, index):
     if index in dict:
@@ -49,6 +48,10 @@ def get_list_item(l, index):
 @register.filter(name='sorted_by_value') 
 def sorted_by_value(d):
     return sorted(d, key=d.get, reverse=True)
+
+@register.filter(name='values') 
+def values(d):
+    return d.values()
 
 @register.filter(name='mod') 
 def mod(value, arg):
@@ -71,7 +74,7 @@ def sumvals(arg):
     return pretty_print(sum(arg.values()))
 
 @register.filter(name='mklist') 
-def celangaps(arg):
+def mklist(arg):
     return range(0, int(arg))
 
 absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
@@ -96,6 +99,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     shutil.copy2(os.path.join(absolute, 'scripts/g.pie.js'), os.path.join(html_output_directory, 'g.pie.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/g.raphael.js'), os.path.join(html_output_directory, 'g.raphael.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/raphael.js'), os.path.join(html_output_directory, 'raphael.js'))
+    shutil.copy2(os.path.join(absolute, 'scripts/morris.js'), os.path.join(html_output_directory, 'morris.js'))
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
@@ -149,6 +153,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         for oligo in html_dict['oligos']:
             tmp_dict = copy.deepcopy(html_dict)
             tmp_dict['oligo'] = oligo
+            tmp_dict['distribution'] = get_oligo_distribution_dict(oligo, html_dict)
             oligo_page = os.path.join(html_output_directory, 'oligo_%s.html' % oligo)
             rendered = render_to_string('oligo.tmpl', tmp_dict)
     
@@ -175,6 +180,22 @@ def get_oligos_list(oligos_file_path):
     while fasta.next():
         oligos_list.append(fasta.seq)
     return oligos_list
+
+def get_oligo_distribution_dict(oligo, html_dict):
+    rep_dir = html_dict['output_directory_for_reps']
+    oligo_distribution_dict = cPickle.load(open(os.path.join(rep_dir, '%.5d_'\
+        % html_dict['oligos'].index(oligo) + oligo + '_unique_distribution.cPickle')))
+    
+    ret_dict = {}
+
+    for dataset in oligo_distribution_dict:
+        ret_dict[dataset] = [0] * 20
+        for i in range(0, 20):
+            if oligo_distribution_dict[dataset].has_key(i + 1):
+                ret_dict[dataset][i] = oligo_distribution_dict[dataset][i + 1]
+
+    return ret_dict
+
 
 def get_oligo_reps_dict(html_dict, html_output_directory):
     oligos, rep_dir = html_dict['oligos'], html_dict['output_directory_for_reps']
