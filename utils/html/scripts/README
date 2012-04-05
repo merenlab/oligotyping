@@ -1,0 +1,26 @@
+Here are some info about the scripts in this directory.
+
+
+jquery.js   : jQuery is a fast and concise JavaScript Library that simplifies HTML
+              document traversing, event handling, animating, and Ajax interactions
+              for rapid web development. Downloaded from http://jquery.com/.
+
+raphael.js  : Raphaël is a small JavaScript library that simplifies the amount of
+              work to generate vector graphics on the web. Downloaded from
+              http://raphaeljs.com/. Copyright © 2008 Dmitry Baranovskiy. See
+              raphael.LICENSE for permission to copy and redistribute.
+
+g.raphael.js: Collection of small libraries work with Raphaël graphics library.
+              Copyright © 2008 Dmitry Baranovskiy. Downloaded from http://g.raphaeljs.com/.
+              See raphael.LICENSE for permission to copy and redistribute.
+
+g.pie.js    : Same as g.raphael.js
+
+morris.js   : A lightweight drawing library that uses jQuery and Raphaël. Downloaded from
+              http://oesmith.github.com/morris.js/. Copyright © Olly Smith 2012. See
+              morris.LICENSE for permission to copy and redistribute.
+
+popup.js    : Code for link-hover text boxes by Nicolas Honing. Downloaded from
+              http://nicolashoening.de?twocents&nr=8.
+
+Thanks to all open source developers who made these tools available with open licenses.
