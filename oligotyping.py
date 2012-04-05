@@ -468,19 +468,36 @@ class Oligotyping:
 
             fasta_file_path = fasta_files_dict[oligo]['path']
             fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
-            
+          
+            # this dict is going to hold the information of how unique sequences within an oligotype
+            # is distributed among datasets:
+            distribution_among_datasets = {}
+
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
                                                                      % (oligo,
                                                                         fasta.pos,
                                                                         len(fasta.ids)))
                 unique_files_dict[oligo]['file'].write('%s\n' % fasta.seq)
-        
+
+                for dataset_id in fasta.ids:
+                    dataset_name = self.dataset_name_from_defline(dataset_id)
+                    if not distribution_among_datasets.has_key(dataset_name):
+                        distribution_among_datasets[dataset_name] = {}
+                    d = distribution_among_datasets[dataset_name]
+                    if not d.has_key(fasta.pos):
+                        d[fasta.pos] = 1
+                    else:
+                        d[fasta.pos] += 1
+                
             fasta.close()
             unique_files_dict[oligo]['file'].close()
 
+            unique_fasta_path = unique_files_dict[oligo]['path']
+            distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
+            cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
+
             if (not self.quick) and (not self.no_figures):
-                unique_fasta_path = unique_files_dict[oligo]['path']
                 entropy_file_path = unique_fasta_path + '_entropy'
                 color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
 
