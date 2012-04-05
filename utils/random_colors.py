@@ -28,7 +28,7 @@ def get_hex_color(rgba_color):
     for t in rgba_color[0:3]:
         h = str(hex(int(t * 255)))[2:]
         hex_color += '00' if h == '0' else h
-    return hex_color
+    return hex_color + '0' * (7 - len(hex_color))
 
 def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
 
