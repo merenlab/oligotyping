@@ -67,7 +67,7 @@ def sorted_by_value(d):
     return sorted(d, key=d.get, reverse=True)
 
 @register.filter(name='get_colors') 
-def sorted_by_value(number_of_colors):
+def get_colors(number_of_colors):
     return get_list_of_colors(number_of_colors, colormap="Dark2")
 
 @register.filter(name='values') 
