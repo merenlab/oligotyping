@@ -12,18 +12,34 @@
     <script type="text/javascript" src="morris.js"></script>
     <script>
         window.onload = function () {
-            var day_data = [
+
+            var counts = [
                 {% for dataset in distribution %}
                 {"abundance": "{{ dataset }}", {% for i in distribution|lookup:dataset|length|mklist %}"{{i}}": {{distribution|lookup:dataset|get_list_item:i}}{%if not forloop.last %}, {% endif %}{%endfor%}},
                 {% endfor %}
             ];
             Morris.Line({
-              element: 'graph',
-              data: day_data,
+              element: 'counts',
+              data: counts,
               xkey: 'abundance',
               ykeys: [{% for i in distribution|values|get_list_item:0|length|mklist %}'{{i}}'{%if not forloop.last %}, {% endif %}{%endfor%}],
-              labels: [{% for i in distribution|values|get_list_item:0|length|mklist %}'Unique Sequence #{{i}}'{%if not forloop.last %},{% endif %}{%endfor%}],
-              lineColors: [{% for i in distribution|values|get_list_item:0|length|mklist %}'{{color_dict|lookup:oligo}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              labels: [{% for i in distribution|values|get_list_item:0|length|mklist %}'#{{i|add:"1"}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              lineColors: [{% for color in distribution|values|get_list_item:0|length|get_colors %}'{{color}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              parseTime: false,
+            });
+
+            var percents = [
+                {% for dataset in distribution %}
+                {"abundance": "{{ dataset }}", {% for i in distribution|lookup:dataset|length|mklist %}"{{i}}": {{distribution|lookup:dataset|percentify|get_list_item:i|presicion:1}}{%if not forloop.last %}, {% endif %}{%endfor%}},
+                {% endfor %}
+            ];
+            Morris.Line({
+              element: 'percents',
+              data: percents,
+              xkey: 'abundance',
+              ykeys: [{% for i in distribution|values|get_list_item:0|length|mklist %}'{{i}}'{%if not forloop.last %}, {% endif %}{%endfor%}],
+              labels: [{% for i in distribution|values|get_list_item:0|length|mklist %}'#{{i|add:"1"}}'{%if not forloop.last %},{% endif %}{%endfor%}],
+              lineColors: [{% for color in distribution|values|get_list_item:0|length|get_colors %}'{{color}}'{%if not forloop.last %},{% endif %}{%endfor%}],
               parseTime: false,
             });
         };
@@ -45,8 +61,30 @@
 
 <div class="smallhead">Distribution Among Datasets</div>
 <p class="smallheadtitle">» Graph below shows the distribution of unique sequences concealed with {{ oligo }} among all datasets.
-<div id="graph"></div>
+<p class="content">Actual Counts:
+<div id="counts"></div>
+<p class="content">Percents:
+<div id="percents"></div>
 
+
+<div class="smallhead">Sequences</div>
+<p class="smallheadtitle">» First 20 Unique sequences
+    <div class="wrap">
+        <div id='sequences' style="height: auto;"> 
+            <div style="width: {% if alignment_length|multiply:8 > 800 %}{{alignment_length|multiply:8}}{% else %}800{%endif%}px; position: relative;">
+                     <p><span class="frequency">&nbsp;</span><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> b <strong>{{oligos.0}}</strong> {{ oligo_reps_dict.component_references|lookup:oligo|safe }} </span>
+                {% for i in oligo_reps_dict.fancy_seqs|lookup:oligo|length|mklist %}
+                    <p><span class="frequency">{{ oligo_reps_dict.frequency|lookup:oligo|get_list_item:i }}</span><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}_{{i}}%0d{{ oligo_reps_dict.clear_seqs|lookup:oligo|get_list_item:i|cleangaps }}">b</a></em> {{ oligo_reps_dict.fancy_seqs|lookup:oligo|get_list_item:i|safe }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+<div class="footer"><p>For questions and comments: meren / mbl.edu</div>
+</body>
+</html>
 
 <div class="smallhead">BLAST Hits</div>
 <p class="smallheadtitle">» Alignments obtained for the most frequent sequence of {{ oligo }} are shown below.
@@ -73,24 +111,5 @@
     <p><em>BLAST results are missing.</em>
 {% endif %}
 </div>
-
-<div class="smallhead">Sequences</div>
-<p class="smallheadtitle">» First 20 Unique sequences
-    <div class="wrap">
-        <div id='sequences' style="height: auto;"> 
-            <div style="width: {% if alignment_length|multiply:8 > 800 %}{{alignment_length|multiply:8}}{% else %}800{%endif%}px; position: relative;">
-                     <p><span class="frequency">&nbsp;</span><span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span> <span style="color: white;"> b <strong>{{oligos.0}}</strong> {{ oligo_reps_dict.component_references|lookup:oligo|safe }} </span>
-                {% for i in oligo_reps_dict.fancy_seqs|lookup:oligo|length|mklist %}
-                    <p><span class="frequency">{{ oligo_reps_dict.frequency|lookup:oligo|get_list_item:i }}</span><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}_{{i}}%0d{{ oligo_reps_dict.clear_seqs|lookup:oligo|get_list_item:i|cleangaps }}">b</a></em> {{ oligo_reps_dict.fancy_seqs|lookup:oligo|get_list_item:i|safe }}</span>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-</div>
-</div>
-<div class="footer"><p>For questions and comments: meren / mbl.edu</div>
-</body>
-</html>
 
 

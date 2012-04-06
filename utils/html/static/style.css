@@ -102,7 +102,14 @@ h1 {
     text-align: left;
 }
 
-#graph {
+#counts {
+  width: 1200px;
+  height: 500px;
+  margin-left: 140px;
+}
+
+
+#percents {
   width: 1200px;
   height: 500px;
   margin-left: 140px;

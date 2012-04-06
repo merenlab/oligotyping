@@ -21,6 +21,7 @@ import lib.fastalib as u
 from utils.constants import pretty_names
 from utils.utils import pretty_print
 from utils.utils import get_datasets_dict_from_environment_file
+from utils.random_colors import get_list_of_colors
 from utils.blast_interface import get_blast_results_dict
 from error import HTMLError
 
@@ -45,9 +46,29 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
+@register.filter(name='percentify') 
+def percentify(l):
+    total = sum(l)
+    if total:
+        return [p * 100.0 / total for p in l]
+    else:
+        return [0] * len(l)
+
+@register.filter(name='presicion') 
+def presicion(value, arg):
+    if value == 0:
+        return '0.' + '0' * arg
+    else:
+        t = '%' + '.%d' % arg + 'f'
+        return t % value
+
 @register.filter(name='sorted_by_value') 
 def sorted_by_value(d):
     return sorted(d, key=d.get, reverse=True)
+
+@register.filter(name='get_colors') 
+def sorted_by_value(number_of_colors):
+    return get_list_of_colors(number_of_colors, colormap="Dark2")
 
 @register.filter(name='values') 
 def values(d):
