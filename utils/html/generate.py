@@ -91,7 +91,9 @@ def celangaps(arg):
     return arg.replace('-', '')
 
 @register.filter(name='sumvals') 
-def sumvals(arg):
+def sumvals(arg, clean = None):
+    if clean:
+        return sum(arg.values())
     return pretty_print(sum(arg.values()))
 
 @register.filter(name='mklist') 
