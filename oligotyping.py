@@ -48,7 +48,7 @@ class Oligotyping:
         self.output_directory = None
         self.number_of_auto_components = 5
         self.min_number_of_datasets = 5
-        self.min_percent_abundance = 1.0
+        self.min_percent_abundance = 0.0
         self.dataset_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
 
@@ -62,6 +62,7 @@ class Oligotyping:
             self.limit_oligotypes_to = args.limit_oligotypes_to
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
+            self.min_actual_abundance = args.min_actual_abundance
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.output_directory = args.output_directory
             self.dataset_name_separator = args.dataset_name_separator
@@ -125,13 +126,15 @@ class Oligotyping:
 
     def get_prefix(self):
         if self.selected_components:
-            return 'sC%d-S%d-A%.1f' % (len(self.selected_components),
+            return 'sc%d-s%d-a%.1f-A%d' % (len(self.selected_components),
                                        self.min_number_of_datasets,
-                                       self.min_percent_abundance)
+                                       self.min_percent_abundance,
+                                       self.min_actual_abundance)
         else:
-            return 'C%d-S%d-A%.1f' % (self.number_of_auto_components,
+            return 'c%d-s%d-a%.1f-A%d' % (self.number_of_auto_components,
                                       self.min_number_of_datasets,
-                                      self.min_percent_abundance)
+                                      self.min_percent_abundance,
+                                      self.min_actual_abundance)
 
 
     def generate_output_destination(self, postfix, directory = False):
@@ -185,6 +188,7 @@ class Oligotyping:
         self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.info('s', self.min_number_of_datasets)
         self.info('a', self.min_percent_abundance)
+        self.info('A', self.min_actual_abundance)
         self.info('limit_oligotypes_to', self.limit_oligotypes_to)
         
         if self.number_of_auto_components:
@@ -251,23 +255,24 @@ class Oligotyping:
         self.info('num_unique_oligos', pretty_print(len(oligos_set)))
         
         # count oligo abundance
-        oligo_abundance = []
+        oligo_dataset_abundance = []
         for oligo in oligos_set:
             count = 0
             for dataset in self.datasets:
                 if oligo in self.datasets_dict[dataset].keys():
                     count += 1
-            oligo_abundance.append((count, oligo),)
-        oligo_abundance.sort()
+            oligo_dataset_abundance.append((count, oligo),)
+        oligo_dataset_abundance.sort()
 
-        # eliminate singleton/doubleton oligos (any oligo required to appear in at least
-        # 'self.min_number_of_datasets' datasets)
+        # eliminate oligos based on the number of datasets they appear
+        # (any oligo required to appear in at least 'self.min_number_of_datasets'
+        # datasets)
         non_singleton_oligos = []
-        for tpl in oligo_abundance:
+        for tpl in oligo_dataset_abundance:
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
         self.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
-        
+
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one dataset)
         SUM = lambda dataset: sum([self.datasets_dict[dataset][o] for o in non_singleton_oligos \
@@ -293,9 +298,19 @@ class Oligotyping:
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
 
+        self.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
+        
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
-        self.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
+        # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all datasets
+        # should should be more than 'self.min_actual_abundance'.
+        abundant_oligos_copy = copy.deepcopy(self.abundant_oligos)
+        for oligo in abundant_oligos_copy:
+            if self.min_actual_abundance > sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)]):
+                self.abundant_oligos.remove(oligo)
+
+        self.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
+
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
         if self.limit_oligotypes_to:
@@ -580,12 +595,17 @@ if __name__ == '__main__':
                                 on the number of datasets included in the analysis. If there are 10 datasets,\
                                 3 might be a good choice, if there are 5 datasets, 1 would be a better one\
                                 depending on the study.')
-    parser.add_argument('-a', '--min-percent-abundance', type=float, required=True,
+    parser.add_argument('-a', '--min-percent-abundance', type=float, default=0.0,
                         help = 'Minimum percent abundance of an oligotype in at least one dataset. The default\
-                                is "1.0". Just like --min-number-of-datasets parameter, this parameter too is\
+                                is "0.0". Just like --min-number-of-datasets parameter, this parameter too is\
                                 to eliminate oligotypes that are formed by sequencing errors occured at the\
                                 component of interest. The value should be decided based on the average number\
                                 of sequences every dataset has.')
+    parser.add_argument('-A', '--min-actual-abundance', type=int, default=0,
+                        help = 'Minimum total abundance of an oligotype in all datastes. The default\
+                                is "0". If the total abundance of an oligotype is smaller than the number given\
+                                with this parameter, oligotype would be eliminated and not included in downstream\
+                                analyses.')
     parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
