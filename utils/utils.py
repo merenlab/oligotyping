@@ -12,6 +12,9 @@
 import os
 import sys
 import shutil
+import fcntl
+import termios 
+import struct
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from lib import fastalib as u
@@ -70,3 +73,27 @@ def trim_uninformative_columns_from_alignment(input_file_path):
 
     # overwrite the original file with trimmed content
     shutil.move(temp_file_path, input_file_path)
+
+def get_terminal_size():
+    """function was taken from http://stackoverflow.com/a/566752"""
+    def ioctl_GWINSZ(fd):
+        try:
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ,
+        '1234'))
+        except:
+            return None
+        return cr
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            cr = (25, 80)
+    return int(cr[1]), int(cr[0])
