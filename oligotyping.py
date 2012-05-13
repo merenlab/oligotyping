@@ -27,6 +27,7 @@ from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
 from utils.utils import pretty_print
+from utils.utils import get_terminal_size
 
 # FIXME: test whether Biopython is installed or not here.
 from utils.blast_interface import blast_search
@@ -147,6 +148,16 @@ class Oligotyping:
 
         return return_path
 
+
+    def progress(self, msg = None, clear = False):
+        if clear and (not self.no_display):
+            sys.stdout.write('\r')
+            sys.stdout.flush()
+        elif msg and (not self.no_display):
+            sys.stdout.write('\r' + ' ' * get_terminal_size()[0])
+            sys.stdout.write('\r%s' % msg)
+            sys.stdout.flush()
+    
 
     def info(self, key, value):
         if pretty_names.has_key(key):
@@ -431,6 +442,7 @@ class Oligotyping:
         cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
         self.info('viamics_datasets_dict_file_path', viamics_datasets_dict_file_path)
 
+
     def _generate_representative_sequences(self):
         # create a fasta file with a representative full length consensus sequence for every oligotype
 
@@ -473,6 +485,9 @@ class Oligotyping:
 
         self.fasta.reset()
         while self.fasta.next():
+            if self.fasta.pos % 1000 == 0:
+                self.progress('[RepSeq] Generating Individual FASTA Files: %.2f%%' \
+                                                % (self.fasta.pos * 100 / self.fasta.total_seq))
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
                 fasta_files_dict[oligo]['file'].write('>%s\n' % (self.fasta.id))
@@ -487,6 +502,9 @@ class Oligotyping:
             # this dict is going to hold the information of how unique sequences within an oligotype
             # is distributed among datasets:
             distribution_among_datasets = {}
+
+            self.progress('[RepSeq] Working on "%s" (%d of %d) :: Unique reads' \
+                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
 
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
@@ -512,17 +530,21 @@ class Oligotyping:
             distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
             cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
 
+            if (not self.quick) and (not self.skip_blast_search):
+                # perform BLAST search and store results
+                self.progress('[RepSeq] Working on "%s" (%d of %d) :: Blast search' \
+                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
+                oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
+                unique_fasta = u.SequenceSource(unique_fasta_path)
+                unique_fasta.next()
+                blast_search(unique_fasta.seq, oligo_representative_blast_output)
+                unique_fasta.close()
+
             if (not self.quick) and (not self.no_figures):
+                self.progress('[RepSeq] Working on "%s" (%d of %d) :: Generating figures' \
+                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
                 entropy_file_path = unique_fasta_path + '_entropy'
                 color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
-
-                if (not self.skip_blast_search):
-                    # perform BLAST search and store results
-                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
-                    unique_fasta = u.SequenceSource(unique_fasta_path)
-                    unique_fasta.next()
-                    blast_search(unique_fasta.seq, oligo_representative_blast_output)
-                    unique_fasta.close()
 
                 # generate entropy output at 'entropy_file_path' along with the image
                 vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
@@ -539,6 +561,7 @@ class Oligotyping:
                     color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
 
                 cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
+                self.progress(clear = True)
         
         self.info('output_directory_for_reps', output_directory_for_reps) 
 
@@ -573,6 +596,7 @@ class Oligotyping:
         index_page = generate_html_output(self.run_info_dict, html_output_directory = output_directory_for_html)
         if not self.no_display:
             sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
+
 
 if __name__ == '__main__':
     import argparse
