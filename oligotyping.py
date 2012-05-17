@@ -532,12 +532,29 @@ class Oligotyping:
 
             if (not self.quick) and (not self.skip_blast_search):
                 # perform BLAST search and store results
-                self.progress('[RepSeq] Working on "%s" (%d of %d) :: Blast search' \
-                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
                 oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
                 unique_fasta = u.SequenceSource(unique_fasta_path)
                 unique_fasta.next()
-                blast_search(unique_fasta.seq, oligo_representative_blast_output)
+
+                # FIXME: this value should be paramaterized
+                max_blast_attempt = 3
+
+                def blast_search_wrapper(seq, blast_output):
+                    try:
+                        blast_search(seq, blast_output)
+                        return True
+                    except:
+                        return False
+
+                for blast_attempt in range(0, max_blast_attempt):
+                    self.progress('[RepSeq] Working on "%s" (%d of %d) :: Blast search (trial: %d)' \
+                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos), blast_attempt))
+                        
+                    if blast_search_wrapper(unique_fasta.seq, oligo_representative_blast_output):
+                        break
+                    else:
+                        continue
+
                 unique_fasta.close()
 
             if (not self.quick) and (not self.no_figures):
