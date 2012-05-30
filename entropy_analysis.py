@@ -17,8 +17,7 @@ import cPickle
 from scipy import log2 as log
 
 import lib.fastalib as u
-from utils.utils import get_quals_dict
-from utils.utils import get_qual_stats_dict
+from utils.utils import process_command_line_args_for_quality_files
 from utils.random_colors import get_list_of_colors
 
 class EntropyError(Exception):
@@ -196,26 +195,7 @@ if __name__ == '__main__':
 
 
     # process qual scores if provided
-    if args.qual_scores_file:
-        print 'generating quals dict..'
-        quals_dict = get_quals_dict(args.qual_scores_file,\
-                                    args.alignment,\
-                                    output_file_path = args.qual_scores_file + '.cPickle')
-        print 'computing qual stats dict file from quals dict..'
-        qual_stats_dict = get_qual_stats_dict(quals_dict,\
-                                              output_file_path = args.qual_scores_file + '.STATS.cPickle')
-    elif args.qual_scores_dict:
-        print 'reading quals dict..'
-        quals_dict = cPickle.load(open(args.qual_scores_dict))
-        print 'computing qual stats dict file from quals dict..'
-        qual_stats_dict = get_qual_stats_dict(quals_dict,\
-                            output_file_path = args.qual_scores_dict.split('.cPickle')[0] + '.STATS.cPickle')
-    elif args.qual_stats_dict:
-        print 'reading qual stats dict..'
-        qual_stats_dict = cPickle.load(open(args.qual_stats_dict))
-    else:
-        qual_stats_dict = None
-        
+    qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')       
 
     entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY')
     visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick, no_display = args.no_display, qual_stats_dict = qual_stats_dict)

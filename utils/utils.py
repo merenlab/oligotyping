@@ -82,6 +82,54 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
 
     return quals_aligned_dict
 
+def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict'):
+    """this function computes and returns the dictionary of interest (indicated
+       with '_return' parameter if qual score files were provided via the command
+       line interface.
+       
+       _return value expected to be either 'qual_stats_dict', or 'quals_dict'.
+
+       """
+
+    if args.qual_scores_file:
+        sys.stderr.write('* Generating quality scores dictionary..\n')
+        quals_dict = get_quals_dict(args.qual_scores_file,\
+                                    args.alignment,\
+                                    output_file_path = args.qual_scores_file + '.cPickle')
+        if _return == 'quals_dict':
+            return quals_dict
+
+        sys.stderr.write('* Computing quality stats dictionary file from quality scores dictionary.\n')
+        qual_stats_dict = get_qual_stats_dict(quals_dict,\
+                                              output_file_path = args.qual_scores_file + '.STATS.cPickle')
+
+        if _return == 'qual_stats_dict':
+            return qual_stats_dict
+
+    elif args.qual_scores_dict:
+        sys.stderr.write('* Reading quality scores dictionary..\n')
+        quals_dict = cPickle.load(open(args.qual_scores_dict))
+
+        if _return == 'quals_dict':
+            return quals_dict
+
+        sys.stderr.write('* Computing qual stats dict file from quals dict..\n')
+        qual_stats_dict = get_qual_stats_dict(quals_dict,\
+                            output_file_path = args.qual_scores_dict.split('.cPickle')[0] + '.STATS.cPickle')
+
+        if _return == 'qual_stats_dict':
+            return qual_stats_dict
+
+    elif args.qual_stats_dict:
+        sys.stderr.write('* Reading qual stats dictionary..\n')
+        qual_stats_dict = cPickle.load(open(args.qual_stats_dict))
+        
+        if _return == 'qual_stats_dict':
+            return qual_stats_dict
+    
+    else:
+        return None
+ 
 
 def get_datasets_dict_from_environment_file(environment_file_path):
     datasets_dict = {}
