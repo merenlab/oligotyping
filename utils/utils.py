@@ -91,6 +91,9 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
 
        """
 
+    if _return not in ['qual_stats_dict', 'quals_dict']:
+        return None
+
     if args.qual_scores_file:
         sys.stderr.write('* Generating quality scores dictionary..\n')
         quals_dict = get_quals_dict(args.qual_scores_file,\
