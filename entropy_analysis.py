@@ -13,11 +13,13 @@
 import os
 import sys
 import operator
+import cPickle
 from scipy import log2 as log
-import numpy as np
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
-import fastalib as u
+import lib.fastalib as u
+from utils.utils import get_quals_dict
+from utils.utils import get_qual_stats_dict
+from utils.random_colors import get_list_of_colors
 
 class EntropyError(Exception):
     def __init__(self, e = None):
@@ -100,7 +102,7 @@ def get_unique_sequences(alignment, limit = 10):
     return unique_sequences
 
 
-def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False):
+def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -125,7 +127,7 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
             count = unique_sequences[current][1]
             frequency = unique_sequences[current][2]
             for i in range(0, len(unique_sequence)):
-                plt.text(i, y / 100.0, unique_sequence[i],  \
+                plt.text(i, y / 100.0, unique_sequence[i],\
                                     fontsize = 5, color = COLORS[unique_sequence[i]])
 
             percent = int(round(frequency * len(unique_sequence))) or 1
@@ -135,6 +137,21 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
             current += 1
             if current + 1 > len(unique_sequences):
                 break
+
+    if not quick and qual_stats_dict:
+        # add mean quality values in the background of the figure.
+        colors = get_list_of_colors(21, colormap="RdYlGn")
+        colors = [colors[0] for _ in range(0, 20)] + colors
+
+        max_count = max([qual_stats_dict[q]['count'] for q in qual_stats_dict if qual_stats_dict[q]])
+
+        for pos in range(0, len(entropy_values)):
+            if not qual_stats_dict[pos]:
+                continue
+
+            mean = int(round(qual_stats_dict[pos]['mean']))
+            count = qual_stats_dict[pos]['count']
+            plt.fill_between([pos, pos + 1], y1 = 0, y2 = y_maximum, color = colors[mean], alpha = (log(count) / log(max_count)) / 5)
 
     ind = np.arange(len(entropy_values))
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
@@ -154,6 +171,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Entropy Analysis')
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
                          that contains all datasets and sequences in FASTA format')
+    parser.add_argument('--qual-scores-file', metavar = 'QUAL SCORES FILE',
+                        help = 'FASTA formatted file that contains PHRED base call values\
+                         for each read in the alignment file')
+    parser.add_argument('--qual-scores-dict', metavar = 'QUAL SCORES DICT',
+                        help = 'Previously computed and serialized dictionary that contains\
+                        PHRED base call values for each read in the alignment file. If you\
+                        provide --qual-scores-file, that file will be used to recompute this\
+                        dictionary and the file you refer with this parameter will\
+                        not be ignored')
+    parser.add_argument('--qual-stats-dict', metavar = 'QUAL STATS DICT',
+                        help = 'Previously computed and serialized dictionary that contains\
+                        PHRED base call quality score statistics for the alignment file. If\
+                        you provide --qual-scores-dict, it will be used to recompute this\
+                        dictionary and the file you refer to with this parameter will\
+                        actually not be used')
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'When set, entropy values will be shown as fast as\
                                 possible (some visualization steps will be skipped).')
@@ -161,6 +193,30 @@ if __name__ == '__main__':
                                 help = 'When set, no figures will be shown.')
 
     args = parser.parse_args()
+
+
+    # process qual scores if provided
+    if args.qual_scores_file:
+        print 'generating quals dict..'
+        quals_dict = get_quals_dict(args.qual_scores_file,\
+                                    args.alignment,\
+                                    output_file_path = args.qual_scores_file + '.cPickle')
+        print 'computing qual stats dict file from quals dict..'
+        qual_stats_dict = get_qual_stats_dict(quals_dict,\
+                                              output_file_path = args.qual_scores_file + '.STATS.cPickle')
+    elif args.qual_scores_dict:
+        print 'reading quals dict..'
+        quals_dict = cPickle.load(open(args.qual_scores_dict))
+        print 'computing qual stats dict file from quals dict..'
+        qual_stats_dict = get_qual_stats_dict(quals_dict,\
+                            output_file_path = args.qual_scores_dict.split('.cPickle')[0] + '.STATS.cPickle')
+    elif args.qual_stats_dict:
+        print 'reading qual stats dict..'
+        qual_stats_dict = cPickle.load(open(args.qual_stats_dict))
+    else:
+        qual_stats_dict = None
+        
+
     entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY')
-    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick, no_display = args.no_display)
+    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick, no_display = args.no_display, qual_stats_dict = qual_stats_dict)
 
