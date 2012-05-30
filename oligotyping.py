@@ -136,16 +136,17 @@ class Oligotyping:
 
 
     def get_prefix(self):
+        prefix = 's%d-a%.1f-A%d' % (self.min_number_of_datasets, self.min_percent_abundance, self.min_actual_abundance)
+
         if self.selected_components:
-            return 'sc%d-s%d-a%.1f-A%d' % (len(self.selected_components),
-                                       self.min_number_of_datasets,
-                                       self.min_percent_abundance,
-                                       self.min_actual_abundance)
+            prefix = 'sc%d-%s' % (len(self.selected_components), prefix)
         else:
-            return 'c%d-s%d-a%.1f-A%d' % (self.number_of_auto_components,
-                                      self.min_number_of_datasets,
-                                      self.min_percent_abundance,
-                                      self.min_actual_abundance)
+            prefix = 'c%d-%s' % (self.number_of_auto_components, prefix)
+
+        if self.quals_dict:
+            prefix = '%s-q%d' % (prefix, self.min_base_quality)
+
+        return prefix
 
 
     def generate_output_destination(self, postfix, directory = False):
