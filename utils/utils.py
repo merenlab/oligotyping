@@ -14,10 +14,73 @@ import sys
 import shutil
 import fcntl
 import termios 
+import cPickle
 import struct
+import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from lib import fastalib as u
+
+def get_qual_stats_dict(quals_dict, output_file_path = None):
+    """This function takes quals dict (which can be obtained by calling the
+       utils.utils.get_quals_dict function) and returns a dictionary that
+       simply contains the summary of quality scores per location in the
+       alignment"""
+
+    # FIXME: get_quals_dict and get_qual_stats_dict functions are only for
+    #        454 technology at this moment.
+
+    qual_stats_dict = {}
+    alignment_length = len(quals_dict[quals_dict.keys()[0]])
+    for pos in range(0, alignment_length):
+        qual_stats_dict[pos] = {}
+        quals_for_pos = [q[pos] for q in quals_dict.values() if q[pos]]
+        if not quals_for_pos:
+            qual_stats_dict[pos] = None
+            continue
+        qual_stats_dict[pos]['mean']  = np.mean(quals_for_pos)
+        qual_stats_dict[pos]['std']   = np.std(quals_for_pos)
+        qual_stats_dict[pos]['max']   = np.max(quals_for_pos)
+        qual_stats_dict[pos]['min']   = np.min(quals_for_pos)
+        qual_stats_dict[pos]['count'] = len(quals_for_pos)
+    
+    if output_file_path:
+        cPickle.dump(quals_dict, open(output_file_path, 'w'))
+
+    return qual_stats_dict
+  
+def get_quals_dict(quals_file, alignment_file, output_file_path = None):
+    """This function takes qual scores file in FASTA format, expands each
+       entry to match base calls in the corresponding aligned read in the
+       FASTA file (which requires deflines to be identical), and finally
+       returns a dictionary that contains qual scores as a list of integer
+       values that are bound to deflines as key/value pairs"""
+
+    quals_dict = {}
+    quals_aligned_dict = {}
+ 
+    alignment = u.SequenceSource(alignment_file)
+    qual = u.QualSource(quals_file)
+
+    while qual.next():
+        quals_dict[qual.id] = qual.quals_int
+
+    while alignment.next():
+        matching_qual = quals_dict[alignment.id] 
+
+        qual_aligned = []
+        for i in range(0, len(alignment.seq)):
+            if alignment.seq[i] != '-':
+                qual_aligned.append(matching_qual.pop(0))
+            else:
+                qual_aligned.append(None)
+
+        quals_aligned_dict[alignment.id] = qual_aligned
+
+    if output_file_path:
+        cPickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
+
+    return quals_aligned_dict
 
 
 def get_datasets_dict_from_environment_file(environment_file_path):
