@@ -28,6 +28,7 @@ from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.constants import pretty_names
 from utils.utils import pretty_print
 from utils.utils import get_terminal_size
+from utils.utils import process_command_line_args_for_quality_files
 
 # FIXME: test whether Biopython is installed or not here.
 from utils.blast_interface import blast_search
@@ -58,6 +59,8 @@ class Oligotyping:
         if args:
             self.entropy = Absolute(args.entropy)
             self.alignment = Absolute(args.alignment)
+            self.quals_dict = process_command_line_args_for_quality_files(args, _return = 'quals_dict')
+            self.min_base_quality = args.min_base_quality
             self.number_of_auto_components = args.number_of_auto_components
             self.selected_components = args.selected_components
             self.limit_oligotypes_to = args.limit_oligotypes_to
@@ -93,6 +96,13 @@ class Oligotyping:
                 self.selected_components = [int(c) for c in self.selected_components.split(',')]
             except:
                 raise ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
+
+        if self.min_base_quality:
+            try:
+                self.min_base_quality = int(self.min_base_quality)
+                assert(self.min_base_quality >= 0 and self.min_base_quality <= 40)
+            except:
+                raise ConfigError, "Minimum base quality must be an integer between 0 and 40."
 
         if self.limit_oligotypes_to:
             self.limit_oligotypes_to = [o.strip().upper() for o in self.limit_oligotypes_to.split(',')]
@@ -200,6 +210,8 @@ class Oligotyping:
         self.info('s', self.min_number_of_datasets)
         self.info('a', self.min_percent_abundance)
         self.info('A', self.min_actual_abundance)
+        if self.quals_dict:
+            self.info('q', self.min_base_quality)
         self.info('limit_oligotypes_to', self.limit_oligotypes_to)
         
         if self.number_of_auto_components:
@@ -239,6 +251,12 @@ class Oligotyping:
 
 
     def _construct_datasets_dict(self):
+        """This is where oligotypes are being genearted based on bases of each
+           alignment at the location of interest"""
+
+        if self.quals_dict:
+            num_reads_eliminated_due_to_min_base_quality = 0
+
         self.fasta.reset()
         while self.fasta.next():
             dataset = self.dataset_name_from_defline(self.fasta.id)
@@ -246,14 +264,40 @@ class Oligotyping:
             if not self.datasets_dict.has_key(dataset):
                 self.datasets_dict[dataset] = {}
                 self.datasets.append(dataset)
-        
-            oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
+
+            if self.quals_dict:
+                # if qual_dicts is available, each base of interest will be tested
+                # against --min-base-quality parameter to make sure that it is above
+                # the expected quality score. 
+                quality_scores = self.quals_dict[self.fasta.id]
+                quality_scores_of_bases_of_interest = [quality_scores[o] for o in self.bases_of_interest_locs]
+               
+                min_base_quality = min([base_quality for base_quality in quality_scores_of_bases_of_interest if base_quality])
+
+                if min_base_quality < self.min_base_quality:
+                    # if True, discard the read
+                    # FIXME: Discarded reads should be stored somewhere else for further analysis
+                    num_reads_eliminated_due_to_min_base_quality += 1
+                    continue
+                else:
+                    oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
+                
+            else:
+                # if quals_dict is not available, oligotypes will be generated without
+                # checking the base qualities
+                oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
         
             if self.datasets_dict[dataset].has_key(oligo):
                 self.datasets_dict[dataset][oligo] += 1
             else:
                 self.datasets_dict[dataset][oligo] = 1
+        
         self.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
+
+        if self.quals_dict:
+            self.info('num_reads_eliminated_due_to_min_base_quality', pretty_print(num_reads_eliminated_due_to_min_base_quality))
+            if self.fasta.total_seq == num_reads_eliminated_due_to_min_base_quality:
+                raise ConfigError, "All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality
 
     
     def _contrive_abundant_oligos(self):
@@ -628,6 +672,29 @@ if __name__ == '__main__':
                         help = 'Number of components to use from alignment to generate oligotypes. Default\
                                 is "5", which is a completely arbitrary value. Number of components should\
                                 be determined after a careful examination of entropy figure.')
+    parser.add_argument('--qual-scores-file', metavar = 'QUAL SCORES FILE',
+                        help = 'FASTA formatted file that contains PHRED base call values\
+                                for each read in the alignment file')
+    parser.add_argument('--qual-scores-dict', metavar = 'QUAL SCORES DICT',
+                        help = 'Previously computed and serialized dictionary that contains\
+                                PHRED base call values for each read in the alignment file. If you\
+                                provide --qual-scores-file, that file will be used to recompute this\
+                                dictionary and the file you refer with this parameter will\
+                                not be ignored')
+    parser.add_argument('--qual-stats-dict', metavar = 'QUAL STATS DICT',
+                        help = 'Previously computed and serialized dictionary that contains\
+                                PHRED base call quality score statistics for the alignment file. If\
+                                you provide --qual-scores-dict, it will be used to recompute this\
+                                dictionary and the file you refer to with this parameter will\
+                                actually not be used')
+    parser.add_argument('-q', '--min-base-quality', type=int, default=15,
+                        help = 'Minimum quality score for each base in locations of interest of a read to be\
+                                considered in an oligotype. When base quality score files are provided, this\
+                                value makes sure that low quality bases that are more likely to be the result\
+                                of random sequencing errors do not create artificial oligotypes. Any read that has\
+                                less quality score than the given value, will simply be discarded. This parameter\
+                                only in effect when --qual-scores-file or --qual-scores-dict parameters are used. \
+                                Defeault --min-base-quality is 15.')
     parser.add_argument('-C', '--selected-components', type=str, default=None,
                         help = 'Comma separated entropy components to be used during the oligotyping process.')
     parser.add_argument('-s', '--min-number-of-datasets', type=int, required=True,
