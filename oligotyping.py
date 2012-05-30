@@ -212,7 +212,8 @@ class Oligotyping:
         self.info('A', self.min_actual_abundance)
         if self.quals_dict:
             self.info('q', self.min_base_quality)
-        self.info('limit_oligotypes_to', self.limit_oligotypes_to)
+        if self.limit_oligotypes_to:
+            self.info('limit_oligotypes_to', self.limit_oligotypes_to)
         
         if self.number_of_auto_components:
             # locations of interest based on the entropy scores
@@ -399,8 +400,6 @@ class Oligotyping:
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
-            self.info('datasets_removed_after_qc', datasets_to_remove)
-        else:
             self.info('datasets_removed_after_qc', datasets_to_remove)
 
 
