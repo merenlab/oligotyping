@@ -75,7 +75,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
             sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
             sys.stderr.flush()
    
-        if set([x[i] for x in lines]) == set(['.']) or set([x[i] for x in lines]) == set(['-']):
+        if len(set([x[i] for x in lines])) == 1:
             entropy_tpls.append((i, 0.0),)
         else:
             column = "".join([x[i] for x in lines])
