@@ -35,6 +35,7 @@ COLORS = {'A': 'red',
           'N': 'white', 
           '-': '#CACACA'}
 
+
 def entropy(l):
     P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
     return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
@@ -44,7 +45,7 @@ def weighted_entropy(column, column_qual, expected_qual_score = 40):
     if column_qual:
         return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]) * (column_qual['mean'] / expected_qual_score))
     else:
-        return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
+        return entropy(column)
 
 
 def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None, weighted = False, qual_stats_dict = None):
@@ -70,27 +71,28 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
     entropy_tpls = [] 
    
-    for i in range(0, len(lines[0])):
+    for position in range(0, len(lines[0])):
         if verbose:
-            sys.stderr.write('\rPerforming entropy analysis: %d%%' % (int((i + 1) * 100.0 / len(lines[0]))))
+            sys.stderr.write('\rPerforming entropy analysis: %d%%' \
+                                % (int((position + 1) * 100.0 / len(lines[0]))))
             sys.stderr.flush()
    
-        if len(set([x[i] for x in lines])) == 1:
-            entropy_tpls.append((i, 0.0),)
+        if len(set([x[position] for x in lines])) == 1:
+            entropy_tpls.append((position, 0.0),)
         else:
-            column = "".join([x[i] for x in lines])
+            column = "".join([x[position] for x in lines])
 
             if weighted:
                 if not qual_stats_dict: 
                     raise EntropyError, "Weighted entropy is selected, but no qual stats are provided"
-                e = weighted_entropy(column, qual_stats_dict[i])
+                e = weighted_entropy(column, qual_stats_dict[position])
             else:
                 e = entropy(column)
 
             if e < 0.00001:
-                entropy_tpls.append((i, 0.0),)
+                entropy_tpls.append((position, 0.0),)
             else:
-                entropy_tpls.append((i, e),)
+                entropy_tpls.append((position, e),)
     
     if verbose:
         print
