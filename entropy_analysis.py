@@ -39,8 +39,15 @@ def entropy(l):
     P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
     return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
 
+def weighted_entropy(column, column_qual, expected_qual_score = 40):
+    P = lambda n: (len([x for x in column if x.upper() == n.upper()]) * 1.0 / len(column)) + 0.0000000000000000001
+    if column_qual:
+        return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]) * (column_qual['mean'] / expected_qual_score))
+    else:
+        return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
 
-def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None):
+
+def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None, weighted = False, qual_stats_dict = None):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -72,7 +79,14 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
             entropy_tpls.append((i, 0.0),)
         else:
             column = "".join([x[i] for x in lines])
-            e = entropy(column)
+
+            if weighted:
+                if not qual_stats_dict: 
+                    raise EntropyError, "Weighted entropy is selected, but no qual stats are provided"
+                e = weighted_entropy(column, qual_stats_dict[i])
+            else:
+                e = entropy(column)
+
             if e < 0.00001:
                 entropy_tpls.append((i, 0.0),)
             else:
@@ -101,7 +115,7 @@ def get_unique_sequences(alignment, limit = 10):
     return unique_sequences
 
 
-def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None):
+def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None, weighted = False):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -156,8 +170,11 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
     ax.set_xlim([0, len(unique_sequences[0][0])])
     ax.set_ylim([0, y_maximum])
-    plt.xlabel('Nucleotide Position')
-    plt.ylabel('Shannon Entropy')
+    plt.xlabel('Position in the Alignment')
+    if weighted:
+        plt.ylabel('Weighted Shannon Entropy')
+    else:
+        plt.ylabel('Shannon Entropy')
     plt.savefig(output_file)
 
     if not no_display:
@@ -185,6 +202,9 @@ if __name__ == '__main__':
                         you provide --qual-scores-dict, it will be used to recompute this\
                         dictionary and the file you refer to with this parameter will\
                         actually not be used')
+    parser.add_argument('--weighted', action = 'store_true', default = False,
+                        help = 'When set, entropy computation per column will use\
+                        mean quality score for each column.')
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'When set, entropy values will be shown as fast as\
                                 possible (some visualization steps will be skipped).')
@@ -197,6 +217,16 @@ if __name__ == '__main__':
     # process qual scores if provided
     qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')       
 
-    entropy_values = entropy_analysis(args.alignment, output_file = args.alignment + '-ENTROPY')
-    visualize_distribution(args.alignment, entropy_values, output_file = args.alignment + '-ENTROPY.png', quick = args.quick, no_display = args.no_display, qual_stats_dict = qual_stats_dict)
+    entropy_values = entropy_analysis(args.alignment,
+                                      output_file = args.alignment + '-ENTROPY',
+                                      weighted = args.weighted,
+                                      qual_stats_dict = qual_stats_dict)
+
+    visualize_distribution(args.alignment,
+                           entropy_values,
+                           output_file = args.alignment + '-ENTROPY.png',
+                           quick = args.quick,
+                           no_display = args.no_display,
+                           qual_stats_dict = qual_stats_dict,
+                           weighted = args.weighted)
 
