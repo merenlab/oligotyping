@@ -113,7 +113,7 @@ class Oligotyping:
                 raise ConfigError, "Oligotypes defined by --limit-oligotypes parameter seems to have ambiguours characters."
         
         if not self.output_directory:
-             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project, self.get_prefix()]))
+             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
         
         if not os.path.exists(self.output_directory):
             try:
