@@ -142,7 +142,7 @@ if __name__ == '__main__':
     for oligotype, color in [line.strip().split('\t') for line in open(args.colors_file).readlines()]:
         colors_dict[oligotype] = color
 
-    oligotype_distribution_stack_bar(datasets_dict, colors_dict, legend = args.legend, project_title = args.project_title)
+    oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title)
 
 
 
