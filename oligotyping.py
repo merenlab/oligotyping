@@ -203,7 +203,7 @@ class Oligotyping:
         self.info('entropy', self.entropy)
         self.info('output_directory', self.output_directory)
         self.info('info_file_path', self.info_file_path)
-        self.info('cmd_line', ' '.join(sys.argv))
+        self.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
         self.info('total_seq', pretty_print(self.fasta.total_seq))
         self.info('alignment_length', pretty_print(self.alignment_length))
         self.info('number_of_auto_components', self.number_of_auto_components or 0)
