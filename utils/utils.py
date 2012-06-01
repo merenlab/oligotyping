@@ -33,6 +33,10 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     qual_stats_dict = {}
     alignment_length = len(quals_dict[quals_dict.keys()[0]])
     for pos in range(0, alignment_length):
+
+        sys.stderr.write('\r    Qual stats are being computed: %d of %d' % (pos + 1, alignment_length))
+        sys.stderr.flush()
+
         qual_stats_dict[pos] = {}
         quals_for_pos = [q[pos] for q in quals_dict.values() if q[pos]]
         if not quals_for_pos:
@@ -47,6 +51,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     if output_file_path:
         cPickle.dump(quals_dict, open(output_file_path, 'w'))
 
+    sys.stderr.write('\n')
     return qual_stats_dict
   
 def get_quals_dict(quals_file, alignment_file, output_file_path = None):
@@ -63,9 +68,17 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
     qual = u.QualSource(quals_file)
 
     while qual.next():
+        if qual.pos % 1000 == 0:
+            sys.stderr.write('\r    Quals dict is being generated. Step 1 of 2; pos: %s' % (pretty_print(qual.pos)))
+            sys.stderr.flush()
         quals_dict[qual.id] = qual.quals_int
+    sys.stderr.write('\n')
 
     while alignment.next():
+        if alignment.pos % 1000 == 0:
+            sys.stderr.write('\r    Quals dict is being generated. Step 2 of 2; pos: %s' % (pretty_print(alignment.pos)))
+            sys.stderr.flush()
+
         matching_qual = quals_dict[alignment.id] 
 
         qual_aligned = []
@@ -76,6 +89,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
                 qual_aligned.append(None)
 
         quals_aligned_dict[alignment.id] = qual_aligned
+    sys.stderr.write('\n')
 
     if output_file_path:
         cPickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
