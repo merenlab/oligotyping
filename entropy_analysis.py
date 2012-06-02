@@ -219,14 +219,17 @@ if __name__ == '__main__':
     # process qual scores if provided
     qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')       
 
+    output_text_path = args.alignment + '%s-ENTROPY' % ('-WEIGHTED' if args.weighted else '')
+    output_img_path = args.alignment + '%s-ENTROPY.png' % ('-WEIGHTED' if args.weighted else '')
+
     entropy_values = entropy_analysis(args.alignment,
-                                      output_file = args.alignment + '-ENTROPY',
+                                      output_file = output_text_path,
                                       weighted = args.weighted,
                                       qual_stats_dict = qual_stats_dict)
 
     visualize_distribution(args.alignment,
                            entropy_values,
-                           output_file = args.alignment + '-ENTROPY.png',
+                           output_file = output_img_path,
                            quick = args.quick,
                            no_display = args.no_display,
                            qual_stats_dict = qual_stats_dict,
