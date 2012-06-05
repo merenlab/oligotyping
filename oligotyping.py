@@ -421,10 +421,10 @@ class Oligotyping:
         f = open(oligos_nexus_file_path, 'w')
         f.write("""begin data;
             dimensions ntax=%d nchar=%d;
-            format datatype=dna interleave=no;
+            format datatype=dna interleave=no gap=-;
             matrix\n""" % (len(self.abundant_oligos), len(self.abundant_oligos[0])))
         for oligo in self.abundant_oligos:
-            f.write('    %.20s %s\n' % (oligo, oligo))
+            f.write('    %.40s %s\n' % (oligo, oligo))
         f.write('    ;\n')
         f.write('end;\n')
         f.close()
