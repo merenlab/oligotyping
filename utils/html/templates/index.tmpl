@@ -26,9 +26,10 @@
 
 
 <div class="smallhead">General</div>
-<p class="smallheadtitle">» General information about the run
+<br />
+<p class="smallheadtitle">» Given Parameters
 <div class="info_table">
-<table>
+<table width=90%>
     {% if number_of_auto_components %}
     <tr><td id="l">{{pretty_names.number_of_auto_components}}</td><td id="r">{{number_of_auto_components}}</td></tr>
     {% else %}
@@ -37,22 +38,45 @@
 
     <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
     <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
-    <tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.A}}</td><td id="r"> {{A}}</td></tr>
+    <tr><td id="l">{{pretty_names.quals_provided}}</td><td id="r"> {{quals_provided}}</td></tr>
+    {% if quals_provided %}
+    <tr><td id="l">{{pretty_names.q}}</td><td id="r"> Q{{q}}</td></tr>
+    {% endif %}
+</table>
+</div>
+
+<p class="smallheadtitle">» Components used for Oligotyping
+<div class="info_table">
+<table width=90%>
     <tr><td id="l">{{pretty_names.bases_of_interest_locs}}</td><td id="r"> {{bases_of_interest_locs}}</td></tr>
+</table>
+</div>
+
+<p class="smallheadtitle">» Quality filtering results
+<div class="info_table">
+<table width=90%>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    {% if quals_provided %}
+    <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality}}</td></tr>
+    {% endif %}
     <tr><td colspan=2>&nbsp;</td></tr>
     <tr><td id="l">{{pretty_names.num_unique_oligos}}</td><td id="r"> {{num_unique_oligos}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim}}</td></tr>
     <tr><td colspan=2>&nbsp;</td></tr>
     <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
     <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
-    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} {% if datasets_removed_after_qc|length > 0 %} ({{datasets_removed_after_qc|join:", "}}){% endif %}</td></tr>
+    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
+    {% if datasets_removed_after_qc %} 
+    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
+    {% endif %}
 </table>
 </div>
 
 
-<div class="smallhead">Download</div>
+<div class="smallhead">Downloads</div>
 <p class="smallheadtitle">» Files to analyze results further via third partry applications
 <div class="info_table">
 <table>
@@ -75,7 +99,7 @@
 <p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
 
-<div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundan oligotypes with their frequencies within the dataset are shown below along with the most frequent sequence within the group of oligotype. {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something duing the BLAST search with 100% identity. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search. <br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %} {{oligo}}, {% endif %}{% endfor %}{% else %}BLAST results are missing for this analysis.{% endif %}
+<div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundant oligotypes along with their frequencies within the project are shown below. Every oligotype is followed by a representative sequence, which is the most frequent read in all reads that were collected by the given oligotype. Mouseover on an oligotype will popup a figure that shows the abundance distribution of unique sequences within the oligotype, along with the new entropy (in an ideal world there should be only one unique read with 0 entropy, but due to the random sequencing errors it is almost never the case). {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something during the BLAST search with 100% identity in NCBI's <i>nr</i> database. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search.<br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}{{oligo}},{% endif %}{% endfor %} (if you would like to limit your interest only to these oligotypes, you can use "--limit-oligotypes-to" directive from the command line interface and repeat the analysis).{% else %}BLAST results are missing for this analysis.{% endif %}
 
 {% if output_directory_for_reps %}
     <div class="wrap">
