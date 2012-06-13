@@ -21,6 +21,37 @@ import numpy as np
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from lib import fastalib as u
 
+
+def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
+    datasets = datasets_dict.keys()
+    datasets.sort()
+
+    if oligos == None:
+        oligos = []
+        map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
+        oligos = list(set(oligos))
+
+    abundant_oligos = []
+    
+    SUM = lambda dataset: sum([datasets_dict[dataset][o] for o in oligos \
+                                                if datasets_dict[dataset].has_key(o)])
+    for oligo in oligos:
+        percent_abundances = []
+
+        for dataset in datasets:
+            if datasets_dict[dataset].has_key(oligo):
+                percent_abundances.append((datasets_dict[dataset][oligo] * 100.0 / SUM(dataset),\
+                                           datasets_dict[dataset][oligo], SUM(dataset), dataset))
+
+        percent_abundances.sort(reverse = True)
+
+        for abundance_percent, abundance_count, dataset_size, dataset in percent_abundances:
+            abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
+            break
+
+    return [x[1] for x in sorted(abundant_oligos)]
+
+
 def get_qual_stats_dict(quals_dict, output_file_path = None):
     """This function takes quals dict (which can be obtained by calling the
        utils.utils.get_quals_dict function) and returns a dictionary that
