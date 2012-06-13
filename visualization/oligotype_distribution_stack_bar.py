@@ -9,10 +9,17 @@
 #
 # Please read the COPYING file.
 
+import os
+import sys
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
-import sys
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from utils.random_colors import random_colors
+from utils.utils import get_oligos_sorted_by_abundance
+
 
 def HTMLColorToRGB(colorstring):
     """ convert #RRGGBB to an (R, G, B) tuple """
@@ -30,12 +37,13 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
     datasets.sort()
    
     if oligos == None:
-        oligos = []
-        map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
-        oligos = sorted(list(set(oligos)))
+        oligos = get_oligos_sorted_by_abundance(datasets_dict, oligos)
     else:
         oligos.reverse()
-  
+ 
+    if colors_dict == None:
+        colors_dict = random_colors(copy.deepcopy(oligos))
+
     datasets_oligo_vectors = {}
     for dataset in datasets:
         vector = []
@@ -45,7 +53,6 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
             else:
                 vector.append(0)
         datasets_oligo_vectors[dataset] = vector
-    
     
     datasets_oligo_vectors_percent_normalized = {}
     for dataset in datasets:
@@ -115,10 +122,13 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Stack Bar Representation of Oligotype Distribution')
-    parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE', help = 'Oligotype distribution in datasets')
-    parser.add_argument('colors_file', metavar = 'COLORS_FILE', help = 'File that contains random colors for oligotypes')
+    parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE',\
+                        help = 'Oligotype distribution in datasets')
+    parser.add_argument('--colors-file', metavar = 'COLORS_FILE', default = None,\
+                        help = 'File that contains random colors for oligotypes')
     parser.add_argument('--output-file', default = None, metavar = 'OUTPUT_FILE',\
-                        help = 'File name for the figure to be stored. File name must end with "png", "jpg", or "tiff".')
+                        help = 'File name for the figure to be stored. File name\
+                                must end with "png", "jpg", or "tiff".')
     parser.add_argument('--legend', action = 'store_true', default = False,
                         help = 'Turn on legend')
     parser.add_argument('--project-title', default = None, metavar = 'PROJECT_TITLE',\
@@ -138,9 +148,13 @@ if __name__ == '__main__':
             datasets_dict[dataset] = {}
             datasets_dict[dataset][oligotype] = int(count)
 
-    colors_dict = {}
-    for oligotype, color in [line.strip().split('\t') for line in open(args.colors_file).readlines()]:
-        colors_dict[oligotype] = color
+
+    if args.colors_file:
+        colors_dict = {}
+        for oligotype, color in [line.strip().split('\t') for line in open(args.colors_file).readlines()]:
+            colors_dict[oligotype] = color
+    else:
+        colors_dict = None
 
     oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title)
 
