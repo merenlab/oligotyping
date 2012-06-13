@@ -273,9 +273,9 @@ class Oligotyping:
                 # against --min-base-quality parameter to make sure that it is above
                 # the expected quality score. 
                 quality_scores = self.quals_dict[self.fasta.id]
-                quality_scores_of_bases_of_interest = [quality_scores[o] for o in self.bases_of_interest_locs]
+                quality_scores_of_bases_of_interest = [quality_scores[o] for o in self.bases_of_interest_locs if not quality_scores[o] == None]
                
-                min_base_quality = min([base_quality for base_quality in quality_scores_of_bases_of_interest if base_quality])
+                min_base_quality = min([base_quality for base_quality in quality_scores_of_bases_of_interest if base_quality] or [0])
 
                 if min_base_quality < self.min_base_quality:
                     # if True, discard the read
