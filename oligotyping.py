@@ -31,7 +31,7 @@ from utils.utils import get_terminal_size
 from utils.utils import process_command_line_args_for_quality_files
 
 # FIXME: test whether Biopython is installed or not here.
-from utils.blast_interface import blast_search
+from utils.blast_interface import remote_blast_search, local_blast_search
 
 
 class ConfigError(Exception):
@@ -41,6 +41,7 @@ class ConfigError(Exception):
         return
     def __str__(self):
         return 'Config Error: %s' % self.e
+
 
 class Oligotyping:
     def __init__(self, args = None):
@@ -74,6 +75,7 @@ class Oligotyping:
             self.quick = args.quick
             self.no_figures = args.no_figures
             self.no_display = args.no_display
+            self.blast_ref_db = Absolute(args.blast_ref_db) if args.blast_ref_db else None
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
@@ -224,6 +226,9 @@ class Oligotyping:
         elif self.selected_components:
             self.bases_of_interest_locs = sorted(self.selected_components)
             self.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
+
+        if self.blast_ref_db:
+            self.info('blast_ref_db', self.blast_ref_db)
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
@@ -577,28 +582,41 @@ class Oligotyping:
 
             if (not self.quick) and (not self.skip_blast_search):
                 # perform BLAST search and store results
-                oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
                 unique_fasta = u.SequenceSource(unique_fasta_path)
                 unique_fasta.next()
+               
+                if self.blast_ref_db:
+                    # if self.blast_ref_db is set, then perform a local BLAST search 
+                    # against self.blast_ref_db
+                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.txt'
 
-                # FIXME: this value should be paramaterized
-                max_blast_attempt = 3
-
-                def blast_search_wrapper(seq, blast_output):
-                    try:
-                        blast_search(seq, blast_output)
-                        return True
-                    except:
-                        return False
-
-                for blast_attempt in range(0, max_blast_attempt):
-                    self.progress('[RepSeq] Working on "%s" (%d of %d) :: Blast search (trial: %d)' \
-                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos), blast_attempt))
+                    self.progress('[RepSeq] Working on "%s" (%d of %d) :: Local BLAST search' \
+                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
                         
-                    if blast_search_wrapper(unique_fasta.seq, oligo_representative_blast_output):
-                        break
-                    else:
-                        continue
+                    local_blast_search(unique_fasta.seq, self.blast_ref_db, oligo_representative_blast_output)
+
+                else:
+                    # if self.blast_ref_db is not set, perform a BLAST search on NCBI
+                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
+
+                    # FIXME: this value should be paramaterized
+                    max_blast_attempt = 3
+
+                    def blast_search_wrapper(seq, blast_output):
+                        try:
+                            remote_blast_search(seq, blast_output)
+                            return True
+                        except:
+                            return False
+
+                    for blast_attempt in range(0, max_blast_attempt):
+                        self.progress('[RepSeq] Working on "%s" (%d of %d) :: NCBI BLAST search (trial: %d)' \
+                            % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos), blast_attempt))
+                            
+                        if blast_search_wrapper(unique_fasta.seq, oligo_representative_blast_output):
+                            break
+                        else:
+                            continue
 
                 unique_fasta.close()
 
@@ -736,6 +754,9 @@ if __name__ == '__main__':
                                 trivial steps would be skipped to give results as soon as possible.')
     parser.add_argument('--no-figures', action = 'store_true', default = False,
                         help = 'When set, no figures will be generated or displayed.')
+    parser.add_argument('--blast-ref-db', default = None, type=str,
+                        help = 'When set, BLAST search will be done locally against the ref db (local BLAST search\
+                                requires USEARCH)')
     parser.add_argument('--skip-blast-search', action = 'store_true', default = False,
                         help = 'When set, BLAST search step will not be performed.')
     parser.add_argument('--no-display', action = 'store_true', default = False,

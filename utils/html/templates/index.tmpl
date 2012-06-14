@@ -43,6 +43,10 @@
     {% if quals_provided %}
     <tr><td id="l">{{pretty_names.q}}</td><td id="r"> Q{{q}}</td></tr>
     {% endif %}
+    {% if blast_ref_db %}
+    <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
+    {% endif %}
+            
 </table>
 </div>
 
@@ -85,6 +89,9 @@
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
+    {% if blast_ref_db and blast_ref_db_path %}
+    <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
+    {% endif %}
 </table>
 </div>
 
@@ -124,7 +131,7 @@
                         </span>
                         <span class="frequency">{{ frequency|lookup:oligo }}</span>
                         <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span>
-                        <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
+                        <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
                 {% endfor %}
             </div>
         </div>

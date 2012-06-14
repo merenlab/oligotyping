@@ -22,7 +22,7 @@ from utils.constants import pretty_names
 from utils.utils import pretty_print
 from utils.utils import get_datasets_dict_from_environment_file
 from utils.random_colors import get_list_of_colors
-from utils.blast_interface import get_blast_results_dict
+from utils.blast_interface import get_blast_results_dict, get_local_blast_results_dict
 from error import HTMLError
 
 
@@ -35,9 +35,9 @@ except ImportError:
 
 
 @register.filter(name='lookup')
-def lookup(dict, index):
-    if index in dict:
-        return dict[index]
+def lookup(d, index):
+    if index in d:
+        return d[index]
     return ''
 
 @register.filter(name='get_list_item')
@@ -45,6 +45,30 @@ def get_list_item(l, index):
     if index < len(l):
         return l[index]
     return ''
+
+@register.filter(name='get_p_hits')
+def get_p_hits(d, max_num = 8):
+    '''gets a dictionary of BLAST results, returns
+       the target_labels where 100% identity is
+       achieved'''
+
+    p_hits = {}
+    for i in range(0, len(d)):
+        if d[i]['identity'] == 100.0:
+            p_hits[i] = d[i]
+
+    num_show = len(p_hits) if len(p_hits) < max_num else max_num
+
+    if num_show == 0:
+        return ''
+        
+    ret_line = '<p><b>BLAST search results at a glance</b> (%d of total %d 100%% identity hits are shown):' %\
+                                            (num_show, len(p_hits))
+    for i in p_hits.keys()[0:num_show]:
+        if p_hits[i]['identity'] == 100.0:
+            ret_line += '<p>* %s (<i>query coverage: %.2f%%</i>)' % (p_hits[i]['hit_def'],
+                                                                                 p_hits[i]['coverage'])
+    return ret_line
 
 @register.filter(name='percentify') 
 def percentify(l):
@@ -143,6 +167,8 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
+    if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
+        html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
     html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
@@ -259,12 +285,21 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
         oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
-        blast_results_file_path = alignment_base_path + '_unique_BLAST.xml'
-        if os.path.exists(blast_results_file_path):
-            html_dict['blast_results_found'] = True
-            oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 50)
+        if html_dict.has_key('blast_ref_db') and html_dict['blast_ref_db']:
+            # BLAST search was done locally
+            blast_results_file_path = alignment_base_path + '_unique_BLAST.txt'
+            if os.path.exists(blast_results_file_path):
+                html_dict['blast_results_found'] = True
+                oligo_reps_dict['blast_results'][oligo] = get_local_blast_results_dict(open(blast_results_file_path).readlines(), num_results = 50)
+            else:
+                oligo_reps_dict['blast_results'][oligo] = None
         else:
-            oligo_reps_dict['blast_results'][oligo] = None
+            blast_results_file_path = alignment_base_path + '_unique_BLAST.xml'
+            if os.path.exists(blast_results_file_path):
+                html_dict['blast_results_found'] = True
+                oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 50)
+            else:
+                oligo_reps_dict['blast_results'][oligo] = None
 
     return oligo_reps_dict
 
