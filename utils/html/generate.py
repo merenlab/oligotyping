@@ -62,7 +62,7 @@ def get_p_hits(d, max_num = 8):
     if num_show == 0:
         return ''
         
-    ret_line = '<p><b>BLAST search results at a glance</b> (%d of total %d 100%% identity hits are shown):' %\
+    ret_line = '<p><b>BLAST search results at a glance</b> (%d of %d total 100%% identity hits are shown):' %\
                                             (num_show, len(p_hits))
     for i in p_hits.keys()[0:num_show]:
         if p_hits[i]['identity'] == 100.0:
