@@ -142,7 +142,7 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
             count = unique_sequences[current][1]
             frequency = unique_sequences[current][2]
             for i in range(0, len(unique_sequence)):
-                plt.text(i + 0.25, y / 100.0, unique_sequence[i],\
+                plt.text(i, y / 100.0, unique_sequence[i],\
                                     fontsize = 5, color = COLORS[unique_sequence[i]])
 
             percent = int(round(frequency * len(unique_sequence))) or 1
