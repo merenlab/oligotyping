@@ -83,7 +83,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
         previous_alignment_length = len(alignment.seq)
 
     alignment.close()
-    sys.stderr.write('\n')
+    if verbose:
+        sys.stderr.write('\n')
 
     entropy_tpls = [] 
    
