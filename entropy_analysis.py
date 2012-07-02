@@ -19,6 +19,7 @@ from scipy import log2 as log
 import lib.fastalib as u
 from utils.utils import process_command_line_args_for_quality_files
 from utils.random_colors import get_list_of_colors
+from utils.utils import pretty_print
 
 class EntropyError(Exception):
     def __init__(self, e = None):
@@ -53,21 +54,36 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
     lines = []
-    
+    previous_alignment_length = None
+   
     alignment = u.SequenceSource(alignment_path)
-    if not uniqued:
-        while alignment.next():
+
+    # processing the alignment file..
+    while alignment.next():
+        # check the alignment lengths along the way:
+        if previous_alignment_length:
+            if previous_alignment_length != len(alignment.seq):
+                raise EntropyError, "Not all reads have the same length."
+
+        # print out process info
+        if verbose:
+            if alignment.pos % 10000 == 0:
+                sys.stderr.write('\rReading FASTA into memory; reads processed: %s' \
+                                % (pretty_print(alignment.pos)))
+                sys.stderr.flush()
+        
+        # fill 'lines' variable
+        if not uniqued:
             lines.append(alignment.seq)
-    else:
-        while alignment.next():
+        else:
             frequency = freq_from_defline(alignment.id)
             for i in range(0, frequency):
                 lines.append(alignment.seq)
 
-    alignment.close()
+        previous_alignment_length = len(alignment.seq)
 
-    if len(list(set([len(line) for line in lines]))) != 1:
-        raise EntropyError, "Not all sequences have the same length."
+    alignment.close()
+    sys.stderr.write('\n')
 
     entropy_tpls = [] 
    
