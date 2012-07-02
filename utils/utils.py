@@ -20,6 +20,9 @@ import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from lib import fastalib as u
+from constants import pretty_names
+
+P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 
 
 def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
@@ -256,3 +259,69 @@ def get_terminal_size():
         except:
             cr = (25, 80)
     return int(cr[1]), int(cr[0])
+
+
+def colorize(txt, color = 'green'):
+    colors = {'green': lambda s: '\033[30m\033[42m' + s + '' + '\033[0m',
+              'cyan' : lambda s: '\033[34m\033[40m' + s + '' + '\033[0m'}
+
+    return colors[color](txt)
+
+
+class Progress:
+    def __init__(self):
+        self.pid = None
+
+    def new(self, pid):
+        if self.pid:
+            self.end()
+        self.pid = pid
+
+    def reset(self):
+        sys.stderr.write('\r' + ' ' * get_terminal_size()[0])
+        sys.stderr.write('\r')
+        sys.stderr.flush()
+    
+    def append(self, msg):
+        sys.stderr.write(colorize('%s' % (msg), 'cyan'))
+
+    def update(self, msg):
+        sys.stderr.write('\r' + colorize(' ' * get_terminal_size()[0], 'cyan'))
+        sys.stderr.write(colorize('\r[%s] %s' % (self.pid, msg), 'cyan'))
+        sys.stderr.flush()
+    
+    def end(self):
+        self.reset()
+        self.pid = None
+
+
+class Run:
+    """a class that keeps info about an oligotyping run, and deal with the console output"""
+    def __init__(self, info_file_path = None):
+        if info_file_path:
+            self.info_file_obj = open(info_file_path, 'w')
+        else:
+            self.info_file_obj = None
+        self.info_dict = {}
+
+    def info(self, key, value):
+        if pretty_names.has_key(key):
+            label = pretty_names[key]
+        else:
+            label = key
+
+        self.info_dict[key] = value
+
+        info_line = "%s %s: %s\n" % (label, '.' * (65 - len(label)), str(value))
+        if self.info_file_obj:
+            self.info_file_obj.write(info_line)
+
+        sys.stderr.write(info_line)
+
+    def store_info_dict(self, destination):
+        cPickle.dump(self.info_dict, open(destination, 'w'))
+
+    def quit(self):
+        self.info_file_obj.close()
+
+

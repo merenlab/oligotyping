@@ -25,7 +25,9 @@ from visualization.oligotype_distribution_stack_bar import oligotype_distributio
 from visualization.oligotype_network_structure import oligotype_network_structure
 from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
-from utils.constants import pretty_names
+from utils.utils import P
+from utils.utils import Run
+from utils.utils import Progress
 from utils.utils import pretty_print
 from utils.utils import get_terminal_size
 from utils.utils import process_command_line_args_for_quality_files
@@ -54,6 +56,9 @@ class Oligotyping:
         self.min_percent_abundance = 0.0
         self.dataset_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
+
+        self.run = None
+        self.progress = Progress()
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -84,7 +89,6 @@ class Oligotyping:
         self.datasets = []
         self.abundant_oligos = []
         self.colors_dict = None
-        self.run_info_dict = {}
 
     def sanity_check(self):
         if self.number_of_auto_components != None and self.selected_components != None:
@@ -162,35 +166,11 @@ class Oligotyping:
         return return_path
 
 
-    def progress(self, msg = None, clear = False):
-        if clear:
-            sys.stderr.write('\r')
-            sys.stderr.flush()
-        elif msg:
-            sys.stderr.write('\r' + ' ' * get_terminal_size()[0])
-            sys.stderr.write('\r%s' % msg)
-            sys.stderr.flush()
-    
-
-    def info(self, key, value):
-        if pretty_names.has_key(key):
-            label = pretty_names[key]
-        else:
-            label = key
-
-        self.run_info_dict[key] = value
-
-        info_line = "%s %s: %s                                 \n" % (label, '.' * (65 - len(label)), str(value))
-        self.info_file_obj.write(info_line)
-
-        sys.stderr.write(info_line)
-
-
     def run_all(self):
         self.sanity_check()
         
         self.info_file_path = self.generate_output_destination('RUNINFO')
-        self.info_file_obj = open(self.info_file_path, 'w')
+        self.run = Run(self.info_file_path)
 
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
@@ -199,35 +179,35 @@ class Oligotyping:
         self.alignment_length = len(self.fasta.seq)
         self.fasta.reset()
 
-        self.info('project', self.project)
-        self.info('alignment', self.alignment)
-        self.info('entropy', self.entropy)
-        self.info('output_directory', self.output_directory)
-        self.info('info_file_path', self.info_file_path)
-        self.info('quals_provided', True if self.quals_dict else False)
-        self.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
-        self.info('total_seq', pretty_print(self.fasta.total_seq))
-        self.info('alignment_length', pretty_print(self.alignment_length))
-        self.info('number_of_auto_components', self.number_of_auto_components or 0)
-        self.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
-        self.info('s', self.min_number_of_datasets)
-        self.info('a', self.min_percent_abundance)
-        self.info('A', self.min_actual_abundance)
+        self.run.info('project', self.project)
+        self.run.info('alignment', self.alignment)
+        self.run.info('entropy', self.entropy)
+        self.run.info('output_directory', self.output_directory)
+        self.run.info('info_file_path', self.info_file_path)
+        self.run.info('quals_provided', True if self.quals_dict else False)
+        self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
+        self.run.info('total_seq', pretty_print(self.fasta.total_seq))
+        self.run.info('alignment_length', pretty_print(self.alignment_length))
+        self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
+        self.run.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
+        self.run.info('s', self.min_number_of_datasets)
+        self.run.info('a', self.min_percent_abundance)
+        self.run.info('A', self.min_actual_abundance)
         if self.quals_dict:
-            self.info('q', self.min_base_quality)
+            self.run.info('q', self.min_base_quality)
         if self.limit_oligotypes_to:
-            self.info('limit_oligotypes_to', self.limit_oligotypes_to)
+            self.run.info('limit_oligotypes_to', self.limit_oligotypes_to)
         
         if self.number_of_auto_components:
             # locations of interest based on the entropy scores
             self.bases_of_interest_locs = sorted([self.column_entropy[i] for i in range(0, self.number_of_auto_components)])
-            self.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
+            self.run.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
         elif self.selected_components:
             self.bases_of_interest_locs = sorted(self.selected_components)
-            self.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
+            self.run.info('bases_of_interest_locs',', '.join([str(x) for x in self.bases_of_interest_locs]))
 
         if self.blast_ref_db:
-            self.info('blast_ref_db', self.blast_ref_db)
+            self.run.info('blast_ref_db', self.blast_ref_db)
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
@@ -245,29 +225,27 @@ class Oligotyping:
         if not self.no_figures:
             self._generate_stack_bar_figure()
 
-        self.info_file_obj.close()
-        self._store_run_info_dict()
+        info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
+        self.run.store_info_dict(info_dict_file_path)
+        self.run.quit()
 
         if self.gen_html:
             self._generate_html_output()
-
-
-    def _store_run_info_dict(self):
-        info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
-        cPickle.dump(self.run_info_dict, open(info_dict_file_path, 'w'))
 
 
     def _construct_datasets_dict(self):
         """This is where oligotypes are being genearted based on bases of each
            alignment at the location of interest"""
 
+        self.progress.new('Dataset Dict Construction')
+
         if self.quals_dict:
             num_reads_eliminated_due_to_min_base_quality = 0
 
         self.fasta.reset()
         while self.fasta.next():
-            if self.fasta.pos % 10000 == 0:
-                self.progress('[DatasetDict] Constructing dataset dictionary; reads processed: %s' \
+            if self.fasta.pos % 1000 == 0:
+                self.progress.update('Analyzing: %s' \
                                     % (pretty_print(self.fasta.pos)))
 
             dataset = self.dataset_name_from_defline(self.fasta.id)
@@ -302,53 +280,83 @@ class Oligotyping:
                 self.datasets_dict[dataset][oligo] += 1
             else:
                 self.datasets_dict[dataset][oligo] = 1
-        
-        self.progress(clear = True)
-        self.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
+       
+        self.progress.reset()
+        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
 
         if self.quals_dict:
-            self.info('num_reads_eliminated_due_to_min_base_quality', pretty_print(num_reads_eliminated_due_to_min_base_quality))
+            self.run.info('num_reads_eliminated_due_to_min_base_quality', pretty_print(num_reads_eliminated_due_to_min_base_quality))
             if self.fasta.total_seq == num_reads_eliminated_due_to_min_base_quality:
                 raise ConfigError, "All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality
+        
 
-    
     def _contrive_abundant_oligos(self):
         # cat oligos | uniq
+        self.progress.new('Contriving Abundant Oligos')
+
         oligos_set = []
         for dataset in self.datasets:
+            self.progress.update('Unique Oligos: ' + P(self.datasets.index(dataset), len(self.datasets)))
             for oligo in self.datasets_dict[dataset].keys():
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
-        self.info('num_unique_oligos', pretty_print(len(oligos_set)))
-        
+        self.progress.reset()
+        self.run.info('num_unique_oligos', pretty_print(len(oligos_set)))
+       
+
         # count oligo abundance
         oligo_dataset_abundance = []
-        for oligo in oligos_set:
+        for i in range(0, len(oligos_set)):
+            oligo = oligos_set[i]
+            
+            if i % 100 == 0 or i == len(oligos_set) - 1:
+                self.progress.update('Counting oligo abundance: ' + P(i, len(oligos_set)))
+            
             count = 0
             for dataset in self.datasets:
                 if oligo in self.datasets_dict[dataset].keys():
                     count += 1
             oligo_dataset_abundance.append((count, oligo),)
         oligo_dataset_abundance.sort()
+        self.progress.reset()
 
         # eliminate oligos based on the number of datasets they appear
         # (any oligo required to appear in at least 'self.min_number_of_datasets'
         # datasets)
         non_singleton_oligos = []
-        for tpl in oligo_dataset_abundance:
+        for i in range(0, len(oligo_dataset_abundance)):
+            if i % 100 == 0 or i == len(oligo_dataset_abundance) - 1:
+                 self.progress.update('Eliminating singletons: ' + P(i, len(oligo_dataset_abundance)))
+            tpl = oligo_dataset_abundance[i]
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
-        self.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
+        self.progress.reset()
+        self.run.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
+        
+
+        # dataset_sums keeps the actual number of oligos that are present in non_singleton_oligos list,
+        # for each dataset. computing it here once is more optimized.
+        dataset_sums = {}
+        SUM = lambda dataset: sum([self.datasets_dict[dataset][o] for o in non_singleton_oligos \
+                                                                if self.datasets_dict[dataset].has_key(o)])
+        for dataset in self.datasets:
+            dataset_sums[dataset] = SUM(dataset)
 
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one dataset)
-        SUM = lambda dataset: sum([self.datasets_dict[dataset][o] for o in non_singleton_oligos \
-                                                                if self.datasets_dict[dataset].has_key(o)])
-        for oligo in non_singleton_oligos:
+        for i in range(0, len(non_singleton_oligos)):
+            oligo = non_singleton_oligos[i]
+            if i % 100 == 0 or i == len(non_singleton_oligos) - 1:
+                 self.progress.update('Applying -a parameter: ' + P(i, len(non_singleton_oligos)))
+            
             percent_abundances = []
             for dataset in self.datasets:
                 if self.datasets_dict[dataset].has_key(oligo):
-                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / SUM(dataset), self.datasets_dict[dataset][oligo], SUM(dataset), dataset))
+                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / dataset_sums[dataset],
+                                               self.datasets_dict[dataset][oligo],
+                                               dataset_sums[dataset],
+                                               dataset))
+
             percent_abundances.sort(reverse = True)
 
             # NOTE: if a dataset has less than 100 sequences, percent abundance doesn't mean much.
@@ -365,35 +373,56 @@ class Oligotyping:
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
 
-        self.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
+        self.progress.reset()
+        self.run.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
         
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
         # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all datasets
         # should should be more than 'self.min_actual_abundance'.
-        abundant_oligos_copy = copy.deepcopy(self.abundant_oligos)
-        for oligo in abundant_oligos_copy:
-            if self.min_actual_abundance > sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)]):
-                self.abundant_oligos.remove(oligo)
+        oligos_for_removal = []
+        for i in range(0, len(self.abundant_oligos)):
+            oligo = self.abundant_oligos[i]
 
-        self.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
+            if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
+                 self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
+
+            oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)])
+            if self.min_actual_abundance > oligo_actual_abundance:
+                oligos_for_removal.append(oligo)
+
+        for oligo in oligos_for_removal:
+            self.abundant_oligos.remove(oligo)
+        self.progress.reset()
+        self.run.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
 
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
         if self.limit_oligotypes_to:
             self.abundant_oligos = [oligo for oligo in self.abundant_oligos if oligo in self.limit_oligotypes_to]
-            self.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
+            self.run.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
             if len(self.abundant_oligos) == 0:
                 raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
+
+        self.progress.end()
 
 
     def _refine_datasets_dict(self):
         # removing oligos from datasets dictionary that didn't pass
         # MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE and
         # MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS filters.
+        self.progress.new('Refining Datasets Dict')
+
+        self.progress.update('Deepcopying datasets dict .. ')
         datasets_dict_copy = copy.deepcopy(self.datasets_dict)
+        self.progress.append('done')
+
         datasets_to_remove = []
-        for dataset in self.datasets:
+        for i in range(0, len(self.datasets)):
+            dataset = self.datasets[i]
+
+            self.progress.update('Analyzing datasets: ' + P(i, len(self.datasets) - 1))
+            
             for oligo in datasets_dict_copy[dataset]:
                 if oligo not in self.abundant_oligos:
                     self.datasets_dict[dataset].pop(oligo)
@@ -403,57 +432,69 @@ class Oligotyping:
             self.datasets.remove(dataset)
             self.datasets_dict.pop(dataset)
 
+        self.progress.end()
+        
         number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
-        self.info('num_sequences_after_qc', '%s of %s (%.2f%%)'\
+        self.run.info('num_sequences_after_qc', '%s of %s (%.2f%%)'\
                             % (pretty_print(number_of_reads_in_datasets_dict),
                                pretty_print(self.fasta.total_seq),
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
-            self.info('datasets_removed_after_qc', datasets_to_remove)
+            self.run.info('datasets_removed_after_qc', datasets_to_remove)
 
 
     def _generate_FASTA_file(self): 
         # store abundant oligos
+        self.progress.new('FASTA File')
         oligos_fasta_file_path = self.generate_output_destination("OLIGOS.fasta")
         f = open(oligos_fasta_file_path, 'w')
+        self.progress.update('Generating')
         for oligo in self.abundant_oligos:
             f.write('>' + oligo + '\n')
             f.write(oligo + '\n')
         f.close()
-        self.info('oligos_fasta_file_path', oligos_fasta_file_path)
+        self.progress.end()
+        self.run.info('oligos_fasta_file_path', oligos_fasta_file_path)
         
         
     def _generate_NEXUS_file(self):
         # generate NEXUS file of oligos
+        self.progress.new('NEXUS File')
         oligos_nexus_file_path = self.generate_output_destination("OLIGOS.nexus")
         f = open(oligos_nexus_file_path, 'w')
         f.write("""begin data;
             dimensions ntax=%d nchar=%d;
             format datatype=dna interleave=no gap=-;
             matrix\n""" % (len(self.abundant_oligos), len(self.abundant_oligos[0])))
+        self.progress.update('Generating')
         for oligo in self.abundant_oligos:
             f.write('    %.40s %s\n' % (oligo, oligo))
         f.write('    ;\n')
         f.write('end;\n')
         f.close()
-        self.info('oligos_nexus_file_path', oligos_nexus_file_path)
+        self.progress.end()
+        self.run.info('oligos_nexus_file_path', oligos_nexus_file_path)
     
 
     def _generate_ENVIRONMENT_file(self):
         # generate environment file
+        self.progress.new('ENVIRONMENT File')
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         f = open(environment_file_path, 'w')
+        self.progress.update('Generating')
         for dataset in self.datasets:
             for oligo in self.datasets_dict[dataset]:
                 f.write("%s\t%s\t%d\n" % (oligo, dataset, self.datasets_dict[dataset][oligo]))
         f.close()
-        self.info('environment_file_path', environment_file_path)
+        self.progress.end()
+        self.run.info('environment_file_path', environment_file_path)
 
 
     def _generate_MATRIX_files(self):
         # generate matrices..
+        self.progress.new('Matrix Files')
         matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
         matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")
         count_file = open(matrix_count_file_path, 'w')
@@ -461,6 +502,7 @@ class Oligotyping:
         
         count_file.write('\t'.join([''] + self.datasets) + '\n')
         percent_file.write('\t'.join([''] + self.datasets) + '\n')
+        self.progress.update('Generating')
         for oligo in self.abundant_oligos:
             counts = []
             percents = []
@@ -475,14 +517,17 @@ class Oligotyping:
             percent_file.write('\t'.join([oligo] + percents) + '\n')
         count_file.close()
         percent_file.close()
-        self.info('matrix_count_file_path', matrix_count_file_path)
-        self.info('matrix_percent_file_path', matrix_percent_file_path)
+        self.progress.end()
+        self.run.info('matrix_count_file_path', matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
         
    
     def _generate_viamics_datasets_dict(self):
+        self.progress.new('VIAMICS Datasets Dict')
         # generate viamics datasets dict 
         viamics_datasets_dict = {}
         viamics_datasets_dict_file_path = self.generate_output_destination("ENVIRONMENT.cPickle")
+        self.progress.update('Generating')
         for dataset in self.datasets_dict:
             viamics_datasets_dict[dataset] = {}
             viamics_datasets_dict[dataset]['species'] = {}
@@ -493,8 +538,11 @@ class Oligotyping:
         for dataset in viamics_datasets_dict:
             viamics_datasets_dict[dataset]['tr'] = sum(viamics_datasets_dict[dataset]['species'].values())
             viamics_datasets_dict[dataset]['bases_of_interest_locs'] = self.bases_of_interest_locs
+        self.progress.update('Storing')
         cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
-        self.info('viamics_datasets_dict_file_path', viamics_datasets_dict_file_path)
+        self.progress.end()
+
+        self.run.info('viamics_datasets_dict_file_path', viamics_datasets_dict_file_path)
 
 
     def _generate_representative_sequences(self):
@@ -503,6 +551,7 @@ class Oligotyping:
         # this is what is going on here: we go through all oligotypes, gather sequences that are being
         # represented by a particular oligotype, unique them and report the top ten unique sequences
         # ordered by the frequency.
+        self.progress.new('Represenative Sequences')
 
         output_directory_for_reps = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
 
@@ -522,7 +571,7 @@ class Oligotyping:
                                        'WARNING: Oligotyping process has reached the maximum number of open files',
                                        'limit defined by the operating system. There are "%d" oligotypes to be'\
                                                                  % len(self.abundant_oligos),
-                                       'stored. You can learn the actual limit by typing "ulimit -n" in the console.',
+                                       'stored. You can learn the actual limit by typing "ulimit -n" in the.run.',
                                        '',
                                        'You can increase this limit temporarily by typing "ulimit -n NUMBER", and',
                                        'restart the process. It seems using %d as NUMBER might be a good start.'\
@@ -540,14 +589,18 @@ class Oligotyping:
         self.fasta.reset()
         while self.fasta.next():
             if self.fasta.pos % 1000 == 0:
-                self.progress('[RepSeq] Generating Individual FASTA Files: %.2f%%' \
+                self.progress.update('Generating Individual FASTA Files: %.2f%%' \
                                                 % (self.fasta.pos * 100 / self.fasta.total_seq))
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
                 fasta_files_dict[oligo]['file'].write('>%s\n' % (self.fasta.id))
                 fasta_files_dict[oligo]['file'].write('%s\n' % self.fasta.seq)
-            
+        
+        self.progress.end()
+
         for oligo in self.abundant_oligos:
+            self.progress.new('Representative Sequences | %s (%d of %d)'\
+                % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
             fasta_files_dict[oligo]['file'].close()
 
             fasta_file_path = fasta_files_dict[oligo]['path']
@@ -557,8 +610,7 @@ class Oligotyping:
             # is distributed among datasets:
             distribution_among_datasets = {}
 
-            self.progress('[RepSeq] Working on "%s" (%d of %d) :: Unique reads' \
-                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
+            self.progress.update('Unique reads in FASTA ..') 
 
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
@@ -594,8 +646,7 @@ class Oligotyping:
                     # against self.blast_ref_db
                     oligo_representative_blast_output = unique_fasta_path + '_BLAST.txt'
 
-                    self.progress('[RepSeq] Working on "%s" (%d of %d) :: Local BLAST search' \
-                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
+                    self.progress.update('Local BLAST Search..')
                         
                     local_blast_search(unique_fasta.seq, self.blast_ref_db, oligo_representative_blast_output)
 
@@ -614,8 +665,7 @@ class Oligotyping:
                             return False
 
                     for blast_attempt in range(0, max_blast_attempt):
-                        self.progress('[RepSeq] Working on "%s" (%d of %d) :: NCBI BLAST search (trial: %d)' \
-                            % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos), blast_attempt))
+                        self.progress.update('NCBI BLAST search (attempt #%d)' % (blast_attempt + 1))
                             
                         if blast_search_wrapper(unique_fasta.seq, oligo_representative_blast_output):
                             break
@@ -625,12 +675,11 @@ class Oligotyping:
                 unique_fasta.close()
 
             if (not self.quick) and (not self.no_figures):
-                self.progress('[RepSeq] Working on "%s" (%d of %d) :: Generating figures' \
-                        % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
                 entropy_file_path = unique_fasta_path + '_entropy'
                 color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
 
                 # generate entropy output at 'entropy_file_path' along with the image
+                self.progress.update('Generating entropy figure')
                 vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
 
                 # use entropy output to generate a color shade for every columns in alignment
@@ -645,27 +694,30 @@ class Oligotyping:
                     color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
 
                 cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
-                self.progress(clear = True)
-        
-        self.info('output_directory_for_reps', output_directory_for_reps) 
+       
+        self.progress.end()
+        self.run.info('output_directory_for_reps', output_directory_for_reps) 
 
 
     def _generate_random_colors(self):
         random_color_file_path = self.generate_output_destination('COLORS')
         self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
-        self.info('random_color_file_path', random_color_file_path)
+        self.run.info('random_color_file_path', random_color_file_path)
 
 
     def _generate_dataset_oligotype_network_figures(self):
         output_directory_for_datasets = self.generate_output_destination("DATASETS", directory = True)
-        oligotype_network_structure(self.run_info_dict['environment_file_path'], output_dir = output_directory_for_datasets)
-        self.info('output_directory_for_datasets', output_directory_for_datasets) 
+        oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_datasets)
+        self.run.info('output_directory_for_datasets', output_directory_for_datasets) 
  
 
     def _generate_stack_bar_figure(self):
+        self.progress.new('Stackbar Figure')
         stack_bar_file_path = self.generate_output_destination('STACKBAR.png')
+        self.progress.update('Generating')
         oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, stack_bar_file_path, oligos = self.abundant_oligos, project_title = self.project, display = not self.no_display)
-        self.info('stack_bar_file_path', stack_bar_file_path)
+        self.progress.end()
+        self.run.info('stack_bar_file_path', stack_bar_file_path)
 
 
     def _generate_html_output(self):
@@ -676,8 +728,11 @@ class Oligotyping:
             sys.stdout.write('\n\n\t%s\n\n' % e)
             sys.exit()
 
+        self.progress.new('HTML Output')
         output_directory_for_html = self.generate_output_destination("HTML-OUTPUT", directory = True)
-        index_page = generate_html_output(self.run_info_dict, html_output_directory = output_directory_for_html)
+        self.progress.update('Generating')
+        index_page = generate_html_output(self.run.info_dict, html_output_directory = output_directory_for_html)
+        self.progress.end()
         if not self.no_display:
             sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
 
