@@ -163,13 +163,13 @@ class Oligotyping:
 
 
     def progress(self, msg = None, clear = False):
-        if clear and (not self.no_display):
-            sys.stdout.write('\r')
-            sys.stdout.flush()
-        elif msg and (not self.no_display):
-            sys.stdout.write('\r' + ' ' * get_terminal_size()[0])
-            sys.stdout.write('\r%s' % msg)
-            sys.stdout.flush()
+        if clear:
+            sys.stderr.write('\r')
+            sys.stderr.flush()
+        elif msg:
+            sys.stderr.write('\r' + ' ' * get_terminal_size()[0])
+            sys.stderr.write('\r%s' % msg)
+            sys.stderr.flush()
     
 
     def info(self, key, value):
@@ -180,11 +180,10 @@ class Oligotyping:
 
         self.run_info_dict[key] = value
 
-        info_line = "%s %s: %s\n" % (label, '.' * (65 - len(label)), str(value))
+        info_line = "%s %s: %s                                 \n" % (label, '.' * (65 - len(label)), str(value))
         self.info_file_obj.write(info_line)
 
-        if not self.no_display:
-            sys.stdout.write(info_line)
+        sys.stderr.write(info_line)
 
 
     def run_all(self):
@@ -267,6 +266,10 @@ class Oligotyping:
 
         self.fasta.reset()
         while self.fasta.next():
+            if self.fasta.pos % 10000 == 0:
+                self.progress('[DatasetDict] Constructing dataset dictionary; reads processed: %s' \
+                                    % (pretty_print(self.fasta.pos)))
+
             dataset = self.dataset_name_from_defline(self.fasta.id)
             
             if not self.datasets_dict.has_key(dataset):
@@ -300,6 +303,7 @@ class Oligotyping:
             else:
                 self.datasets_dict[dataset][oligo] = 1
         
+        self.progress(clear = True)
         self.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
 
         if self.quals_dict:
