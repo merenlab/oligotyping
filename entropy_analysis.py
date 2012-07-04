@@ -12,6 +12,7 @@
 
 import os
 import sys
+import numpy
 import operator
 import cPickle
 from scipy import log2 as log
@@ -20,6 +21,9 @@ import lib.fastalib as u
 from utils.utils import process_command_line_args_for_quality_files
 from utils.random_colors import get_list_of_colors
 from utils.utils import pretty_print
+from utils.utils import Progress
+from utils.utils import Run
+from utils.utils import P
 
 class EntropyError(Exception):
     def __init__(self, e = None):
@@ -36,6 +40,8 @@ COLORS = {'A': 'red',
           'N': 'white', 
           '-': '#CACACA'}
 
+run = Run()
+progress = Progress()
 
 def entropy(l):
     P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
@@ -58,6 +64,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
    
     alignment = u.SequenceSource(alignment_path)
 
+    progress.new('Processing the Alignment')
+
     # processing the alignment file..
     while alignment.next():
         # check the alignment lengths along the way:
@@ -68,9 +76,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
         # print out process info
         if verbose:
             if alignment.pos % 10000 == 0:
-                sys.stderr.write('\rReading FASTA into memory; reads processed: %s' \
-                                % (pretty_print(alignment.pos)))
-                sys.stderr.flush()
+                progress.update('Reads processed: %s' % (pretty_print(alignment.pos)))
         
         # fill 'lines' variable
         if not uniqued:
@@ -82,17 +88,20 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
         previous_alignment_length = len(alignment.seq)
 
-    alignment.close()
     if verbose:
-        sys.stderr.write('\n')
+        progress.end()
+        run.info('Number of reads', pretty_print(alignment.pos))
 
-    entropy_tpls = [] 
+    alignment.close()
+
+
    
+    # entropy analysis
+    entropy_tpls = []
+    progress.new('Entropy Analysis')
     for position in range(0, len(lines[0])):
         if verbose:
-            sys.stderr.write('\rPerforming entropy analysis: %d%%' \
-                                % (int((position + 1) * 100.0 / len(lines[0]))))
-            sys.stderr.flush()
+            progress.update(P(int(position + 1), len(lines[0])))
    
         if len(set([x[position] for x in lines])) == 1:
             entropy_tpls.append((position, 0.0),)
@@ -110,14 +119,23 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
                 entropy_tpls.append((position, 0.0),)
             else:
                 entropy_tpls.append((position, e),)
-    
+
+    sorted_entropy_tpls = sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True)
+    entropy_components_larger_than_0 = [e[1] for e in entropy_tpls if e[1] > 0]
+
     if verbose:
-        print
+        progress.end()
+        run.info('Entropy analysis', 'Done (total of %d components greater than 0, mean: %.2f, max: %.2f, min: %.2f).' \
+                                                        % (len(entropy_components_larger_than_0),
+                                                           numpy.mean(entropy_components_larger_than_0),
+                                                           numpy.max(entropy_components_larger_than_0),
+                                                           numpy.min(entropy_components_larger_than_0)))
    
     if output_file:
         entropy_output = open(output_file, 'w')
-        for _component, _entropy in sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True):
+        for _component, _entropy in sorted_entropy_tpls:
             entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
+        run.info('Entropy analysis output file path', output_file)
         entropy_output.close()
     
     return [x[1] for x in entropy_tpls]
@@ -134,9 +152,13 @@ def get_unique_sequences(alignment, limit = 10):
     return unique_sequences
 
 
-def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None, weighted = False):
+def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None, weighted = False, verbose = False):
     import matplotlib.pyplot as plt
     import numpy as np
+
+    progress.new('Entropy Distribution Figure')
+    if verbose:
+        progress.update('Being generated ')
 
     y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
     number_of_uniques_to_show = int(y_maximum * 100)
@@ -155,6 +177,8 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
     if not quick:
         current = 0
         for y in range(number_of_uniques_to_show - 1, 0, -3):
+            if verbose:
+                progress.append('.')
             unique_sequence = unique_sequences[current][0]
             count = unique_sequences[current][1]
             frequency = unique_sequences[current][2]
@@ -194,7 +218,12 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
         plt.ylabel('Weighted Shannon Entropy')
     else:
         plt.ylabel('Shannon Entropy')
+
     plt.savefig(output_file)
+
+    if verbose:
+        progress.end()
+        run.info('Entropy figure output path', output_file)
 
     if not no_display:
         plt.show()
