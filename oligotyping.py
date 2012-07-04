@@ -294,10 +294,16 @@ class Oligotyping:
         # cat oligos | uniq
         self.progress.new('Contriving Abundant Oligos')
 
+        # a performance optimization workaround in order to lessen the 
+        # number of expensive 'keys()' calls on datasets_dict to be made
+        oligos_in_datasets_dict = {}
+        for dataset in self.datasets:
+            oligos_in_datasets_dict[dataset] = set(self.datasets_dict[dataset].keys())
+        
         oligos_set = []
         for dataset in self.datasets:
             self.progress.update('Unique Oligos: ' + P(self.datasets.index(dataset), len(self.datasets)))
-            for oligo in self.datasets_dict[dataset].keys():
+            for oligo in oligos_in_datasets_dict[dataset]:
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
         self.progress.reset()
@@ -314,7 +320,7 @@ class Oligotyping:
             
             count = 0
             for dataset in self.datasets:
-                if oligo in self.datasets_dict[dataset].keys():
+                if oligo in oligos_in_datasets_dict[dataset]:
                     count += 1
             oligo_dataset_abundance.append((count, oligo),)
         oligo_dataset_abundance.sort()
