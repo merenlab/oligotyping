@@ -135,7 +135,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
         entropy_output = open(output_file, 'w')
         for _component, _entropy in sorted_entropy_tpls:
             entropy_output.write('%d\t%.4f\n' % (_component, _entropy))
-        run.info('Entropy analysis output file path', output_file)
+        if verbose:
+            run.info('Entropy analysis output file path', output_file)
         entropy_output.close()
     
     return [x[1] for x in entropy_tpls]
