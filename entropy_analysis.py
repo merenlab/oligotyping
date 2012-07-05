@@ -25,6 +25,7 @@ from utils.utils import Progress
 from utils.utils import Run
 from utils.utils import P
 
+
 class EntropyError(Exception):
     def __init__(self, e = None):
         Exception.__init__(self)
@@ -32,6 +33,9 @@ class EntropyError(Exception):
         return
     def __str__(self):
         return 'Error: %s' % self.e
+
+
+VALID_CHARS = set(['A', 'T', 'C', 'G', '-'])
 
 COLORS = {'A': 'red',
           'T': 'blue', 
@@ -43,16 +47,21 @@ COLORS = {'A': 'red',
 run = Run()
 progress = Progress()
 
-def entropy(l):
-    P = lambda n: (len([x for x in l if x.upper() == n.upper()]) * 1.0 / len(l)) + 0.0000000000000000001
-    return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]))
 
-def weighted_entropy(column, column_qual, expected_qual_score = 40):
-    P = lambda n: (len([x for x in column if x.upper() == n.upper()]) * 1.0 / len(column)) + 0.0000000000000000001
-    if column_qual:
-        return -(sum([P(N) * log(P(N)) for N in ['A', 'T', 'C', 'G', '-']]) * (column_qual['mean'] / expected_qual_score))
+def entropy(l, l_qual = None, expected_qual_score = 40):
+    l = l.upper()
+    
+    E_Cs = []
+    for char in VALID_CHARS:
+        P_C = (l.count(char) * 1.0 / len(l)) + 0.0000000000000000001
+        E_Cs.append(P_C * log(P_C))
+   
+    if l_qual:
+        # return weighted entropy
+        return -(sum(E_Cs) * (l_qual['mean'] / expected_qual_score))
     else:
-        return entropy(column)
+        # return un-weighted entropy
+        return -(sum(E_Cs))
 
 
 def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None, weighted = False, qual_stats_dict = None):
@@ -95,7 +104,6 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     alignment.close()
 
 
-   
     # entropy analysis
     entropy_tpls = []
     progress.new('Entropy Analysis')
@@ -111,7 +119,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
             if weighted:
                 if not qual_stats_dict: 
                     raise EntropyError, "Weighted entropy is selected, but no qual stats are provided"
-                e = weighted_entropy(column, qual_stats_dict[position])
+                e = entropy(column, l_qual = qual_stats_dict[position])
             else:
                 e = entropy(column)
 
