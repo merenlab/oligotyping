@@ -47,18 +47,26 @@ class ConfigError(Exception):
 
 class Oligotyping:
     def __init__(self, args = None):
-        self.alignment = None
         self.entropy   = None
-        self.project = None
-        self.output_directory = None
+        self.alignment = None
+        self.quals_dict = None
+        self.min_base_quality = None
         self.number_of_auto_components = 5
+        self.selected_components = None
+        self.limit_oligotypes_to = None
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 0.0
+        self.project = None
+        self.output_directory = None
         self.dataset_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
-
-        self.run = None
-        self.progress = Progress()
+        self.quick = False
+        self.no_figures = False
+        self.no_display = False
+        self.blast_ref_db = None
+        self.skip_blast_search = False
+        self.gen_html = False
+        self.gen_dataset_oligo_networks = False
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -84,6 +92,9 @@ class Oligotyping:
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
+        
+        self.run = None
+        self.progress = Progress()
 
         self.datasets_dict = {}
         self.datasets = []
@@ -135,6 +146,8 @@ class Oligotyping:
         
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
             raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
+
+        return True
 
 
     def dataset_name_from_defline(self, defline):
