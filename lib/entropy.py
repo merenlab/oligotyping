@@ -62,6 +62,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
     lines = []
     previous_alignment_length = None
+    progress.verbose = verbose
    
     alignment = u.SequenceSource(alignment_path)
 
@@ -75,9 +76,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
                 raise EntropyError, "Not all reads have the same length."
 
         # print out process info
-        if verbose:
-            if alignment.pos % 10000 == 0:
-                progress.update('Reads processed: %s' % (pretty_print(alignment.pos)))
+        if alignment.pos % 10000 == 0:
+            progress.update('Reads processed: %s' % (pretty_print(alignment.pos)))
         
         # fill 'lines' variable
         if not uniqued:
@@ -89,19 +89,19 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
         previous_alignment_length = len(alignment.seq)
 
+    progress.end()
     if verbose:
-        progress.end()
         run.info('Number of reads', pretty_print(alignment.pos))
 
     alignment.close()
 
 
     # entropy analysis
-    entropy_tpls = []
     progress.new('Entropy Analysis')
+    entropy_tpls = []
+
     for position in range(0, len(lines[0])):
-        if verbose:
-            progress.update(P(int(position + 1), len(lines[0])))
+        progress.update(P(int(position + 1), len(lines[0])))
    
         if len(set([x[position] for x in lines])) == 1:
             entropy_tpls.append((position, 0.0),)
@@ -123,8 +123,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     sorted_entropy_tpls = sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True)
     entropy_components_larger_than_0 = [e[1] for e in entropy_tpls if e[1] > 0]
 
+    progress.end()
     if verbose:
-        progress.end()
         run.info('Entropy analysis', 'Done (total of %d components greater than 0, mean: %.2f, max: %.2f, min: %.2f).' \
                                                         % (len(entropy_components_larger_than_0),
                                                            numpy.mean(entropy_components_larger_than_0),

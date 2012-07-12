@@ -471,7 +471,7 @@ class Oligotyping:
         self.progress.new('FASTA File')
         oligos_fasta_file_path = self.generate_output_destination("OLIGOS.fasta")
         f = open(oligos_fasta_file_path, 'w')
-        self.progress.update('Generating')
+        self.progress.update('Being generated')
         for oligo in self.abundant_oligos:
             f.write('>' + oligo + '\n')
             f.write(oligo + '\n')
@@ -489,7 +489,7 @@ class Oligotyping:
             dimensions ntax=%d nchar=%d;
             format datatype=dna interleave=no gap=-;
             matrix\n""" % (len(self.abundant_oligos), len(self.abundant_oligos[0])))
-        self.progress.update('Generating')
+        self.progress.update('Being generated')
         for oligo in self.abundant_oligos:
             f.write('    %.40s %s\n' % (oligo, oligo))
         f.write('    ;\n')
@@ -504,7 +504,7 @@ class Oligotyping:
         self.progress.new('ENVIRONMENT File')
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         f = open(environment_file_path, 'w')
-        self.progress.update('Generating')
+        self.progress.update('Being generated')
         for dataset in self.datasets:
             for oligo in self.datasets_dict[dataset]:
                 f.write("%s\t%s\t%d\n" % (oligo, dataset, self.datasets_dict[dataset][oligo]))
@@ -523,7 +523,7 @@ class Oligotyping:
         
         count_file.write('\t'.join([''] + self.datasets) + '\n')
         percent_file.write('\t'.join([''] + self.datasets) + '\n')
-        self.progress.update('Generating')
+        self.progress.update('Being generated')
         for oligo in self.abundant_oligos:
             counts = []
             percents = []
@@ -548,7 +548,7 @@ class Oligotyping:
         # generate viamics datasets dict 
         viamics_datasets_dict = {}
         viamics_datasets_dict_file_path = self.generate_output_destination("ENVIRONMENT.cPickle")
-        self.progress.update('Generating')
+        self.progress.update('Being generated')
         for dataset in self.datasets_dict:
             viamics_datasets_dict[dataset] = {}
             viamics_datasets_dict[dataset]['species'] = {}

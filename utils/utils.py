@@ -282,24 +282,28 @@ def colorize(txt, color = 'green'):
 class Progress:
     def __init__(self):
         self.pid = None
+        self.verbose = True
 
     def new(self, pid):
         if self.pid:
             self.end()
         self.pid = pid
 
+    def write(self, c):
+        if self.verbose:
+            sys.stderr.write(c)
+            sys.stderr.flush()
+
     def reset(self):
-        sys.stderr.write('\r' + ' ' * get_terminal_size()[0])
-        sys.stderr.write('\r')
-        sys.stderr.flush()
+        self.write('\r' + ' ' * get_terminal_size()[0])
+        self.write('\r')
     
     def append(self, msg):
-        sys.stderr.write(colorize('%s' % (msg), 'cyan'))
+        self.write(colorize('%s' % (msg), 'cyan'))
 
     def update(self, msg):
-        sys.stderr.write('\r' + colorize(' ' * get_terminal_size()[0], 'cyan'))
-        sys.stderr.write(colorize('\r[%s] %s' % (self.pid, msg), 'cyan'))
-        sys.stderr.flush()
+        self.write('\r' + colorize(' ' * get_terminal_size()[0], 'cyan'))
+        self.write(colorize('\r[%s] %s' % (self.pid, msg), 'cyan'))
     
     def end(self):
         self.reset()

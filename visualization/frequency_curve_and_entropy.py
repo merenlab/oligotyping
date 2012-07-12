@@ -59,7 +59,10 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.subplot(2, 1, 2)
     plt.subplots_adjust(left=0.05, bottom = 0.1, top = 0.95, right = 0.99)
 
-    plt.grid(axis='y') 
+    try:
+        plt.grid(axis='y') 
+    except:
+        plt.grid(True)
     plt.rcParams.update({'axes.linewidth' : 0.9})
     plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
 

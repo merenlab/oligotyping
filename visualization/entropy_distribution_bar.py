@@ -33,10 +33,9 @@ progress = Progress()
 
 
 def entropy_distribution_bar(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None, weighted = False, verbose = False):
-
+    progress.verbose = verbose
     progress.new('Entropy Distribution Figure')
-    if verbose:
-        progress.update('Being generated ')
+    progress.update('Computing ')
 
     y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
     number_of_uniques_to_show = int(y_maximum * 100)
@@ -55,8 +54,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     if not quick:
         current = 0
         for y in range(number_of_uniques_to_show - 1, 0, -3):
-            if verbose:
-                progress.append('.')
+            progress.append('.')
             unique_sequence = unique_sequences[current][0].upper()
             count = unique_sequences[current][1]
             frequency = unique_sequences[current][2]
@@ -97,15 +95,21 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     else:
         plt.ylabel('Shannon Entropy')
 
+    progress.update('Saving into "%s"' % output_file)
     plt.savefig(output_file)
 
     if verbose:
-        progress.end()
+        progress.reset()
         run.info('Entropy figure output path', output_file)
 
     if not no_display:
-        plt.show()
+        try:
+            progress.update('Figure is being shown (at least that is what I am trying to do (you can avoid this step by using --no-display))')
+            plt.show()
+        except:
+            pass
 
+    progress.end()
 
 if __name__ == '__main__':
     pass

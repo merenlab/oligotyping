@@ -36,5 +36,6 @@ if __name__ == '__main__':
                              quick = args.quick,
                              no_display = args.no_display,
                              qual_stats_dict = qual_stats_dict,
-                             weighted = args.weighted)
+                             weighted = args.weighted,
+                             verbose = True)
 
