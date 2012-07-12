@@ -18,8 +18,6 @@ import cPickle
 from scipy import log2 as log
 
 import lib.fastalib as u
-from utils import parsers
-from utils.utils import process_command_line_args_for_quality_files
 from utils.random_colors import get_list_of_colors
 from utils.utils import pretty_print
 from utils.utils import Progress
