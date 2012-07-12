@@ -18,6 +18,7 @@ import cPickle
 from scipy import log2 as log
 
 import lib.fastalib as u
+from visualization.entropy_distribution_bar import entropy_distribution_bar
 from utils.utils import process_command_line_args_for_quality_files
 from utils.random_colors import get_list_of_colors
 from utils.utils import pretty_print
@@ -37,15 +38,6 @@ class EntropyError(Exception):
 
 VALID_CHARS = set(['A', 'T', 'C', 'G', '-'])
 
-COLORS = {'A': 'red',
-          'T': 'blue', 
-          'C': 'green', 
-          'G': 'purple', 
-          'N': 'white', 
-          'K': '#CACACA',
-          'R': '#CACACA',
-          '-': '#CACACA'
-        }
 
 run = Run()
 progress = Progress()
@@ -153,94 +145,6 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     return [x[1] for x in entropy_tpls]
 
 
-def get_unique_sequences(alignment, limit = 10):
-    unique_sequences = []
-
-    fasta = u.SequenceSource(alignment, unique = True, lazy_init = False)
-
-    while fasta.next() and fasta.pos < limit:
-        unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) / float(fasta.total_seq)))
-
-    return unique_sequences
-
-
-def visualize_distribution(alignment, entropy_values, output_file, quick = False, no_display = False, qual_stats_dict = None, weighted = False, verbose = False):
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    progress.new('Entropy Distribution Figure')
-    if verbose:
-        progress.update('Being generated ')
-
-    y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
-    number_of_uniques_to_show = int(y_maximum * 100)
-    unique_sequences = get_unique_sequences(alignment, limit = number_of_uniques_to_show)
-
-    fig = plt.figure(figsize = (len(unique_sequences[0][0]) / 20, 10))
-
-    plt.rcParams.update({'axes.linewidth' : 0.1})
-    plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
-    plt.grid(True)
-
-    plt.subplots_adjust(hspace = 0, wspace = 0, right = 0.995, left = 0.050, top = 0.92, bottom = 0.10)
-
-    ax = fig.add_subplot(111)
-
-    if not quick:
-        current = 0
-        for y in range(number_of_uniques_to_show - 1, 0, -3):
-            if verbose:
-                progress.append('.')
-            unique_sequence = unique_sequences[current][0].upper()
-            count = unique_sequences[current][1]
-            frequency = unique_sequences[current][2]
-            for i in range(0, len(unique_sequence)):
-                plt.text(i, y / 100.0, unique_sequence[i],\
-                                    fontsize = 5, color = COLORS[unique_sequence[i]])
-
-            percent = int(round(frequency * len(unique_sequence))) or 1
-            plt.fill_between(range(0, percent), (y + 1.15) / 100.0, (y - 0.85) / 100.0, color="green", alpha = 0.2)
-            plt.text(percent + 0.8, (y - 1.2) / 100.0, count, fontsize = 5, color = 'gray')
-
-            current += 1
-            if current + 1 > len(unique_sequences):
-                break
-
-    if not quick and qual_stats_dict:
-        # add mean quality values in the background of the figure.
-        colors = get_list_of_colors(21, colormap="RdYlGn")
-        colors = [colors[0] for _ in range(0, 20)] + colors
-
-        max_count = max([qual_stats_dict[q]['count'] for q in qual_stats_dict if qual_stats_dict[q]])
-
-        for pos in range(0, len(entropy_values)):
-            if not qual_stats_dict[pos]:
-                continue
-
-            mean = int(round(qual_stats_dict[pos]['mean']))
-            count = qual_stats_dict[pos]['count']
-            plt.fill_between([pos, pos + 1], y1 = 0, y2 = y_maximum, color = colors[mean], alpha = (log(count) / log(max_count)) / 5)
-
-    ind = np.arange(len(entropy_values))
-    ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
-    ax.set_xlim([0, len(unique_sequences[0][0])])
-    ax.set_ylim([0, y_maximum])
-    plt.xlabel('Position in the Alignment')
-    if weighted:
-        plt.ylabel('Weighted Shannon Entropy')
-    else:
-        plt.ylabel('Shannon Entropy')
-
-    plt.savefig(output_file)
-
-    if verbose:
-        progress.end()
-        run.info('Entropy figure output path', output_file)
-
-    if not no_display:
-        plt.show()
-
-
 if __name__ == '__main__':
     import argparse
 
@@ -285,11 +189,11 @@ if __name__ == '__main__':
                                       weighted = args.weighted,
                                       qual_stats_dict = qual_stats_dict)
 
-    visualize_distribution(args.alignment,
-                           entropy_values,
-                           output_file = output_img_path,
-                           quick = args.quick,
-                           no_display = args.no_display,
-                           qual_stats_dict = qual_stats_dict,
-                           weighted = args.weighted)
+    entropy_distribution_bar(args.alignment,
+                             entropy_values,
+                             output_file = output_img_path,
+                             quick = args.quick,
+                             no_display = args.no_display,
+                             qual_stats_dict = qual_stats_dict,
+                             weighted = args.weighted)
 

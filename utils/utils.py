@@ -25,6 +25,17 @@ from constants import pretty_names
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 
 
+def get_unique_sequences_from_FASTA(alignment, limit = 10):
+    unique_sequences = []
+
+    fasta = u.SequenceSource(alignment, unique = True, lazy_init = False)
+
+    while fasta.next() and fasta.pos < limit:
+        unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) / float(fasta.total_seq)))
+
+    return unique_sequences
+
+
 def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
     datasets = datasets_dict.keys()
     datasets.sort()
