@@ -42,7 +42,10 @@ COLORS = {'A': 'red',
           'C': 'green', 
           'G': 'purple', 
           'N': 'white', 
-          '-': '#CACACA'}
+          'K': '#CACACA',
+          'R': '#CACACA',
+          '-': '#CACACA'
+        }
 
 run = Run()
 progress = Progress()
@@ -188,7 +191,7 @@ def visualize_distribution(alignment, entropy_values, output_file, quick = False
         for y in range(number_of_uniques_to_show - 1, 0, -3):
             if verbose:
                 progress.append('.')
-            unique_sequence = unique_sequences[current][0]
+            unique_sequence = unique_sequences[current][0].upper()
             count = unique_sequences[current][1]
             frequency = unique_sequences[current][2]
             for i in range(0, len(unique_sequence)):
