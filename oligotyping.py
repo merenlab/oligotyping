@@ -230,13 +230,14 @@ class Oligotyping:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
         self._generate_viamics_datasets_dict()
-        if not self.quick:
-            self._generate_representative_sequences()
         self._generate_random_colors()
+        
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
+        if not self.quick:
+            self._generate_representative_sequences()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
