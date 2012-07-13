@@ -1,0 +1,31 @@
+This directory various scripst that once were used and found useful to solve
+something. Some of them are incomplete, and most of them lack appropriate
+usage information. I am hoping to solve these issues in time. Here is a brief
+description of files in this directory and their purpose:
+
+- create_GG_alignment_template_from_taxon.py: Uses GreenGenes core alignment 
+  file and otu_id_to_greengenes.txt to generate a template for a given taxon.
+
+- generate_matching_qual_file.py: it is not there yet, but it takes an alignment
+  and 454 qual scores in FASTA format for reads in the alignment and 'aligns'
+  qual scores to match with the alignment.
+
+- trim_from_the_beginning.py: trims reads in a FASTA file from the beginning.
+
+- generate_consensus_from_alignment.py: a very crude way to generate a consensus
+  from many aligned sequences. it is extremely likely to create chimeras with the
+  approach implemented in this script.
+
+- populate_datasets_from_VAMPS_download.py: creates a FASTA file for a chosen
+  taxon and populates the datasets from a FASTA file that was obtained through
+  VAMPS.
+
+- treat_homopolymer_regions.py: this was a very bad idea, but worked magically
+  well (worst ideas are the ones that work despite the fact that they were bad
+  ideas from the get go). one should never treat their sequences to ameliorate
+  systemmatical errors.
+
+- trim_uninformative_columns_from_alignment.py: takes an alignment and removes
+  uninformative gaps. it is usually necesary after aligning your reads against
+  full length bacterial templates.  your  alignment becomes a universe of gaps.
+  this script cleans them out.
