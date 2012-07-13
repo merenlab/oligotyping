@@ -26,7 +26,7 @@ def files_are_the_same(file1, file2):
 
 class Tests(unittest.TestCase):
     def setUp(self):
-        self.output_directory_path = os.path.join(my_path, 'test-run')
+        self.output_directory_path = os.path.join(my_path, 'test-oligotyping')
         self.oligotyping = Oligotyping()
         self.oligotyping.alignment = os.path.join(my_path, 'files/unaligned-25K-illumina-test.fa')
         self.oligotyping.entropy = os.path.join(my_path, 'files/unaligned-25K-illumina-test-entropy.txt')
@@ -38,6 +38,8 @@ class Tests(unittest.TestCase):
         self.oligotyping.quick = True
         self.oligotyping.output_directory = self.output_directory_path 
         self.oligotyping.no_display = True
+        self.oligotyping.progress.verbose = False
+        self.oligotyping.run.verbose = False
 
     def tearDown(self):
         pass
@@ -51,7 +53,7 @@ class Tests(unittest.TestCase):
 
     def test_03_EnvironmentFile(self):
         self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-ENVIRONMENT.txt'),
-                                           os.path.join(my_path, 'test-run/ENVIRONMENT.txt')))
+                                           os.path.join(self.output_directory_path, 'ENVIRONMENT.txt')))
        
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)
