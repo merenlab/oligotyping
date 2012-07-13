@@ -29,7 +29,7 @@ class Tests(unittest.TestCase):
         self.output_directory_path = os.path.join(my_path, 'test-run')
         self.oligotyping = Oligotyping()
         self.oligotyping.alignment = os.path.join(my_path, 'files/unaligned-25K-illumina-test.fa')
-        self.oligotyping.entropy = os.path.join(my_path, 'files/unaligned-25K-illumina-test.fa-ENTROPY')
+        self.oligotyping.entropy = os.path.join(my_path, 'files/unaligned-25K-illumina-test-entropy.txt')
         self.oligotyping.number_of_auto_components = 20
         self.oligotyping.min_percent_abundance = 1
         self.oligotyping.min_actual_abundance = 100
