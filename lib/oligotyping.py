@@ -94,7 +94,7 @@ class Oligotyping:
             self.gen_html = args.gen_html
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
         
-        self.run = None
+        self.run = Run()
         self.progress = Progress()
 
         self.datasets_dict = {}
@@ -184,7 +184,7 @@ class Oligotyping:
         self.sanity_check()
         
         self.info_file_path = self.generate_output_destination('RUNINFO')
-        self.run = Run(self.info_file_path)
+        self.run.init_info_file_obj(self.info_file_path)
 
         self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]

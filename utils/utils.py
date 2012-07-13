@@ -312,12 +312,17 @@ class Progress:
 
 class Run:
     """a class that keeps info about an oligotyping run, and deal with the console output"""
-    def __init__(self, info_file_path = None):
+    def __init__(self, info_file_path = None, verbose = True):
         if info_file_path:
-            self.info_file_obj = open(info_file_path, 'w')
+            self.init_info_file_obj(info_file_path)
         else:
             self.info_file_obj = None
+
         self.info_dict = {}
+        self.verbose = verbose
+
+    def init_info_file_obj(self, info_file_path):
+            self.info_file_obj = open(info_file_path, 'w')
 
     def info(self, key, value):
         if pretty_names.has_key(key):
@@ -331,12 +336,14 @@ class Run:
         if self.info_file_obj:
             self.info_file_obj.write(info_line)
 
-        sys.stderr.write(info_line)
+        if self.verbose:
+            sys.stderr.write(info_line)
 
     def store_info_dict(self, destination):
         cPickle.dump(self.info_dict, open(destination, 'w'))
 
     def quit(self):
-        self.info_file_obj.close()
+        if self.info_file_obj:
+            self.info_file_obj.close()
 
 
