@@ -123,6 +123,12 @@ def entropy():
                         you provide --qual-scores-dict, it will be used to recompute this\
                         dictionary and the file you refer to with this parameter will\
                         actually not be used')
+    parser.add_argument('--uniqued', action = 'store_true', default = False,
+                        help = 'When set, entropy computation will assume that the reads\
+                        in FASTA file are unique. Frequency information of unique reads\
+                        must be stored in the deflines. Every defline in the FASTA file\
+                        must present the frequency information in this format:\
+                        "freq:NUMBER", e.g. ">Read_ID|X|Y|freq:42", or ">Read_ID|freq:42|X|Y"')
     parser.add_argument('--weighted', action = 'store_true', default = False,
                         help = 'When set, entropy computation per column will use\
                         mean quality score for each column.')

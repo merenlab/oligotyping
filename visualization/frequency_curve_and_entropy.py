@@ -20,7 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 import lib.fastalib as u
 from lib.entropy import entropy_analysis
 
-def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None):
+def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None, verbose = False):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -33,9 +33,10 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
         except:
             print 'frequency info can not be read from defline.'
             sys.exit()
-    
+
     frequency_list_to_plot = frequency_list[0:x_limit] + [0] * (x_limit - len(frequency_list) \
                                             if len(frequency_list) < x_limit else 0)
+
     
     fig = plt.figure(figsize=(24, 10))
 
@@ -66,7 +67,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     plt.rcParams.update({'axes.linewidth' : 0.9})
     plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
 
-    entropy_values = entropy_analysis(fasta_file_path, output_file = entropy_output_file, verbose = False, uniqued = True)
+    entropy_values = entropy_analysis(fasta_file_path, output_file = entropy_output_file, verbose = verbose, uniqued = True)
 
     y_maximum = max(entropy_values) * 1.1
     y_maximum = 1.1 if y_maximum < 1 else y_maximum
@@ -97,5 +98,5 @@ if __name__ == '__main__':
 
     fasta_file_path = parser.parse_args().fasta
     x_limit = parser.parse_args().x_limit
-    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + '.png', display = True)
+    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + '.png', display = True, verbose = True)
 

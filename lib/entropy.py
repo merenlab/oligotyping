@@ -83,7 +83,11 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
         if not uniqued:
             lines.append(alignment.seq)
         else:
-            frequency = freq_from_defline(alignment.id)
+            try:
+                frequency = freq_from_defline(alignment.id)
+            except IndexError:
+                raise EntropyError, "Reads declared as unique, but they do not have proper deflines. See help for --uniqued."
+                
             for i in range(0, frequency):
                 lines.append(alignment.seq)
 
