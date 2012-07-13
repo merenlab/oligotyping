@@ -10,8 +10,10 @@
 #
 # Please read the COPYING file.
 
+import sys
 from utils import parsers
 from lib.entropy import entropy_analysis
+from lib.entropy import EntropyError
 from utils.utils import process_command_line_args_for_quality_files
 from visualization.entropy_distribution_bar import entropy_distribution_bar
 
@@ -25,10 +27,15 @@ if __name__ == '__main__':
     output_text_path = args.alignment + '%s-ENTROPY' % ('-WEIGHTED' if args.weighted else '')
     output_img_path = args.alignment + '%s-ENTROPY.png' % ('-WEIGHTED' if args.weighted else '')
 
-    entropy_values = entropy_analysis(args.alignment,
-                                      output_file = output_text_path,
-                                      weighted = args.weighted,
-                                      qual_stats_dict = qual_stats_dict)
+    try:
+        entropy_values = entropy_analysis(args.alignment,
+                                         output_file = output_text_path,
+                                          uniqued = args.uniqued,
+                                          weighted = args.weighted,
+                                          qual_stats_dict = qual_stats_dict)
+    except EntropyError, e:
+        print "Something went wrong. Here is what we know:\n\n\t%s\n\n" % e
+        sys.exit()
 
     entropy_distribution_bar(args.alignment,
                              entropy_values,
