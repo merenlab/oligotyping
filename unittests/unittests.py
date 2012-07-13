@@ -3,11 +3,13 @@
 
 import unittest
 
-#unittest declerations
+# unittest declerations
+import _entropy
 import _oligotyping
 
 def __suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(_entropy.Tests))
     suite.addTest(unittest.makeSuite(_oligotyping.Tests))
 
     return suite
