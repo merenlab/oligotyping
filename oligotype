@@ -10,6 +10,7 @@
 #
 # Please read the COPYING file.
 
+import sys
 from lib.oligotyping import Oligotyping
 from lib.oligotyping import ConfigError
 from utils import parsers
@@ -24,4 +25,3 @@ if __name__ == '__main__':
     except ConfigError, e:
         print e
         sys.exit()
-
