@@ -107,8 +107,8 @@ def multiply(value, arg):
     return int(value) * int(arg) 
 
 @register.filter(name='var') 
-def multiply(arg):
-    return 'x_' + arg.replace(' ', '_').replace('-', '_').replace('+', '_') 
+def var(arg):
+    return 'x_' + arg.replace(' ', '_').replace('-', '_').replace('+', '_').replace('.', '_') 
 
 @register.filter(name='cleangaps') 
 def celangaps(arg):
@@ -192,10 +192,10 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
 
-    # get javascript code for dataset pie-charts
+    # get javascript code for dataset pie-charts
     html_dict['pie_charts_js'] = render_to_string('pie_charts_js.tmpl', html_dict)
 
-    # FIXME: code below is very inefficient and causes a huge
+    # FIXME: code below is very inefficient and causes a huge
     # memory issue. fix it by not using deepcopy.
     # generate individual oligotype pages
     if html_dict.has_key('output_directory_for_reps'):
@@ -286,7 +286,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
         if html_dict.has_key('blast_ref_db') and html_dict['blast_ref_db']:
-            # BLAST search was done locally
+            # BLAST search was done locally
             blast_results_file_path = alignment_base_path + '_unique_BLAST.txt'
             if os.path.exists(blast_results_file_path):
                 html_dict['blast_results_found'] = True
