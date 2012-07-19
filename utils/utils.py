@@ -272,11 +272,8 @@ def get_terminal_size():
     return int(cr[1]), int(cr[0])
 
 
-def colorize(txt, color = 'green'):
-    colors = {'green': lambda s: '\033[30m\033[42m' + s + '' + '\033[0m',
-              'cyan' : lambda s: '\033[34m\033[40m' + s + '' + '\033[0m'}
-
-    return colors[color](txt)
+def colorize(txt):
+    return '\033[0;30m\033[46m%s\033[0m' % txt
 
 
 class Progress:
@@ -299,11 +296,11 @@ class Progress:
         self.write('\r')
     
     def append(self, msg):
-        self.write(colorize('%s' % (msg), 'cyan'))
+        self.write(colorize('%s' % (msg)))
 
     def update(self, msg):
-        self.write('\r' + colorize(' ' * get_terminal_size()[0], 'cyan'))
-        self.write(colorize('\r[%s] %s' % (self.pid, msg), 'cyan'))
+        self.write('\r' + colorize(' ' * get_terminal_size()[0]))
+        self.write(colorize('\r[%s] %s' % (self.pid, msg)))
     
     def end(self):
         self.reset()
