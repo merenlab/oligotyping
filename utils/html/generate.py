@@ -167,6 +167,10 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
     html_dict['oligos_fasta_file_path'] = copy_as(run_info_dict['oligos_fasta_file_path'], 'oligos.fa.txt')
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
+    if html_dict.has_key('representative_seqs_fasta_file_path'):
+        html_dict['representative_seqs_fasta_file_path'] = copy_as(run_info_dict['representative_seqs_fasta_file_path'], 'oligo-representatives.fa.txt')
+    else:
+        html_dict['representative_seqs_fasta_file_path'] = None
     if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]

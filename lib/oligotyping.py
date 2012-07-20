@@ -98,6 +98,7 @@ class Oligotyping:
         self.progress = Progress()
 
         self.datasets_dict = {}
+        self.representative_sequences_per_oligotype = {}
         self.datasets = []
         self.abundant_oligos = []
         self.colors_dict = None
@@ -239,6 +240,9 @@ class Oligotyping:
             self._generate_stack_bar_figure()
         if not self.quick:
             self._generate_representative_sequences()
+
+        if self.representative_sequences_per_oligotype:
+            self._generate_representative_sequences_FASTA_file()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
@@ -478,6 +482,20 @@ class Oligotyping:
         f.close()
         self.progress.end()
         self.run.info('oligos_fasta_file_path', oligos_fasta_file_path)
+ 
+
+    def _generate_representative_sequences_FASTA_file(self): 
+        # store representative sequences per oligotype if they are computed
+        self.progress.new('Representative Sequences FASTA File')
+        representative_seqs_fasta_file_path = self.generate_output_destination("OLIGO-REPRESENTATIVES.fasta")
+        f = open(representative_seqs_fasta_file_path, 'w')
+        self.progress.update('Being generated')
+        for oligo in self.abundant_oligos:
+            f.write('>' + oligo + '\n')
+            f.write(self.representative_sequences_per_oligotype[oligo] + '\n')
+        f.close()
+        self.progress.end()
+        self.run.info('representative_seqs_fasta_file_path', representative_seqs_fasta_file_path)
         
         
     def _generate_NEXUS_file(self):
@@ -632,6 +650,13 @@ class Oligotyping:
             distribution_among_datasets = {}
 
             self.progress.update('Unique reads in FASTA ..') 
+
+            fasta.next()
+            # this is the first read in the unique reads list, which is the most abundant unique sequence
+            # for the oligotype. so we are going to store it in a dict to generate
+            # representative sequences FASTA file:
+            self.representative_sequences_per_oligotype[oligo] = fasta.seq
+            fasta.reset()
 
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\

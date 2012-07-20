@@ -85,8 +85,13 @@
 <p class="smallheadtitle">» Files to analyze results further via third partry applications
 <div class="info_table">
 <table>
-    <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
+    {% if representative_seqs_fasta_file_path %}
+    <tr><td id="l">{{pretty_names.representative_seqs_fasta_file_path}}</td><td id="r"><a href="{{representative_seqs_fasta_file_path}}">oligo-representatives.fa.txt</a></td></tr>
+    {% else %}
+    <tr><td id="l">{{pretty_names.representative_seqs_fasta_file_path}}</td><td id="r"><i>(representative sequences were not computed)</i></td></tr>
+    {% endif %}
     <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
