@@ -443,10 +443,10 @@ class Oligotyping:
         self.progress.append('done')
 
         datasets_to_remove = []
-        for i in range(1, len(self.datasets)):
+        for i in range(0, len(self.datasets)):
             dataset = self.datasets[i]
 
-            self.progress.update('Analyzing datasets: ' + P(i, len(self.datasets)))
+            self.progress.update('Analyzing datasets: ' + P(i + 1, len(self.datasets)))
             
             for oligo in datasets_dict_copy[dataset]:
                 if oligo not in self.abundant_oligos:
