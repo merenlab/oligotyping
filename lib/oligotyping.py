@@ -10,6 +10,7 @@
 #
 # Please read the COPYING file.
 
+__version__ = '0.1'
 
 import os
 import sys
@@ -29,6 +30,7 @@ from utils.random_colors import get_color_shade_dict_for_list_of_values
 from utils.utils import P
 from utils.utils import Run
 from utils.utils import Progress
+from utils.utils import get_date
 from utils.utils import pretty_print
 from utils.utils import get_terminal_size
 from utils.utils import process_command_line_args_for_quality_files
@@ -195,6 +197,8 @@ class Oligotyping:
         self.fasta.reset()
 
         self.run.info('project', self.project)
+        self.run.info('run_date', get_date())
+        self.run.info('version', __version__)
         self.run.info('alignment', self.alignment)
         self.run.info('entropy', self.entropy)
         self.run.info('output_directory', self.output_directory)

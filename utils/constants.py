@@ -11,6 +11,8 @@
 
 pretty_names = {'output_directory': 'Output directory',
                 'project': 'Project',
+                'run_date': 'Run date',
+                'version': 'Library version',
                 'cmd_line': 'Command line',
                 'info_file_path': 'Extraction info output file',
                 'alignment': 'Input alignment',

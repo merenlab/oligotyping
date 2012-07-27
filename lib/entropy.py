@@ -10,6 +10,8 @@
 #
 # Please read the COPYING file.
 
+__version__ = '0.1' # Jul 26, 2012
+
 import os
 import sys
 import numpy

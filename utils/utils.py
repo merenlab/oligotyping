@@ -11,8 +11,9 @@
 
 import os
 import sys
-import shutil
 import fcntl
+import time
+import shutil
 import termios 
 import cPickle
 import struct
@@ -246,6 +247,9 @@ def trim_uninformative_columns_from_alignment(input_file_path):
 
     # overwrite the original file with trimmed content
     shutil.move(temp_file_path, input_file_path)
+
+def get_date():
+    return time.strftime("%d %b %Y, %H:%M:%S", time.gmtime())
 
 def get_terminal_size():
     """function was taken from http://stackoverflow.com/a/566752"""
