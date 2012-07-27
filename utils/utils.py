@@ -249,7 +249,7 @@ def trim_uninformative_columns_from_alignment(input_file_path):
     shutil.move(temp_file_path, input_file_path)
 
 def get_date():
-    return time.strftime("%d %b %Y, %H:%M:%S", time.gmtime())
+    return time.strftime("%d %b %Y, %H:%M:%S", time.localtime())
 
 def get_terminal_size():
     """function was taken from http://stackoverflow.com/a/566752"""
