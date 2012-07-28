@@ -66,8 +66,8 @@ def get_p_hits(d, max_num = 8):
                                             (num_show, len(p_hits))
     for i in p_hits.keys()[0:num_show]:
         if p_hits[i]['identity'] == 100.0:
-            ret_line += '<p>* %s (<i>query coverage: %.2f%%</i>)' % (p_hits[i]['hit_def'],
-                                                                                 p_hits[i]['coverage'])
+            ret_line += '<p>* %s (<i>query coverage: %.2f%%</i>)' % (p_hits[i]['hit_def'].replace("'", '"'),
+                                                                     p_hits[i]['coverage'])
     return ret_line
 
 @register.filter(name='percentify') 
