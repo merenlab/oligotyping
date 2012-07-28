@@ -20,7 +20,6 @@ import cPickle
 from scipy import log2 as log
 
 import lib.fastalib as u
-from utils.random_colors import get_list_of_colors
 from utils.utils import pretty_print
 from utils.utils import Progress
 from utils.utils import Run
