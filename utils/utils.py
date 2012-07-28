@@ -76,12 +76,13 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     # FIXME: get_quals_dict and get_qual_stats_dict functions are only for
     #        454 technology at this moment.
 
+    progress = Progress()
+    progress.new('Summary of quality scores per column is being computed')
+    
     qual_stats_dict = {}
     alignment_length = len(quals_dict[quals_dict.keys()[0]])
     for pos in range(0, alignment_length):
-
-        sys.stderr.write('\r    Qual stats are being computed: %d of %d' % (pos + 1, alignment_length))
-        sys.stderr.flush()
+        progress.update('Position: %d of %d' % (pos + 1, alignment_length))
 
         qual_stats_dict[pos] = {}
         quals_for_pos = [q[pos] for q in quals_dict.values() if q[pos]]
@@ -97,7 +98,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     if output_file_path:
         cPickle.dump(quals_dict, open(output_file_path, 'w'))
 
-    sys.stderr.write('\n')
+    progress.end()
     return qual_stats_dict
   
 def get_quals_dict(quals_file, alignment_file, output_file_path = None):
@@ -109,20 +110,21 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
 
     quals_dict = {}
     quals_aligned_dict = {}
+
+    progress = Progress()
+    progress.new('Quality scores dictionary is being generated')
  
     alignment = u.SequenceSource(alignment_file)
     qual = u.QualSource(quals_file)
 
     while qual.next():
         if qual.pos % 1000 == 0:
-            sys.stderr.write('\r    Quals dict is being generated. Step 1 of 2; pos: %s' % (pretty_print(qual.pos)))
-            sys.stderr.flush()
+            progress.update('Step 1 of 2 :: Quality scores read: %s' % (pretty_print(qual.pos)))
         quals_dict[qual.id] = qual.quals_int
-    sys.stderr.write('\n')
 
     while alignment.next():
         if alignment.pos % 1000 == 0:
-            sys.stderr.write('\r    Quals dict is being generated. Step 2 of 2; pos: %s' % (pretty_print(alignment.pos)))
+            progress.update('Step 2 of 2 :: Alignments matched: %s' % (pretty_print(alignment.pos)))
             sys.stderr.flush()
 
         matching_qual = quals_dict[alignment.id] 
@@ -135,7 +137,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
                 qual_aligned.append(None)
 
         quals_aligned_dict[alignment.id] = qual_aligned
-    sys.stderr.write('\n')
+    progress.end()
 
     if output_file_path:
         cPickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
@@ -151,18 +153,18 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
 
        """
 
+    progress = Progress()
+
     if _return not in ['qual_stats_dict', 'quals_dict']:
         return None
 
     if args.qual_scores_file:
-        sys.stderr.write('* Generating quality scores dictionary..\n')
         quals_dict = get_quals_dict(args.qual_scores_file,\
                                     args.alignment,\
                                     output_file_path = args.qual_scores_file + '.cPickle')
         if _return == 'quals_dict':
             return quals_dict
 
-        sys.stderr.write('* Computing quality stats dictionary file from quality scores dictionary.\n')
         qual_stats_dict = get_qual_stats_dict(quals_dict,\
                                               output_file_path = args.qual_scores_file + '.STATS.cPickle')
 
@@ -170,13 +172,11 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_scores_dict:
-        sys.stderr.write('* Reading quality scores dictionary..\n')
         quals_dict = cPickle.load(open(args.qual_scores_dict))
 
         if _return == 'quals_dict':
             return quals_dict
 
-        sys.stderr.write('* Computing qual stats dict file from quals dict..\n')
         qual_stats_dict = get_qual_stats_dict(quals_dict,\
                             output_file_path = args.qual_scores_dict.split('.cPickle')[0] + '.STATS.cPickle')
 
@@ -184,7 +184,6 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_stats_dict:
-        sys.stderr.write('* Reading qual stats dictionary..\n')
         qual_stats_dict = cPickle.load(open(args.qual_stats_dict))
         
         if _return == 'qual_stats_dict':
