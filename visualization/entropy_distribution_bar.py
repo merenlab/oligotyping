@@ -106,7 +106,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
 
     if not no_display:
         try:
-            progress.update('Figure is being shown (at least that is what I am trying to do (you can avoid this step by using --no-display))')
+            progress.update('Entropy figure is being shown (you do not have display? you can avoid this step by using --no-display))')
             plt.show()
         except:
             pass
