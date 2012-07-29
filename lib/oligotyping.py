@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 import os
 import sys
@@ -19,7 +19,6 @@ import shutil
 import cPickle
 import tempfile
 import operator
-
 
 from lib import fastalib as u
 from visualization.frequency_curve_and_entropy import vis_freq_curve
@@ -38,7 +37,6 @@ from utils.utils import process_command_line_args_for_quality_files
 
 # FIXME: test whether Biopython is installed or not here.
 from utils.blast_interface import remote_blast_search, local_blast_search
-
 
 
 class Oligotyping:
