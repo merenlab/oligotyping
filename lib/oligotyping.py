@@ -31,6 +31,7 @@ from utils.utils import P
 from utils.utils import Run
 from utils.utils import Progress
 from utils.utils import get_date
+from utils.utils import ConfigError
 from utils.utils import pretty_print
 from utils.utils import get_terminal_size
 from utils.utils import process_command_line_args_for_quality_files
@@ -38,14 +39,6 @@ from utils.utils import process_command_line_args_for_quality_files
 # FIXME: test whether Biopython is installed or not here.
 from utils.blast_interface import remote_blast_search, local_blast_search
 
-
-class ConfigError(Exception):
-    def __init__(self, e = None):
-        Exception.__init__(self)
-        self.e = e
-        return
-    def __str__(self):
-        return 'Config Error: %s' % self.e
 
 
 class Oligotyping:
@@ -106,6 +99,12 @@ class Oligotyping:
         self.colors_dict = None
 
     def sanity_check(self):
+        if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
+            raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+        
+        if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
+            raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
+
         if self.number_of_auto_components != None and self.selected_components != None:
             raise ConfigError, "Both 'auto components' (-c) and 'selected components' (-C) has been declared."
         
@@ -144,12 +143,6 @@ class Oligotyping:
                                                                 (self.output_directory)
         if not os.access(self.output_directory, os.W_OK):
             raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
-
-        if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
-            raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
-        
-        if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
-            raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
 
         return True
 

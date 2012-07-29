@@ -26,6 +26,15 @@ from constants import pretty_names
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 
 
+class ConfigError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        return
+    def __str__(self):
+        return 'Config Error: %s' % self.e
+
+
 def get_unique_sequences_from_FASTA(alignment, limit = 10):
     unique_sequences = []
 
