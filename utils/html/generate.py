@@ -215,9 +215,9 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
             tmp_dict['prev'] = None
             tmp_dict['next'] = None
             if i > 0:
-                tmp_dict['prev'] = os.path.join(html_output_directory, 'oligo_%s.html' % html_dict['oligos'][i - 1])
+                tmp_dict['prev'] = 'oligo_%s.html' % html_dict['oligos'][i - 1]
             if i < (len(html_dict['oligos']) - 1):
-                tmp_dict['next'] = os.path.join(html_output_directory, 'oligo_%s.html' % html_dict['oligos'][i + 1])
+                tmp_dict['next'] = 'oligo_%s.html' % html_dict['oligos'][i + 1]
             
             rendered = render_to_string('oligo.tmpl', tmp_dict)
     
