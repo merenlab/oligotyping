@@ -113,8 +113,10 @@
             <div style="width: {{alignment_length|multiply:9}}px; position: relative;">
                 {% for i in oligo_reps_dict.blast_results|lookup:oligo|length|mklist %}
                     <p><strong>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hit_def" }}</strong>
+                    {% if not blast_ref_db and not blast_ref_db_path %}
                     <br />Accession: <a href="{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"ncbi_link" }}">
                             {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"accession" }}</a></em>
+                    {% endif %}
                     <br />Identity : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"identity"|floatformat:1 }}%</em>
                     <br />Coverage : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"coverage"|floatformat:1 }}%</em>
                     <p>&nbsp;
