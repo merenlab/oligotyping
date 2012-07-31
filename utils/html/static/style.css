@@ -102,6 +102,24 @@ h1 {
     text-align: left;
 }
 
+.floatingbar {
+    background-color: #DDD;
+    border: 2px solid #BBB;
+    opacity: 0.70;
+    filter:alpha(opacity=70);
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+    height: 35px;
+    text-align: center;
+    font-size: 12px;
+    padding-top: 5px;
+    width: 400px;
+    position: fixed;
+    right: 20px;
+    bottom: -15px;
+}
+
+
 #datasets {
   width: 1200px;
   height: 200px;

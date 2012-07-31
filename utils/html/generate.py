@@ -203,11 +203,22 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     # memory issue. fix it by not using deepcopy.
     # generate individual oligotype pages
     if html_dict.has_key('output_directory_for_reps'):
-        for oligo in html_dict['oligos']:
+        for i in range(0, len(html_dict['oligos'])):
+            oligo = html_dict['oligos'][i]
             tmp_dict = copy.deepcopy(html_dict)
             tmp_dict['oligo'] = oligo
             tmp_dict['distribution'] = get_oligo_distribution_dict(oligo, html_dict)
             oligo_page = os.path.join(html_output_directory, 'oligo_%s.html' % oligo)
+            
+            tmp_dict['index'] = i + 1
+            tmp_dict['total'] = len(html_dict['oligos'])
+            tmp_dict['prev'] = None
+            tmp_dict['next'] = None
+            if i > 0:
+                tmp_dict['prev'] = os.path.join(html_output_directory, 'oligo_%s.html' % html_dict['oligos'][i - 1])
+            if i < (len(html_dict['oligos']) - 1):
+                tmp_dict['next'] = os.path.join(html_output_directory, 'oligo_%s.html' % html_dict['oligos'][i + 1])
+            
             rendered = render_to_string('oligo.tmpl', tmp_dict)
     
             open(oligo_page, 'w').write(rendered.encode("utf-8"))
