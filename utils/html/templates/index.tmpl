@@ -26,7 +26,7 @@
 <div class="links-bar"><a href="http://oligotyping.org">Oligotyping.org</a></div>
 
 
-<div class="smallhead">General</div>
+<div class="smallhead"><a name="General"></a>General</div>
 <br />
 
 <p class="smallheadtitle">» Meta
@@ -91,7 +91,7 @@
 </div>
 
 
-<div class="smallhead">Downloads</div>
+<div class="smallhead"><a name="Downloads"></a>Downloads</div>
 <p class="smallheadtitle">» Files to analyze results further via third partry applications
 <div class="info_table">
 <table>
@@ -113,21 +113,22 @@
 
 
 
-<div class="smallhead">Entropy</div>
+<div class="smallhead"><a name="Entropy"></a>Entropy</div>
 <p class="smallheadtitle">» Entropy values that components were picked from
 <p class="content"><a href="{{ entropy_figure }}"><img src="{{ entropy_figure }}" style="max-width:1200px" border="0"></a>
 
-<div class="smallhead">Stackbar</div>
+<div class="smallhead"><a name="Stackbar"></a>Stackbar</div>
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
 <p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
 
-<div class="smallhead">Read Counts per Dataset</div>
+<div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
 <p class="smallheadtitle">» Total number of reads for each dataset that underwent the oligotyping analysis.
 <div id="datasets"></div>
 
 
-<div class="smallhead">Oligotypes</div><p class="smallheadtitle">» Abundant oligotypes along with their frequencies within the project are shown below. Every oligotype is followed by a representative sequence, which is the most frequent read in all reads that were collected by the given oligotype. Mouseover on an oligotype will popup a figure that shows the abundance distribution of unique sequences within the oligotype, along with the new entropy (in an ideal world there should be only one unique read with 0 entropy, but due to the random sequencing errors it is almost never the case). {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something during the BLAST search with 100% identity in {% if blast_ref_db and blast_ref_db_path %}the <a href="{{blast_ref_db_path}}">local search database</a> that was provided by the user{% else %}NCBI's <i>nr</i> database{% endif %}. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search.<br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}{{oligo}},{% endif %}{% endfor %} (if you would like to limit your interest only to these oligotypes, you can use "--limit-oligotypes-to" directive from the command line interface and repeat the analysis).{% else %}BLAST results are missing for this analysis.{% endif %}
+<div class="smallhead"><a name="Oligotypes"></a>Oligotypes</div>
+<p class="smallheadtitle">» Abundant oligotypes along with their frequencies within the project are shown below. Every oligotype is followed by a representative sequence, which is the most frequent read in all reads that were collected by the given oligotype. Mouseover on an oligotype will popup a figure that shows the abundance distribution of unique sequences within the oligotype, along with the new entropy (in an ideal world there should be only one unique read with 0 entropy, but due to the random sequencing errors it is almost never the case). {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something during the BLAST search with 100% identity in {% if blast_ref_db and blast_ref_db_path %}the <a href="{{blast_ref_db_path}}">local search database</a> that was provided by the user{% else %}NCBI's <i>nr</i> database{% endif %}. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search.<br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}{{oligo}},{% endif %}{% endfor %} (if you would like to limit your interest only to these oligotypes, you can use "--limit-oligotypes-to" directive from the command line interface and repeat the analysis).{% else %}BLAST results are missing for this analysis.{% endif %}
 
 {% if output_directory_for_reps %}
     <div class="wrap">
@@ -172,7 +173,7 @@
 </div>
 </div>
 
-<div class="smallhead">Datasets</div>
+<div class="smallhead"><a name="Datasets"></a>Datasets</div>
 <p class="smallheadtitle">» Overview of datasets.
 {% for dataset in datasets %}
 {% if forloop.counter0|mod:3 == 0 %}
@@ -182,6 +183,7 @@
 
 
 
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Datasets">Datasets</a></div>
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>
