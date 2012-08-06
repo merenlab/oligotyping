@@ -76,7 +76,7 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
     return [x[1] for x in sorted(abundant_oligos)]
 
 
-def get_qual_stats_dict(quals_dict, output_file_path = None):
+def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     """This function takes quals dict (which can be obtained by calling the
        utils.utils.get_quals_dict function) and returns a dictionary that
        simply contains the summary of quality scores per location in the
@@ -86,6 +86,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     #        454 technology at this moment.
 
     progress = Progress()
+    progress.verbose = verbose
     progress.new('Summary of quality scores per column is being computed')
     
     qual_stats_dict = {}
@@ -110,7 +111,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None):
     progress.end()
     return qual_stats_dict
   
-def get_quals_dict(quals_file, alignment_file, output_file_path = None):
+def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose = True):
     """This function takes qual scores file in FASTA format, expands each
        entry to match base calls in the corresponding aligned read in the
        FASTA file (which requires deflines to be identical), and finally
@@ -121,6 +122,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
     quals_aligned_dict = {}
 
     progress = Progress()
+    progress.verbose = verbose
     progress.new('Quality scores dictionary is being generated')
  
     alignment = u.SequenceSource(alignment_file)
@@ -153,7 +155,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None):
 
     return quals_aligned_dict
 
-def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict'):
+def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict', verbose = True):
     """this function computes and returns the dictionary of interest (indicated
        with '_return' parameter if qual score files were provided via the command
        line interface.
@@ -163,6 +165,7 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
        """
 
     progress = Progress()
+    progress.verbose = verbose
 
     if _return not in ['qual_stats_dict', 'quals_dict']:
         return None
