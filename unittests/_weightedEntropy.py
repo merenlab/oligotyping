@@ -34,7 +34,7 @@ class Tests(unittest.TestCase):
         os.makedirs(self.output_directory_path)
         self.alignment = os.path.join(my_path, 'files/500-V6V4-Pelagibacter.fasta')
         self.qual_scores_file = os.path.join(my_path, 'files/500-V6V4-Pelagibacter.qual')
-        self.expected_result = os.path.join(my_path, 'files/500-V6V4-Pelagibacter.fasta-WEIGHTED-ENTROPY')
+        self.expected_result = os.path.join(my_path, 'files/500-V6V4-Pelagibacter-WEIGHTED-ENTROPY')
 
     def tearDown(self):
         pass
