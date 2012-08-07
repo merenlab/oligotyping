@@ -776,8 +776,7 @@ class Oligotyping:
         self.progress.update('Generating')
         index_page = generate_html_output(self.run.info_dict, html_output_directory = output_directory_for_html)
         self.progress.end()
-        if not self.no_display:
-            sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
+        sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
 
 
 if __name__ == '__main__':
