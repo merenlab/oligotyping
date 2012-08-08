@@ -1,0 +1,6 @@
+#!/bin/bash
+
+entropy-analysis 500-V6V4-Pelagibacter.fasta --qual-scores-file 500-V6V4-Pelagibacter.qual --no-display
+oligotype 500-V6V4-Pelagibacter.fasta 500-V6V4-Pelagibacter.fasta-ENTROPY -c 5 -s 1 -a 1 -A 30 --skip-blast-search --gen-html --no-display
+
+rm -rf 500-V6V4-Pelagibacter.fasta-ENTROPY 500-V6V4-Pelagibacter.fasta-ENTROPY.png 500-V6V4-Pelagibacter.qual.STATS.cPickle 500-V6V4-Pelagibacter.qual.cPickle
