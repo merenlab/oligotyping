@@ -90,6 +90,10 @@ def oligotyping():
     parser.add_argument('--blast-ref-db', default = None, type=str,
                         help = 'When set, BLAST search will be done locally against the ref db (local BLAST search\
                                 requires USEARCH)')
+    parser.add_argument('--colors-list-file', default = None, type=str,
+                        help = 'Optional file that contains HTML color codes in each line to color oligotypes. Number\
+                                of colors in the file has to be equal or greater than the number of abundant\
+                                oligotypes, for which colors are going to be used for.')
     parser.add_argument('--skip-blast-search', action = 'store_true', default = False,
                         help = 'When set, BLAST search step will not be performed.')
     parser.add_argument('--no-display', action = 'store_true', default = False,

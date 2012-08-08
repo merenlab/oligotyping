@@ -61,6 +61,7 @@ class Oligotyping:
         self.skip_blast_search = False
         self.gen_html = False
         self.gen_dataset_oligo_networks = False
+        self.colors_list_file = None
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -86,6 +87,7 @@ class Oligotyping:
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
+            self.colors_list_file = args.colors_list_file
         
         self.run = Run()
         self.progress = Progress()
@@ -141,6 +143,14 @@ class Oligotyping:
                                                                 (self.output_directory)
         if not os.access(self.output_directory, os.W_OK):
             raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
+
+        if self.colors_list_file:
+            if not os.path.exists(self.colors_list_file):
+                raise ConfigError, "Colors list file does not exist: '%s'" % self.colors_list_file
+            first_characters = list(set([c.strip()[0] for c in open(self.colors_list_file)]))
+            if len(first_characters) != 1 or first_characters[0] != '#':
+                raise ConfigError, "Colors list file does not seem to be correctly formatted"
+
 
         return True
 
@@ -742,7 +752,21 @@ class Oligotyping:
 
     def _generate_random_colors(self):
         random_color_file_path = self.generate_output_destination('COLORS')
-        self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
+        if self.colors_list_file:
+            # it means user provided a list of colors to be used for oligotypes
+            colors = [c.strip() for c in open(self.colors_list_file).readlines()]
+            if len(colors) < len(self.abundant_oligos):
+                raise ConfigError, "Number of colors defined in colors file (%d),\
+                                    is smaller than the number of abundant oligotypes (%d)" % \
+                                                        (len(colors), len(self.abundant_oligos))
+            colors_dict = {}
+            for i in range(0, len(self.abundant_oligos)):
+                colors_dict[self.abundant_oligos[i]] = colors[i]
+
+            self.colors_dict = colors_dict
+
+        else:
+            self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
         self.run.info('random_color_file_path', random_color_file_path)
 
 
