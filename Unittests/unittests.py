@@ -7,12 +7,14 @@ import unittest
 import _entropy
 import _weightedEntropy
 import _oligotyping
+import _decomposition
 
 def __suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(_entropy.Tests))
     suite.addTest(unittest.makeSuite(_weightedEntropy.Tests))
     suite.addTest(unittest.makeSuite(_oligotyping.Tests))
+    suite.addTest(unittest.makeSuite(_decomposition.Tests))
 
     return suite
 
