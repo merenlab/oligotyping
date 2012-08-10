@@ -12,6 +12,27 @@
 
 import argparse
 
+def decomposer():
+    parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
+    parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
+                        help = 'Alignment file that contains all datasets and sequences in FASTA format')
+    parser.add_argument('-m', '--min-entropy', type=float, default=0.2,
+                        help = 'Minimum entropy for a component to have in order to be picked as a\
+                                discriminant. Defeault: %(default)f')
+    parser.add_argument('-d', '--number-of-discriminants', type=int, default=3,
+                        help = 'Number of discriminant locations to be used for entropy decomposition\
+                                discriminant. Defeault: %(default)d')
+    parser.add_argument('-A', '--min-actual-abundance', type=int, default=0,
+                        help = 'Minimum number of reads in a node for decomposition to continue. Decomposition\
+                                will continue for any node that has more reads than this number as far as they\
+                                present an entropy that is larger than --min-entropy. This number should be\
+                                chosen carefully depending on the size of the dataset')
+    parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
+    parser.add_argument('--project', default = None, type=str,
+                        help = 'When a project name is set, given name will be used in figures whenever possible.')
+
+
+    return parser
 
 def oligotyping():
     parser = argparse.ArgumentParser(description='Start an Oligotyping Process')
