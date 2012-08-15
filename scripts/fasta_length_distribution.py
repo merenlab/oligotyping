@@ -19,6 +19,7 @@ import matplotlib.gridspec as gridspec
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import lib.fastalib as u
+from utils.utils import pretty_print
 
 def length_distribution(fasta, output = None, title = None):
     length_abundance_dict = {}
@@ -60,7 +61,7 @@ def length_distribution(fasta, output = None, title = None):
     plt.xticks([])
     total_seqs = len(sequence_lengths)
     plt.text(0.02, 0.5, 'total: %s / mean: %.2f / std: %.2f / min: %s / max: %s'\
-        % (total_seqs,
+        % (pretty_print(total_seqs),
            numpy.mean(sequence_lengths), numpy.std(sequence_lengths),\
            min(sequence_lengths),\
            max(sequence_lengths)),\
