@@ -33,7 +33,7 @@ import sys
 import cPickle
 from scipy import spatial
 
-def get_oligotype_partitions(oligotypes, vectors, cosine_similarity_threshold, output_file = None):
+def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, output_file = None):
     partitions = []
     distances = {}
     
