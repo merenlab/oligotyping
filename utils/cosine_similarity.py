@@ -1,0 +1,111 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2010 - 2012, A. Murat Eren
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Please read the COPYING file.
+
+# This program helps to agglomorate oligotypes based on their frequency
+# patterns across datasets, assuming that most of them are co-occurring
+# and don't functionally somewhat anologous.
+#
+# Here is an example input file:
+#
+#     OLIGOTYPES        	DATASET_NAME1   DATASET_NAME2   DATASET_NAME3   DATASET_NAME4   DATASET_NAME5   DATASET_NAME6   DATASET_NAME7   DATASET_NAME8   DATASET_NAME1   
+#     TAGATAAAAA-C-GTTAC	20.4509573117	2.31599654326	10.6854411688	18.141183236	2.75361300492	13.4206516811	12.5506081754	9.18451529079	10.497033588
+#     TAGATAGAAA-C-GTTAC	12.7128172113	0.36018939857	15.0573756759	18.9353393378	0.458036304291	19.9503623429	13.3957224948	5.47629339621	13.6538638382
+#     TAGAGAGAAA-C-GTTAC	18.0246980365	0.615297579484	14.7570747071	12.8939331142	0.36652632687	17.9981258947	14.3154911844	5.35317215042	15.6756810063
+#     AAGATAGAAG-C-GCTAC	13.0686419929	0.878617519887	11.6350565111	19.9689321105	0.473692712916	17.4658459333	16.597647458	6.57207683968	13.3395099821
+#     TGGAGAGGAC-T-TGCGT	0.475162605924	25.571525922	9.43118736779	1.15559558043	41.5513135103	2.97259932294	6.80887034513	1.44177620772	10.5919691377
+#     TAGAGAAAATCT-AATAC	13.7423501569	0.640768984652	14.6270833878	10.7464043591	0.566629189838	19.4586949365	24.4534185641	5.40165386795	10.3629965532
+#     CGGTTAGAAG-C-CCCTC	0.489691111705	29.1574841354	11.0672069019	1.51011971333	39.6255850137	1.87336134179	4.81021673323	0.518058382573	10.9482766663
+#     GAGTTAGGAG-C-GCTAC	0.198166962328	25.8465099248	28.0636126996	1.03592770249	28.6071336884	7.38720775725	3.41467006542	0.900050098907	4.54672110072
+#     TAGAGAGAAA-T-GTTAC	14.4873726757	0.264949578898	15.5784524907	13.5772103533	0.386489951693	17.1867602335	17.2095305909	2.24129536992	19.0679387553
+#     TACTTAGAACTT-GGTAT	18.9421855944	1.3822243641	10.3208847966	14.7093902734	0.650727124538	8.22547255033	19.0420299574	12.9040938859	13.8229914534
+#     TATAGTGGACCT-AGTAT	12.1090224002	0.26665440018	19.3617011303	15.1000904089	0.459966563452	20.2927274957	12.8589434862	4.85846741089	14.6924267042
+
+import os
+import sys
+import cPickle
+from scipy import spatial
+
+def get_partitions(oligotypes, vectors, cosine_similarity_threshold, output_file = None):
+    partitions = []
+    distances = {}
+    
+    for i in range(0, len(oligos)):
+        if not distances.has_key(oligos[i]):
+            distances[oligos[i]] = {}
+        for j in range(i, len(oligos)):
+            if not distances.has_key(oligos[j]):
+                distances[oligos[j]] = {}
+            
+            distances[oligos[i]][oligos[j]] = spatial.distance.cosine(vectors[oligos[i]], vectors[oligos[j]])
+            distances[oligos[j]][oligos[i]] = spatial.distance.cosine(vectors[oligos[i]], vectors[oligos[j]])
+    
+    ids = range(0, len(oligos))
+    while 1:
+        if not len(ids):
+            break
+        
+        new_partition = [ids[0]]
+        seed = oligos[ids[0]]
+    
+        for _id in ids[1:]:
+            candidate = oligos[_id]
+            if distances[seed][candidate] <= cosine_similarity_threshold:
+                new_partition.append(_id)
+    
+        for _id in new_partition:
+            ids.remove(_id)
+    
+        partitions.append(new_partition)
+
+
+    partitioned_oligos = [[oligos[i] for i in partition] for partition in partitions]
+
+    if output_file:
+        cPickle.dump(partitioned_oligos, open(output_file, 'w'))
+
+    return partitioned_oligos
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Group Oligotypes Based on Cosine Similarity')
+    parser.add_argument('oligotypes_across_datasets', metavar = 'OLIGOTYPES_ACROSS_DATASETS',\
+                        help = 'A TAB-delimited matrix file that that contains normalized\
+                                oligotype frequencies across datasets. See the source code\
+                                for an example format')
+    parser.add_argument('-c', '--cosine-similarity-threshold', default = 0.1, type=float,\
+                        metavar = 'COS_SIM_THRESHOLD', help = 'The higher the threshold is,\
+                                the more oligotypes will be pulled together. Cosine similarity\
+                                would return 0 for perfectly similar two vectors. Default is %(default)f.')
+    parser.add_argument('-o', '--output-file', default = None, metavar = 'OUTPUT_FILE',\
+                        help = 'Serialized list of lists object that contains partitions')
+
+
+    args = parser.parse_args()
+    
+    oligotypes_across_datasets_file_obj = open(args.oligotypes_across_datasets)
+    
+    oligos = []
+    vectors = {}
+
+    for line in oligotypes_across_datasets_file_obj.readlines()[1:]:
+        fields = line.strip().split('\t')
+        
+        oligo = fields[0]
+        oligos.append(oligo)
+        vectors[oligo] = [float(c) for c in fields[1:]]
+
+
+    partitions = get_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
+    print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n' % (len(oligos), len(partitions), args.cosine_similarity_threshold)
+    for partition in partitions:
+        print '    - %s\n' % (', '.join(partition))
