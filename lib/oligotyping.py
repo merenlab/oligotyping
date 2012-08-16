@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.3'
+__version__ = '0.4'
 
 import os
 import sys
@@ -23,6 +23,7 @@ import operator
 from lib import fastalib as u
 from visualization.frequency_curve_and_entropy import vis_freq_curve
 from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
+from visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
 from visualization.oligotype_network_structure import oligotype_network_structure
 from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
@@ -243,6 +244,7 @@ class Oligotyping:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
+            self._generate_oligos_across_datasets_figure()
         if not self.quick:
             self._generate_representative_sequences()
 
@@ -541,29 +543,55 @@ class Oligotyping:
         self.progress.new('Matrix Files')
         matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
         matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")
-        count_file = open(matrix_count_file_path, 'w')
-        percent_file = open(matrix_percent_file_path, 'w')
+        oligos_across_datasets_MN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-MAX-NORM.txt")
+        oligos_across_datasets_SN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-SUM-NORM.txt")
         
-        count_file.write('\t'.join([''] + self.datasets) + '\n')
-        percent_file.write('\t'.join([''] + self.datasets) + '\n')
-        self.progress.update('Being generated')
+        oligo_percents = {}
+        oligo_counts = {}
+
+        self.progress.update('Generating the data')
         for oligo in self.abundant_oligos:
             counts = []
             percents = []
             for dataset in self.datasets:
                 if self.datasets_dict[dataset].has_key(oligo):
-                    counts.append(str(self.datasets_dict[dataset][oligo]))
-                    percents.append(str(self.datasets_dict[dataset][oligo] * 100.0 / sum(self.datasets_dict[dataset].values())))
+                    counts.append(self.datasets_dict[dataset][oligo])
+                    percents.append(self.datasets_dict[dataset][oligo] * 100.0 / sum(self.datasets_dict[dataset].values()))
                 else:
-                    counts.append('0')
-                    percents.append('0.0')
-            count_file.write('\t'.join([oligo] + counts) + '\n')
-            percent_file.write('\t'.join([oligo] + percents) + '\n')
+                    counts.append(0)
+                    percents.append(0.0)
+
+            oligo_counts[oligo] = counts
+            oligo_percents[oligo] = percents
+
+        
+        self.progress.update('Generating files')
+        count_file = open(matrix_count_file_path, 'w')
+        percent_file = open(matrix_percent_file_path, 'w')       
+        oligos_across_datasets_MN_file = open(oligos_across_datasets_MN_file_path, 'w')
+        oligos_across_datasets_SN_file = open(oligos_across_datasets_SN_file_path, 'w')
+        
+        count_file.write('\t'.join([''] + self.datasets) + '\n')
+        percent_file.write('\t'.join([''] + self.datasets) + '\n')
+        oligos_across_datasets_MN_file.write('\t'.join([''] + self.datasets) + '\n')
+        oligos_across_datasets_SN_file.write('\t'.join([''] + self.datasets) + '\n')
+
+        for oligo in self.abundant_oligos:
+            count_file.write('\t'.join([oligo] + [str(c) for c in oligo_counts[oligo]]) + '\n')
+            percent_file.write('\t'.join([oligo] + [str(p) for p in oligo_percents[oligo]]) + '\n')
+            oligos_across_datasets_MN_file.write('\t'.join([oligo] + [str(p * 100.0 / max(oligo_percents[oligo])) for p in oligo_percents[oligo]]) + '\n')
+            oligos_across_datasets_SN_file.write('\t'.join([oligo] + [str(p * 100.0 / sum(oligo_percents[oligo])) for p in oligo_percents[oligo]]) + '\n')
+        
         count_file.close()
         percent_file.close()
+        oligos_across_datasets_MN_file.close()
+        oligos_across_datasets_SN_file.close()
+
         self.progress.end()
         self.run.info('matrix_count_file_path', matrix_count_file_path)
         self.run.info('matrix_percent_file_path', matrix_percent_file_path)
+        self.run.info('oligos_across_datasets_MN_file_path', oligos_across_datasets_MN_file_path)
+        self.run.info('oligos_across_datasets_SN_file_path', oligos_across_datasets_SN_file_path)
         
    
     def _generate_viamics_datasets_dict(self):
@@ -785,6 +813,17 @@ class Oligotyping:
                                          project_title = self.project, display = not self.no_display)
         self.progress.end()
         self.run.info('stack_bar_file_path', stack_bar_file_path)
+
+
+    def _generate_oligos_across_datasets_figure(self):
+        self.progress.new('Oligotypes Across Datasets Figure')
+        oligos_across_datasets_file_path = self.generate_output_destination('OLIGOS-ACROSS-DATASETS.png')
+        self.progress.update('Generating')
+        oligos = copy.deepcopy(self.abundant_oligos)
+        oligotype_distribution_across_datasets(self.datasets_dict, self.colors_dict, oligos_across_datasets_file_path, oligos = oligos,\
+                                                project_title = self.project, display = False)
+        self.progress.end()
+        self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
 
 
     def _generate_html_output(self):

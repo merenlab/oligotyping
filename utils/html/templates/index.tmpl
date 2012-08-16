@@ -105,6 +105,8 @@
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.oligos_across_datasets_MN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_MN_file_path}}">oligos_across_datasets_max_normalized.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.oligos_across_datasets_SN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_SN_file_path}}">oligos_across_datasets_sum_normalized.txt</a></td></tr>
     {% if blast_ref_db and blast_ref_db_path %}
     <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
     {% endif %}
@@ -120,7 +122,6 @@
 <div class="smallhead"><a name="Stackbar"></a>Stackbar</div>
 <p class="smallheadtitle">» Oligotype Profiles Among Datasets
 <p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
-
 
 <div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
 <p class="smallheadtitle">» Total number of reads for each dataset that underwent the oligotyping analysis.
@@ -172,6 +173,10 @@
 
 </div>
 </div>
+
+<div class="smallhead"><a name="AcrossDatasets"></a>Oligotypes Across Datasets</div>
+<p class="smallheadtitle">» Figures show the presence of oligotypes across datasets normalized by sum of the percent abundance of an oligotype in all datasets and normalized by max percent abundance of an oligotype in all datasets.
+<p class="content"><a href="{{ oligos_across_datasets_figure }}"><img src="{{ oligos_across_datasets_figure }}" style="max-width:1200px" border="0"></a>
 
 <div class="smallhead"><a name="Datasets"></a>Datasets</div>
 <p class="smallheadtitle">» Overview of datasets.
