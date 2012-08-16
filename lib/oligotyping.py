@@ -307,6 +307,7 @@ class Oligotyping:
             else:
                 self.datasets_dict[dataset][oligo] = 1
        
+        self.datasets.sort()
         self.progress.reset()
         self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
 
