@@ -33,7 +33,7 @@ import sys
 import cPickle
 from scipy import spatial
 
-def get_partitions(oligotypes, vectors, cosine_similarity_threshold, output_file = None):
+def get_oligotype_partitions(oligotypes, vectors, cosine_similarity_threshold, output_file = None):
     partitions = []
     distances = {}
     
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         vectors[oligo] = [float(c) for c in fields[1:]]
 
 
-    partitions = get_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
+    partitions = get_oligotype_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
     print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n' % (len(oligos), len(partitions), args.cosine_similarity_threshold)
     for partition in partitions:
         print '    - %s\n' % (', '.join(partition))
