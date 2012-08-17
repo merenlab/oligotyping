@@ -57,6 +57,7 @@
     {% if blast_ref_db %}
     <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
     {% endif %}
+    <tr><td id="l">{{pretty_names.T}}</td><td id="r"> {{T}}</td></tr>
             
 </table>
 </div>
@@ -107,6 +108,7 @@
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_across_datasets_MN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_MN_file_path}}">oligos_across_datasets_max_normalized.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_across_datasets_SN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_SN_file_path}}">oligos_across_datasets_sum_normalized.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.oligotype_partitions_file_path}}</td><td id="r"><a href="{{oligotype_partitions_file}}">oligotype_partitions.txt</a></td></tr>
     {% if blast_ref_db and blast_ref_db_path %}
     <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
     {% endif %}
@@ -177,6 +179,28 @@
 <div class="smallhead"><a name="AcrossDatasets"></a>Oligotypes Across Datasets</div>
 <p class="smallheadtitle">» Figures show the presence of oligotypes across datasets normalized by sum of the percent abundance of an oligotype in all datasets and normalized by max percent abundance of an oligotype in all datasets.
 <p class="content"><a href="{{ oligos_across_datasets_figure }}"><img src="{{ oligos_across_datasets_figure }}" style="max-width:1200px" border="0"></a>
+
+<div class="smallhead"><a name="Partitions"></a>Oligotype Partitions</div>
+<p class="smallheadtitle">» Figure below shows the groups of oligotypes put together based on their frequency patterns across datasets. In this case cosine similarity threshold to consider two oligotypes to be in the same group was {{ T }}, and {{ oligotype_partitions_info }}. It can be argued that if two oligotypes co-occur in all datasets with great similarity in frequency patterns, they can be considered functionally somewhat anologous.
+<p class="content"><a href="{{ oligotype_partitions_figure }}"><img src="{{ oligotype_partitions_figure }}" style="max-width:1200px" border="0"></a>
+<p class="content">
+<div class="wrap">
+<table style="width: 1160px;margin-left:40px">
+{% for group in oligotype_groups %}
+<tr>
+    <p><td style="border: 1px solid #808080; text-align: center; background-color: {{ color_dict|lookup:group.0 }}; opacity: 0.85; filter:alpha(opacity=85);">
+        <b>Group {{ forloop.counter0 }}</b>
+    </td> 
+    <td style="padding: 10px; line-height:150%; border: 1px solid #808080; opacity: 0.90; filter:alpha(opacity=90);">
+        {% for oligo in group %}
+            {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
+            <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a> 
+        {% endfor %}
+    </td> 
+</tr>
+{% endfor %}
+</table>
+</div>
 
 <div class="smallhead"><a name="Datasets"></a>Datasets</div>
 <p class="smallheadtitle">» Overview of datasets.
