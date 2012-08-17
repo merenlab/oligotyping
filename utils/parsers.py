@@ -66,6 +66,10 @@ def oligotyping():
                                 is "0". If the total abundance of an oligotype is smaller than the number given\
                                 with this parameter, oligotype would be eliminated and not included in downstream\
                                 analyses.')
+    parser.add_argument('-T', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
+                        help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
+                                the threshold is, the more oligotypes will be pulled together. Cosine similarity\
+                                would return 0 for perfectly similar two vectors. Default is %(default)f.')
     parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\

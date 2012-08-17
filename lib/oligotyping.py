@@ -27,6 +27,7 @@ from visualization.oligotype_distribution_across_datasets import oligotype_distr
 from visualization.oligotype_network_structure import oligotype_network_structure
 from utils.random_colors import random_colors
 from utils.random_colors import get_color_shade_dict_for_list_of_values
+from utils.cosine_similarity import get_oligotype_partitions
 from utils.utils import P
 from utils.utils import Run
 from utils.utils import Progress
@@ -51,6 +52,7 @@ class Oligotyping:
         self.limit_oligotypes_to = None
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 0.0
+        self.cosine_similarity_threshold = 0.1
         self.project = None
         self.output_directory = None
         self.dataset_name_separator = '_'
@@ -89,12 +91,16 @@ class Oligotyping:
             self.gen_html = args.gen_html
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
             self.colors_list_file = args.colors_list_file
+            self.cosine_similarity_threshold = args.cosine_similarity_threshold
         
         self.run = Run()
         self.progress = Progress()
 
         self.datasets_dict = {}
         self.representative_sequences_per_oligotype = {}
+        self.oligos_across_datasets_sum_normalized = {}
+        self.oligos_across_datasets_max_normalized = {}
+        self.oligotype_partitions = None
         self.datasets = []
         self.abundant_oligos = []
         self.colors_dict = None
@@ -229,6 +235,8 @@ class Oligotyping:
 
         if self.blast_ref_db:
             self.run.info('blast_ref_db', self.blast_ref_db)
+        
+        self.run.info('T', self.cosine_similarity_threshold)
 
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
@@ -237,6 +245,7 @@ class Oligotyping:
         self._generate_NEXUS_file()
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
+        self._agglomerate_oligos_based_on_cosine_similarity()
         self._generate_viamics_datasets_dict()
         self._generate_random_colors()
         
@@ -578,10 +587,14 @@ class Oligotyping:
         oligos_across_datasets_SN_file.write('\t'.join([''] + self.datasets) + '\n')
 
         for oligo in self.abundant_oligos:
+            self.oligos_across_datasets_sum_normalized[oligo] = [p * 100.0 / sum(oligo_percents[oligo]) for p in oligo_percents[oligo]]
+            self.oligos_across_datasets_max_normalized[oligo] = [p * 100.0 / max(oligo_percents[oligo]) for p in oligo_percents[oligo]]
+        
+        for oligo in self.abundant_oligos:
             count_file.write('\t'.join([oligo] + [str(c) for c in oligo_counts[oligo]]) + '\n')
             percent_file.write('\t'.join([oligo] + [str(p) for p in oligo_percents[oligo]]) + '\n')
-            oligos_across_datasets_MN_file.write('\t'.join([oligo] + [str(p * 100.0 / max(oligo_percents[oligo])) for p in oligo_percents[oligo]]) + '\n')
-            oligos_across_datasets_SN_file.write('\t'.join([oligo] + [str(p * 100.0 / sum(oligo_percents[oligo])) for p in oligo_percents[oligo]]) + '\n')
+            oligos_across_datasets_MN_file.write('\t'.join([oligo] + [str(o) for o in self.oligos_across_datasets_max_normalized[oligo]]) + '\n')
+            oligos_across_datasets_SN_file.write('\t'.join([oligo] + [str(o) for o in self.oligos_across_datasets_sum_normalized[oligo]]) + '\n')
         
         count_file.close()
         percent_file.close()
@@ -594,7 +607,22 @@ class Oligotyping:
         self.run.info('oligos_across_datasets_MN_file_path', oligos_across_datasets_MN_file_path)
         self.run.info('oligos_across_datasets_SN_file_path', oligos_across_datasets_SN_file_path)
         
-   
+
+    def _agglomerate_oligos_based_on_cosine_similarity(self):
+        self.progress.new('Agglomerating Oligos')
+        partitioned_oligotypes_file_path = self.generate_output_destination("OLIGO-PARTITIONS.cPickle")
+        self.progress.update('Computing')
+        self.oligotype_partitions = get_oligotype_partitions(self.abundant_oligos,
+                                                             self.oligos_across_datasets_sum_normalized,
+                                                             self.cosine_similarity_threshold,
+                                                             partitioned_oligotypes_file_path)
+        
+        self.progress.end()
+        self.run.info('oligotype_partitions_file_path', partitioned_oligotypes_file_path)
+        self.run.info('oligotype_partitions_info', '%d oligotypes partitioned into %d groups with cosine similarity threshold of %.4f'\
+                                            % (len(self.abundant_oligos), len(self.oligotype_partitions), self.cosine_similarity_threshold))
+
+
     def _generate_viamics_datasets_dict(self):
         self.progress.new('VIAMICS Datasets Dict')
         # generate viamics datasets dict 
