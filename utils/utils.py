@@ -76,6 +76,22 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
     return [x[1] for x in sorted(abundant_oligos)]
 
 
+def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
+    oligotypes_across_datasets_file_obj = open(file_path)
+   
+    oligos = []
+    vectors = {}
+
+    for line in oligotypes_across_datasets_file_obj.readlines()[1:]:
+        fields = line.strip().split('\t')
+        
+        oligo = fields[0]
+        oligos.append(oligo)
+        vectors[oligo] = [float(c) for c in fields[1:]]
+
+    return (oligos, vectors)
+
+
 def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     """This function takes quals dict (which can be obtained by calling the
        utils.utils.get_quals_dict function) and returns a dictionary that

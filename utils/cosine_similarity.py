@@ -33,6 +33,8 @@ import sys
 import cPickle
 from scipy import spatial
 
+from utils import get_vectors_from_oligotypes_across_datasets_matrix
+
 def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, output_file = None):
     partitions = []
     distances = {}
@@ -91,20 +93,9 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
+ 
+    oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
     
-    oligotypes_across_datasets_file_obj = open(args.oligotypes_across_datasets)
-    
-    oligos = []
-    vectors = {}
-
-    for line in oligotypes_across_datasets_file_obj.readlines()[1:]:
-        fields = line.strip().split('\t')
-        
-        oligo = fields[0]
-        oligos.append(oligo)
-        vectors[oligo] = [float(c) for c in fields[1:]]
-
-
     partitions = get_oligotype_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
     print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n' % (len(oligos), len(partitions), args.cosine_similarity_threshold)
     for partition in partitions:
