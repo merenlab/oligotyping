@@ -22,9 +22,10 @@ import operator
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
+from Oligotyping.visualization.partitioned_oligotypes import partitioned_oligotypes
+from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from Oligotyping.visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
-from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.random_colors import get_color_shade_dict_for_list_of_values
 from Oligotyping.utils.cosine_similarity import get_oligotype_partitions
@@ -254,6 +255,7 @@ class Oligotyping:
         if not self.no_figures:
             self._generate_stack_bar_figure()
             self._generate_oligos_across_datasets_figure()
+            self._generate_oligotype_partitions_figure()
         if not self.quick:
             self._generate_representative_sequences()
 
@@ -849,11 +851,21 @@ class Oligotyping:
         oligos_across_datasets_file_path = self.generate_output_destination('OLIGOS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
         oligos = copy.deepcopy(self.abundant_oligos)
-        oligotype_distribution_across_datasets(self.datasets_dict, self.colors_dict, oligos_across_datasets_file_path, oligos = oligos,\
-                                                project_title = self.project, display = False)
+        oligotype_distribution_across_datasets(self.datasets_dict, self.colors_dict, oligos_across_datasets_file_path,\
+                                               oligos = oligos, project_title = self.project, display = False)
         self.progress.end()
         self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
 
+    def _generate_oligotype_partitions_figure(self):
+        self.progress.new('Oligotype Partitions Figure')
+        oligo_partitions_file_path = self.generate_output_destination('OLIGO-PARTITIONS.png')
+        self.progress.update('Generating')
+        partitioned_oligotypes(self.oligotype_partitions, self.oligos_across_datasets_sum_normalized, self.datasets,\
+                               display = False, colors_dict = self.colors_dict, output_file = oligo_partitions_file_path,\
+                               project_title = 'Partitioned Oligotypes Across Daasets for "%s" at Cosine Similarity Threshold of %.4f'\
+                                        % (self.project, self.cosine_similarity_threshold), legend = True)
+        self.progress.end()
+        self.run.info('oligo_partitions_file_path', oligo_partitions_file_path)
 
     def _generate_html_output(self):
         from Oligotyping.utils.html.error import HTMLError

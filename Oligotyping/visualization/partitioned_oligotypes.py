@@ -28,8 +28,8 @@ def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, ou
         list_of_colors = get_list_of_colors(len(partitions), colormap = 'Accent')
         for i in range(0, len(partitions)):
             colors_dict[partitions[i][0]] = list_of_colors[i]
-            for oligo in partitions[i]:
-                print '%s,%s' % (oligo, list_of_colors[i])
+            #for oligo in partitions[i]:
+            #    print '%s,%s' % (oligo, list_of_colors[i])
 
     # figure.. 
     fig = plt.figure(figsize=(20, 7))
@@ -67,8 +67,7 @@ def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, ou
         lines.append(p)
     
     plt.ylabel('Partitioned Oligotypes', size='large')
-    plt.title('Partitioned Oligotypes Across Datasets %s' \
-                 % (('for "%s"' % project_title) if project_title else ''))
+    plt.title(project_title if project_title else 'Partitioned Oligotypes Across Datasets')
 
     plt.xticks(ind, datasets, rotation=90, size='small')
     plt.yticks([])
