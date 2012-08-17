@@ -612,7 +612,7 @@ class Oligotyping:
 
     def _agglomerate_oligos_based_on_cosine_similarity(self):
         self.progress.new('Agglomerating Oligos')
-        partitioned_oligotypes_file_path = self.generate_output_destination("OLIGO-PARTITIONS.cPickle")
+        partitioned_oligotypes_file_path = self.generate_output_destination("OLIGO-PARTITIONS.txt")
         self.progress.update('Computing')
         self.oligotype_partitions = get_oligotype_partitions(self.abundant_oligos,
                                                              self.oligos_across_datasets_sum_normalized,
@@ -621,8 +621,8 @@ class Oligotyping:
         
         self.progress.end()
         self.run.info('oligotype_partitions_file_path', partitioned_oligotypes_file_path)
-        self.run.info('oligotype_partitions_info', '%d oligotypes partitioned into %d groups with cosine similarity threshold of %.4f'\
-                                            % (len(self.abundant_oligos), len(self.oligotype_partitions), self.cosine_similarity_threshold))
+        self.run.info('oligotype_partitions_info', '%d oligotypes partitioned into %d groups'\
+                                            % (len(self.abundant_oligos), len(self.oligotype_partitions)))
 
 
     def _generate_viamics_datasets_dict(self):
@@ -858,14 +858,14 @@ class Oligotyping:
 
     def _generate_oligotype_partitions_figure(self):
         self.progress.new('Oligotype Partitions Figure')
-        oligo_partitions_file_path = self.generate_output_destination('OLIGO-PARTITIONS.png')
+        oligo_partitions_figure_path = self.generate_output_destination('OLIGO-PARTITIONS.png')
         self.progress.update('Generating')
         partitioned_oligotypes(self.oligotype_partitions, self.oligos_across_datasets_sum_normalized, self.datasets,\
-                               display = False, colors_dict = self.colors_dict, output_file = oligo_partitions_file_path,\
-                               project_title = 'Partitioned Oligotypes Across Daasets for "%s" at Cosine Similarity Threshold of %.4f'\
-                                        % (self.project, self.cosine_similarity_threshold), legend = True)
+                               display = False, colors_dict = self.colors_dict, output_file = oligo_partitions_figure_path,\
+                               project_title = 'Partitioned Oligotypes Across Datasets for "%s" at Cosine Similarity Threshold of %.4f'\
+                                        % (self.project, self.cosine_similarity_threshold), legend = False)
         self.progress.end()
-        self.run.info('oligo_partitions_file_path', oligo_partitions_file_path)
+        self.run.info('oligotype_partitions_figure_path', oligo_partitions_figure_path)
 
     def _generate_html_output(self):
         from Oligotyping.utils.html.error import HTMLError
