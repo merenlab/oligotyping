@@ -30,7 +30,6 @@
 
 import os
 import sys
-import cPickle
 from scipy import spatial
 
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
@@ -72,7 +71,9 @@ def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, outpu
     partitioned_oligos = [[oligos[i] for i in partition] for partition in partitions]
 
     if output_file:
-        cPickle.dump(partitioned_oligos, open(output_file, 'w'))
+        f = open(output_file, 'w')
+        for group in partitioned_oligos:
+            f.write('%s\n' % ','.join(group))
 
     return partitioned_oligos
 
