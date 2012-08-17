@@ -14,10 +14,10 @@ import numpy as np
 from scipy import log2 as log
 import matplotlib.pyplot as plt
 
-from utils.random_colors import get_list_of_colors
-from utils.utils import get_unique_sequences_from_FASTA
-from utils.utils import Progress
-from utils.utils import Run
+from Oligotyping.utils.random_colors import get_list_of_colors
+from Oligotyping.utils.utils import get_unique_sequences_from_FASTA
+from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import Run
 
 
 COLORS = {'A': 'red',

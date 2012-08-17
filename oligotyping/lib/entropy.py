@@ -19,11 +19,11 @@ import operator
 import cPickle
 from scipy import log2 as log
 
-import lib.fastalib as u
-from utils.utils import pretty_print
-from utils.utils import Progress
-from utils.utils import Run
-from utils.utils import P
+import Oligotyping.lib.fastalib as u
+from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import Run
+from Oligotyping.utils.utils import P
 
 
 class EntropyError(Exception):

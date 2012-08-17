@@ -4,12 +4,12 @@
 import os
 import sys
 import shutil
+import inspect
 import unittest
 
-my_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(my_path, '..'))
+from Oligotyping.lib.entropy import entropy_analysis
 
-from lib.entropy import entropy_analysis
+my_path = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 
 def files_are_the_same(file1, file2):
     lines1 = open(file1).readlines()

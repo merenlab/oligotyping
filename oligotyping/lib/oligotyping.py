@@ -20,25 +20,25 @@ import cPickle
 import tempfile
 import operator
 
-from lib import fastalib as u
-from visualization.frequency_curve_and_entropy import vis_freq_curve
-from visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
-from visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
-from visualization.oligotype_network_structure import oligotype_network_structure
-from utils.random_colors import random_colors
-from utils.random_colors import get_color_shade_dict_for_list_of_values
-from utils.cosine_similarity import get_oligotype_partitions
-from utils.utils import P
-from utils.utils import Run
-from utils.utils import Progress
-from utils.utils import get_date
-from utils.utils import ConfigError
-from utils.utils import pretty_print
-from utils.utils import get_terminal_size
-from utils.utils import process_command_line_args_for_quality_files
+from Oligotyping.lib import fastalib as u
+from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
+from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
+from Oligotyping.visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
+from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
+from Oligotyping.utils.random_colors import random_colors
+from Oligotyping.utils.random_colors import get_color_shade_dict_for_list_of_values
+from Oligotyping.utils.cosine_similarity import get_oligotype_partitions
+from Oligotyping.utils.utils import P
+from Oligotyping.utils.utils import Run
+from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import get_date
+from Oligotyping.utils.utils import ConfigError
+from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import get_terminal_size
+from Oligotyping.utils.utils import process_command_line_args_for_quality_files
 
 # FIXME: test whether Biopython is installed or not here.
-from utils.blast_interface import remote_blast_search, local_blast_search
+from Oligotyping.utils.blast_interface import remote_blast_search, local_blast_search
 
 
 class Oligotyping:
@@ -856,9 +856,9 @@ class Oligotyping:
 
 
     def _generate_html_output(self):
-        from utils.html.error import HTMLError
+        from Oligotyping.utils.html.error import HTMLError
         try:
-            from utils.html.generate import generate_html_output
+            from Oligotyping.utils.html.generate import generate_html_output
         except HTMLError, e:
             sys.stdout.write('\n\n\t%s\n\n' % e)
             sys.exit()

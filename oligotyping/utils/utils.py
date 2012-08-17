@@ -19,9 +19,8 @@ import cPickle
 import struct
 import numpy as np
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from lib import fastalib as u
-from constants import pretty_names
+from Oligotyping.lib import fastalib as u
+from Oligotyping.utils.constants import pretty_names
 
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 

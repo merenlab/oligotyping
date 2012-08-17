@@ -16,11 +16,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from utils.random_colors import get_list_of_colors
-from utils.utils import HTMLColorToRGB
-from utils.utils import get_oligos_sorted_by_abundance
-from utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
+from Oligotyping.utils.random_colors import get_list_of_colors
+from Oligotyping.utils.utils import HTMLColorToRGB
+from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
+from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
 
 
 def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, output_file = None, legend = False, project_title = None, display = True):

@@ -10,10 +10,21 @@
 #
 # Please read the COPYING file.
 
+import os
 import sys
-from lib.oligotyping import Oligotyping
-from lib.oligotyping import ConfigError
-from utils import parsers
+
+try:
+    from Oligotyping.lib.oligotyping import Oligotyping
+    from Oligotyping.lib.oligotyping import ConfigError
+    from Oligotyping.utils import parsers
+except ImportError:
+    import inspect
+    print '''Oligotyping package seems to be missing from your PYTHONPATH. Running this might help:
+    
+        export PYTHONPATH="$PYTHONPATH:%s"
+
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    sys.exit()
 
 
 if __name__ == '__main__':

@@ -33,8 +33,8 @@ import sys
 import cPickle
 from scipy import spatial
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from utils import get_vectors_from_oligotypes_across_datasets_matrix
+from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
+from Oligotyping.visualization.partitioned_oligotypes import partitioned_oligotypes
 
 def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, output_file = None):
     partitions = []
@@ -112,6 +112,5 @@ if __name__ == '__main__':
     for partition in partitions:
         print '    - %s\n' % (', '.join(partition))
 
-    #from visualization import partitioned_oligotypes
-    #partitioned_oligotypes(partitions, vectors, datasets, legend = True,\
-    #    project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)
+    partitioned_oligotypes(partitions, vectors, datasets, legend = True,\
+        project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)

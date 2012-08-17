@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 base_pos    = {'-': 5, 'A': 4, 'T': 3, 'C': 2, 'G': 1}
 base_colors = {'-': 'white', 'A': 'red', 'T': 'green', 'C': 'blue', 'G': 'yellow'}
 
-
 def oligotype_network_structure(environment_file_path, output_dir = None):
     tuples = [line.strip().split("\t") for line in open(environment_file_path)]
     

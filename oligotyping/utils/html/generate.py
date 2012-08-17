@@ -16,13 +16,12 @@ import copy
 import shutil
 import cPickle
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
-import lib.fastalib as u
-from utils.constants import pretty_names
-from utils.utils import pretty_print
-from utils.utils import get_datasets_dict_from_environment_file
-from utils.random_colors import get_list_of_colors
-from utils.blast_interface import get_blast_results_dict, get_local_blast_results_dict
+from Oligoyping.lib import fastalib as u
+from Oligotyping.utils.constants import pretty_names
+from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+from Oligotyping.utils.random_colors import get_list_of_colors
+from Oligotyping.utils.blast_interface import get_blast_results_dict, get_local_blast_results_dict
 from error import HTMLError
 
 

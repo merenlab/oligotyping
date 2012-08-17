@@ -16,10 +16,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from utils.random_colors import random_colors
-from utils.utils import HTMLColorToRGB
-from utils.utils import get_oligos_sorted_by_abundance
+from Oligotyping.utils.random_colors import random_colors
+from Oligotyping.utils.utils import HTMLColorToRGB
+from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 
 
 def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):

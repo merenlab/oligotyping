@@ -15,10 +15,8 @@ import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../'))
-
-import lib.fastalib as u
-from lib.entropy import entropy_analysis
+import Oligotyping.lib.fastalib as u
+from Oligotyping.lib.entropy import entropy_analysis
 
 def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None, verbose = False):
     if freq_from_defline == None:

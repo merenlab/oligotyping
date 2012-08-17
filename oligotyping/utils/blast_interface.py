@@ -15,8 +15,7 @@ import tempfile
 import cStringIO
 import subprocess
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-import lib.fastalib as u 
+import Oligotyping.lib.fastalib as u 
 
 # FIXME: carry this class into utils (and don't be quiet about the exception):
 class LocalSearchResult:

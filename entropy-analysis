@@ -11,11 +11,22 @@
 # Please read the COPYING file.
 
 import sys
-from utils import parsers
-from lib.entropy import entropy_analysis
-from lib.entropy import EntropyError
-from utils.utils import process_command_line_args_for_quality_files
-from visualization.entropy_distribution_bar import entropy_distribution_bar
+
+try:
+    from Oligotyping.utils import parsers
+    from Oligotyping.lib.entropy import entropy_analysis
+    from Oligotyping.lib.entropy import EntropyError
+    from Oligotyping.utils.utils import process_command_line_args_for_quality_files
+    from Oligotyping.visualization.entropy_distribution_bar import entropy_distribution_bar
+except ImportError:
+    import inspect
+    print '''Oligotyping package seems to be missing from your PYTHONPATH. Running this might help:
+    
+        export PYTHONPATH="$PYTHONPATH:%s"
+
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    sys.exit()
+
 
 if __name__ == '__main__':
     parser = parsers.entropy()
