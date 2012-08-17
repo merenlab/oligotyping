@@ -13,18 +13,31 @@
 import sys
 
 try:
+    import Oligotyping
+except ImportError:
+    import inspect
+    print '''
+    Oligotyping package seems to be missing from your PYTHONPATH. Running this may help:
+
+        export PYTHONPATH="$PYTHONPATH:%s"
+
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    sys.exit()
+
+try:
     from Oligotyping.utils import parsers
     from Oligotyping.lib.entropy import entropy_analysis
     from Oligotyping.lib.entropy import EntropyError
     from Oligotyping.utils.utils import process_command_line_args_for_quality_files
     from Oligotyping.visualization.entropy_distribution_bar import entropy_distribution_bar
-except ImportError:
-    import inspect
-    print '''Oligotyping package seems to be missing from your PYTHONPATH. Running this might help:
-    
-        export PYTHONPATH="$PYTHONPATH:%s"
+except ImportError, e:
+    print '''
+    Something is not right. It seems you are missing things that are required by
+    the oligotyping pipeline. Here is the original import error:
 
-    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+        %s
+
+    If you have one, you may need to talk to your system administrator about this.\n''' % e
     sys.exit()
 
 
