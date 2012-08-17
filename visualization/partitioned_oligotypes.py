@@ -23,10 +23,10 @@ from utils.utils import get_oligos_sorted_by_abundance
 from utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
 
 
-def partitioned_oligotypes(partitions, vectors, datasets, colors_dict, output_file = None, legend = False, project_title = None, display = True):
+def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, output_file = None, legend = False, project_title = None, display = True):
     if colors_dict == None:
         colors_dict = {}
-        list_of_colors = get_list_of_colors(len(partitions), colormap = 'gist_ncar')
+        list_of_colors = get_list_of_colors(len(partitions), colormap = 'Accent')
         for i in range(0, len(partitions)):
             colors_dict[partitions[i][0]] = list_of_colors[i]
             for oligo in partitions[i]:
@@ -140,4 +140,5 @@ if __name__ == '__main__':
 
     oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
 
-    partitioned_oligotypes(partitions, vectors, datasets, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title, display = True)
+    partitioned_oligotypes(partitions, vectors, datasets, colors_dict, output_file = args.output_file,\
+                           legend = args.legend, project_title = args.project_title, display = True)

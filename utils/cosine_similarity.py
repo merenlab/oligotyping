@@ -33,6 +33,7 @@ import sys
 import cPickle
 from scipy import spatial
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from utils import get_vectors_from_oligotypes_across_datasets_matrix
 
 def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, output_file = None):
@@ -94,9 +95,23 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
  
+
+    def get_datasets():
+        return [d.strip() for d in open(args.oligotypes_across_datasets).readline().split('\t')[1:]]
+
     oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
     
     partitions = get_oligotype_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
-    print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n' % (len(oligos), len(partitions), args.cosine_similarity_threshold)
+
+    datasets = get_datasets()
+
+
+    print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n'\
+                        % (len(oligos), len(partitions), args.cosine_similarity_threshold)
+    
     for partition in partitions:
         print '    - %s\n' % (', '.join(partition))
+
+    #from visualization import partitioned_oligotypes
+    #partitioned_oligotypes(partitions, vectors, datasets, legend = True,\
+    #    project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)
