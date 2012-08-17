@@ -287,6 +287,18 @@ def get_terminal_size():
     return int(cr[1]), int(cr[0])
 
 
+def HTMLColorToRGB(colorstring):
+    """ convert #RRGGBB to an (R, G, B) tuple """
+    colorstring = colorstring.strip()
+    if colorstring[0] == '#': colorstring = colorstring[1:]
+    if len(colorstring) != 6:
+        raise ValueError, "input #%s is not in #RRGGBB format" % colorstring
+    r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
+    r, g, b = [int(n, 16) for n in (r, g, b)]
+
+    return (r / 255.0, g / 255.0, b / 255.0)
+
+
 def colorize(txt):
     return '\033[0;30m\033[46m%s\033[0m' % txt
 

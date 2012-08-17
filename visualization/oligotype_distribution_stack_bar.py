@@ -18,19 +18,9 @@ import cPickle
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from utils.random_colors import random_colors
+from utils.utils import HTMLColorToRGB
 from utils.utils import get_oligos_sorted_by_abundance
 
-
-def HTMLColorToRGB(colorstring):
-    """ convert #RRGGBB to an (R, G, B) tuple """
-    colorstring = colorstring.strip()
-    if colorstring[0] == '#': colorstring = colorstring[1:]
-    if len(colorstring) != 6:
-        raise ValueError, "input #%s is not in #RRGGBB format" % colorstring
-    r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
-    r, g, b = [int(n, 16) for n in (r, g, b)]
-
-    return (r / 255.0, g / 255.0, b / 255.0)
 
 def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
     datasets = datasets_dict.keys()
