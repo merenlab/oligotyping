@@ -33,9 +33,9 @@ import sys
 from scipy import spatial
 
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
-from Oligotyping.visualization.partitioned_oligotypes import partitioned_oligotypes
+from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 
-def get_oligotype_partitions(oligos, vectors, cosine_similarity_threshold, output_file = None):
+def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file = None):
     partitions = []
     distances = {}
     
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
     
-    partitions = get_oligotype_partitions(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
+    partitions = get_oligotype_sets(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
 
     datasets = get_datasets()
 
@@ -113,5 +113,5 @@ if __name__ == '__main__':
     for partition in partitions:
         print '    - %s\n' % (', '.join(partition))
 
-    partitioned_oligotypes(partitions, vectors, datasets, legend = True,\
+    vis_oligotype_sets_distribution(partitions, vectors, datasets, legend = True,\
         project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)

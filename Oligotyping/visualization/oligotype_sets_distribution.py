@@ -22,7 +22,7 @@ from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
 
 
-def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, output_file = None, legend = False, project_title = None, display = True):
+def vis_oligotype_sets_distribution(partitions, vectors, datasets, colors_dict = None, output_file = None, legend = False, project_title = None, display = True):
     if colors_dict == None:
         colors_dict = {}
         list_of_colors = get_list_of_colors(len(partitions), colormap = 'Accent')
@@ -66,13 +66,13 @@ def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, ou
             color = 'black'
 
         plt.fill_between(range(0, len(vector)), maxs, mins, color=color, alpha = 0.1)
-        plt.plot(vector, color=color, linewidth = 1, alpha = 0.95, label = 'Group #%d' % i)
+        plt.plot(vector, color=color, linewidth = 1, alpha = 0.95, label = 'Set #%d' % i)
         if len(vector) < 50:
             plt.plot(vector, color=color, linewidth = 3, alpha = 0.7, label = '_nolegend_')
             plt.plot(vector, color=color, linewidth = 7, alpha = 0.6, zorder = i, label = '_nolegend_')
     
-    plt.ylabel('Partitioned Oligotypes', size='large')
-    plt.title(project_title if project_title else 'Partitioned Oligotypes Across Datasets')
+    plt.ylabel('Oligotype Set Abundance', size='large')
+    plt.title(project_title if project_title else 'Oligotype Sets Across Datasets')
 
     plt.xticks(ind, datasets, rotation=90, size='small')
     plt.yticks([])
@@ -103,11 +103,11 @@ def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, ou
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Visualize Partitioned Oligotypes Across Datasets')
+    parser = argparse.ArgumentParser(description='Visualize Oligotype Sets Across Datasets')
     parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE',\
                         help = 'Environment file')
-    parser.add_argument('partitions_file', metavar = 'PARTITIONS_FILE',\
-                        help = 'Serialized list of lists for partitioned oligotypes')
+    parser.add_argument('sets_file', metavar = 'PARTITIONS_FILE',\
+                        help = 'Serialized list of lists for oligotype sets')
     parser.add_argument('oligotypes_across_datasets', metavar = 'OLIGOTYPES_ACROSS_DATASETS',\
                         help = 'A TAB-delimited matrix file that contains normalized\
                                 oligotype frequencies across datasets')

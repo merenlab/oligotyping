@@ -22,13 +22,13 @@ import operator
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
-from Oligotyping.visualization.partitioned_oligotypes import partitioned_oligotypes
+from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from Oligotyping.visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.random_colors import get_color_shade_dict_for_list_of_values
-from Oligotyping.utils.cosine_similarity import get_oligotype_partitions
+from Oligotyping.utils.cosine_similarity import get_oligotype_sets
 from Oligotyping.utils.utils import P
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
@@ -101,7 +101,7 @@ class Oligotyping:
         self.representative_sequences_per_oligotype = {}
         self.oligos_across_datasets_sum_normalized = {}
         self.oligos_across_datasets_max_normalized = {}
-        self.oligotype_partitions = None
+        self.oligotype_sets = None
         self.datasets = []
         self.abundant_oligos = []
         self.colors_dict = None
@@ -246,16 +246,17 @@ class Oligotyping:
         self._generate_NEXUS_file()
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
-        self._agglomerate_oligos_based_on_cosine_similarity()
-        self._generate_viamics_datasets_dict()
         self._generate_random_colors()
+        self._agglomerate_oligos_based_on_cosine_similarity()
         
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
+            self._generate_stack_bar_figure_with_agglomerated_oligos()
             self._generate_oligos_across_datasets_figure()
-            self._generate_oligotype_partitions_figure()
+            self._generate_oligotype_sets_across_datasets_figure()
+
         if not self.quick:
             self._generate_representative_sequences()
 
@@ -608,44 +609,63 @@ class Oligotyping:
         self.run.info('matrix_percent_file_path', matrix_percent_file_path)
         self.run.info('oligos_across_datasets_MN_file_path', oligos_across_datasets_MN_file_path)
         self.run.info('oligos_across_datasets_SN_file_path', oligos_across_datasets_SN_file_path)
-        
+
+
+    def _generate_random_colors(self):
+        random_color_file_path = self.generate_output_destination('COLORS')
+        if self.colors_list_file:
+            # it means user provided a list of colors to be used for oligotypes
+            colors = [c.strip() for c in open(self.colors_list_file).readlines()]
+            if len(colors) < len(self.abundant_oligos):
+                raise ConfigError, "Number of colors defined in colors file (%d),\
+                                    is smaller than the number of abundant oligotypes (%d)" % \
+                                                        (len(colors), len(self.abundant_oligos))
+            colors_dict = {}
+            for i in range(0, len(self.abundant_oligos)):
+                colors_dict[self.abundant_oligos[i]] = colors[i]
+
+            self.colors_dict = colors_dict
+        else:
+            self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
+        self.run.info('random_color_file_path', random_color_file_path)
+
 
     def _agglomerate_oligos_based_on_cosine_similarity(self):
-        self.progress.new('Agglomerating Oligos')
-        partitioned_oligotypes_file_path = self.generate_output_destination("OLIGO-PARTITIONS.txt")
+        self.progress.new('Agglomerating Oligotypes into Sets')
+        oligotype_sets_file_path = self.generate_output_destination("OLIGOTYPE-SETS.txt")
         self.progress.update('Computing')
-        self.oligotype_partitions = get_oligotype_partitions(self.abundant_oligos,
-                                                             self.oligos_across_datasets_sum_normalized,
-                                                             self.cosine_similarity_threshold,
-                                                             partitioned_oligotypes_file_path)
+        self.oligotype_sets = get_oligotype_sets(self.abundant_oligos,
+                                                 self.oligos_across_datasets_sum_normalized,
+                                                 self.cosine_similarity_threshold,
+                                                 oligotype_sets_file_path)
         
         self.progress.end()
-        self.run.info('oligotype_partitions_file_path', partitioned_oligotypes_file_path)
-        self.run.info('oligotype_partitions_info', '%d oligotypes partitioned into %d groups'\
-                                            % (len(self.abundant_oligos), len(self.oligotype_partitions)))
+        self.run.info('oligotype_sets_file_path', oligotype_sets_file_path)
+        self.run.info('oligotype_sets_info', '%d oligotypes agglomerated into %d sets'\
+                                            % (len(self.abundant_oligos), len(self.oligotype_sets)))
 
 
-    def _generate_viamics_datasets_dict(self):
-        self.progress.new('VIAMICS Datasets Dict')
-        # generate viamics datasets dict 
-        viamics_datasets_dict = {}
-        viamics_datasets_dict_file_path = self.generate_output_destination("ENVIRONMENT.cPickle")
-        self.progress.update('Being generated')
-        for dataset in self.datasets_dict:
-            viamics_datasets_dict[dataset] = {}
-            viamics_datasets_dict[dataset]['species'] = {}
-            for oligo in self.datasets_dict[dataset]:
-                if oligo in self.abundant_oligos:
-                    viamics_datasets_dict[dataset]['species'][oligo] = self.datasets_dict[dataset][oligo]
+        self.progress.new('Generating data objects for newly generated oligotype sets')
+        self.progress.update('New Colors')
+        self.oligotype_set_ids = range(0, len(self.oligotype_sets))
         
-        for dataset in viamics_datasets_dict:
-            viamics_datasets_dict[dataset]['tr'] = sum(viamics_datasets_dict[dataset]['species'].values())
-            viamics_datasets_dict[dataset]['bases_of_interest_locs'] = self.bases_of_interest_locs
-        self.progress.update('Storing')
-        cPickle.dump(viamics_datasets_dict, open(viamics_datasets_dict_file_path, 'w'))
-        self.progress.end()
+        self.colors_dict_for_oligotype_sets = {}
+        for set_id in self.oligotype_set_ids:
+            self.colors_dict_for_oligotype_sets[set_id] = self.colors_dict[self.oligotype_sets[set_id][0]]
 
-        self.run.info('viamics_datasets_dict_file_path', viamics_datasets_dict_file_path)
+        self.progress.update('New Datasets Dict')
+        self.datasets_dict_with_agglomerated_oligos = {}
+        for dataset in self.datasets:
+            self.datasets_dict_with_agglomerated_oligos[dataset] = {}
+
+        for set_id in self.oligotype_set_ids:
+            oligotype_set = self.oligotype_sets[set_id]
+            for dataset in self.datasets:
+                self.datasets_dict_with_agglomerated_oligos[dataset][set_id] = 0
+                for oligo in self.datasets_dict[dataset]:
+                    if oligo in oligotype_set:
+                        self.datasets_dict_with_agglomerated_oligos[dataset][set_id] += self.datasets_dict[dataset][oligo]
+        self.progress.end()
 
 
     def _generate_representative_sequences(self):
@@ -809,26 +829,6 @@ class Oligotyping:
         self.run.info('output_directory_for_reps', output_directory_for_reps) 
 
 
-    def _generate_random_colors(self):
-        random_color_file_path = self.generate_output_destination('COLORS')
-        if self.colors_list_file:
-            # it means user provided a list of colors to be used for oligotypes
-            colors = [c.strip() for c in open(self.colors_list_file).readlines()]
-            if len(colors) < len(self.abundant_oligos):
-                raise ConfigError, "Number of colors defined in colors file (%d),\
-                                    is smaller than the number of abundant oligotypes (%d)" % \
-                                                        (len(colors), len(self.abundant_oligos))
-            colors_dict = {}
-            for i in range(0, len(self.abundant_oligos)):
-                colors_dict[self.abundant_oligos[i]] = colors[i]
-
-            self.colors_dict = colors_dict
-
-        else:
-            self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
-        self.run.info('random_color_file_path', random_color_file_path)
-
-
     def _generate_dataset_oligotype_network_figures(self):
         output_directory_for_datasets = self.generate_output_destination("DATASETS", directory = True)
         oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_datasets)
@@ -856,16 +856,30 @@ class Oligotyping:
         self.progress.end()
         self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
 
-    def _generate_oligotype_partitions_figure(self):
-        self.progress.new('Oligotype Partitions Figure')
-        oligo_partitions_figure_path = self.generate_output_destination('OLIGO-PARTITIONS.png')
+
+    def _generate_oligotype_sets_across_datasets_figure(self):
+        self.progress.new('Oligotype Sets Across Datasets Figure')
+        figure_path = self.generate_output_destination('OLIGO-SETS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
-        partitioned_oligotypes(self.oligotype_partitions, self.oligos_across_datasets_sum_normalized, self.datasets,\
-                               display = False, colors_dict = self.colors_dict, output_file = oligo_partitions_figure_path,\
-                               project_title = 'Partitioned Oligotypes Across Datasets for "%s" at Cosine Similarity Threshold of %.4f'\
+        vis_oligotype_sets_distribution(self.oligotype_sets, self.oligos_across_datasets_sum_normalized, self.datasets,\
+                               display = False, colors_dict = self.colors_dict, output_file = figure_path,\
+                               project_title = 'Oligotype Sets Across Datasets for "%s", at Cosine Similarity Threshold of %.4f'\
                                         % (self.project, self.cosine_similarity_threshold), legend = False)
         self.progress.end()
-        self.run.info('oligotype_partitions_figure_path', oligo_partitions_figure_path)
+        self.run.info('oligotype_sets_across_datasets_figure_path', figure_path)
+
+
+    def _generate_stack_bar_figure_with_agglomerated_oligos(self):
+        self.progress.new('Stackbar Figure with Agglomerated Oligos')
+        stack_bar_file_path = self.generate_output_destination('STACKBAR-AGGLOMERATED-OLIGOS.png')
+        self.progress.update('Generating')
+
+        oligotype_distribution_stack_bar(self.datasets_dict_with_agglomerated_oligos, self.colors_dict_for_oligotype_sets,\
+                                         stack_bar_file_path, oligos = self.oligotype_set_ids, project_title = self.project,\
+                                         display = not self.no_display)
+        self.progress.end()
+        self.run.info('stack_bar_with_agglomerated_oligos_file_path', stack_bar_file_path)
+
 
     def _generate_html_output(self):
         from Oligotyping.utils.html.error import HTMLError
