@@ -47,24 +47,29 @@ def partitioned_oligotypes(partitions, vectors, datasets, colors_dict = None, ou
     ind = np.arange(N)
     width = 0.75
     
-    lines = []
-    
     number_of_dimensions = len(vectors.values()[0])
 
     for i in range(0, len(partitions)):
         group = partitions[i]
         vector = [] 
+        mins = []
+        maxs = []
 
         for d in range(0, number_of_dimensions):
             vector.append(np.mean([vectors[oligo][d] for oligo in group]))
+            mins.append(np.min([vectors[oligo][d] for oligo in group]))
+            maxs.append(np.max([vectors[oligo][d] for oligo in group]))
             
         try:
             color = HTMLColorToRGB(colors_dict[group[0]])
         except:
             color = 'black'
 
-        p = plt.plot(vector, color=color, linewidth = 5, alpha = 0.7, zorder = i, label = 'Partition %d' % i)
-        lines.append(p)
+        plt.fill_between(range(0, len(vector)), maxs, mins, color=color, alpha = 0.1)
+        plt.plot(vector, color=color, linewidth = 1, alpha = 0.95, label = 'Group #%d' % i)
+        if len(vector) < 50:
+            plt.plot(vector, color=color, linewidth = 3, alpha = 0.7, label = '_nolegend_')
+            plt.plot(vector, color=color, linewidth = 7, alpha = 0.6, zorder = i, label = '_nolegend_')
     
     plt.ylabel('Partitioned Oligotypes', size='large')
     plt.title(project_title if project_title else 'Partitioned Oligotypes Across Datasets')
