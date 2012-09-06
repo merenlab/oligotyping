@@ -22,7 +22,7 @@
 <div>
 
 <div class="head">Oligotyping Results for "{{ project }}"</div>
-<div class="title">This page shows some preliminary results of your analysis</div>
+<div class="title">A user-friendly interface to make sense of oligotyping results.</div>
 <div class="links-bar"><a href="http://oligotyping.org">Oligotyping.org</a></div>
 
 
@@ -109,20 +109,20 @@
     <tr><td id="l">{{pretty_names.oligos_across_datasets_MN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_MN_file_path}}">oligos_across_datasets_max_normalized.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_across_datasets_SN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_SN_file_path}}">oligos_across_datasets_sum_normalized.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligotype_sets_file_path}}</td><td id="r"><a href="{{oligotype_sets_file}}">oligotype_sets.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.matrix_percent_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_percent_oligo_sets_file_path}}">matrix_percents_oligo_sets.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.matrix_count_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_count_oligo_sets_file_path}}">matrix_counts_oligo_sets.txt</a></td></tr>
     {% if blast_ref_db and blast_ref_db_path %}
     <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
     {% endif %}
 </table>
 </div>
 
-
-
 <div class="smallhead"><a name="Entropy"></a>Entropy</div>
 <p class="smallheadtitle">» Entropy values that components were picked from
 <p class="content"><a href="{{ entropy_figure }}"><img src="{{ entropy_figure }}" style="max-width:1200px" border="0"></a>
 
 <div class="smallhead"><a name="Stackbar"></a>Stackbar</div>
-<p class="smallheadtitle">» Oligotype Profiles Among Datasets
+<p class="smallheadtitle">» Figure shows the oligotype distribution profiles among datasets. TAB separated files <a href="{{matrix_percent_file_path}}">matrix_percents.txt</a> and <a href="{{matrix_count_file_path}}">matrix_counts.txt</a> hold the information that were used to generate this figure.
 <p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
 <div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
@@ -183,6 +183,7 @@
 <div class="smallhead"><a name="Sets"></a>Oligotype Sets</div>
 <p class="smallheadtitle">» Figure below shows the sets of oligotypes that are agglomerated in distinct sets based on their frequency patterns across datasets. In this case cosine similarity threshold to consider two oligotypes to be in the same set was {{ T }}, and {{ oligotype_sets_info }}. It can be argued that if two oligotypes co-occur in all datasets with great similarity in frequency patterns, they can be considered functionally somewhat anologous.
 <p class="content"><a href="{{ oligotype_sets_figure }}"><img src="{{ oligotype_sets_figure }}" style="max-width:1200px" border="0"></a>
+<p class="smallheadtitle">The oligotype content of each set is shown below. This table also serves as a legend for the figure above, as well as the stackbar figure below. This information is also available in <a href="{{oligotype_sets_file}}">oligotype_sets.txt</a> file.
 <p class="content">
 <div class="wrap">
     <table style="width: 1160px;margin-left:40px">
@@ -202,7 +203,7 @@
     </table>
 </div>
 <p>&nbsp;
-<p class="smallheadtitle">Finally, the following figure shows the distribution of sets of oligotypes identified by the cosine similarity analysis.
+<p class="smallheadtitle">Following figure shows the distribution of oligotype sets identified by the cosine similarity analysis. The data that was used to generate this figure is also available via <a href="{{matrix_percent_oligo_sets_file_path}}">matrix_percents_oligo_sets.txt</a> and <a href="{{matrix_counts_oligo_sets_file_path}}">matrix_counts_oligo_sets.txt</a> files.
 <p class="content"><a href="{{ oligo_sets_stackbar_figure }}"><img src="{{ oligo_sets_stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
 

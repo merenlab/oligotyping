@@ -166,6 +166,8 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['oligotype_sets_figure'] = copy_as(run_info_dict['oligotype_sets_across_datasets_figure_path'], 'oligotype_sets.png')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
+    html_dict['matrix_count_oligo_sets_file_path'] = copy_as(run_info_dict['matrix_count_oligo_sets_file_path'], 'matrix_counts_oligo_sets.txt')
+    html_dict['matrix_percent_oligo_sets_file_path'] = copy_as(run_info_dict['matrix_percent_oligo_sets_file_path'], 'matrix_percents_oligo_sets.txt')
     html_dict['oligos_across_datasets_MN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_MN_file_path'], 'oligos_across_datasets_max_normalized.txt')
     html_dict['oligos_across_datasets_SN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_SN_file_path'], 'oligos_across_datasets_sum_normalized.txt')
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
@@ -179,7 +181,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
-    html_dict['oligotype_sets'] = [l.strip().split(',') for l in open(run_info_dict['oligotype_sets_file_path'])]
+    html_dict['oligotype_sets'] = [l.strip().split('\t')[1].split(',') for l in open(run_info_dict['oligotype_sets_file_path'])]
     html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
     html_dict['blast_results_found'] = False

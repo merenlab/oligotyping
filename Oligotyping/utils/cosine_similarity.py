@@ -36,7 +36,7 @@ from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 
 def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file = None):
-    partitions = []
+    oligotype_sets = []
     distances = {}
     
     for i in range(0, len(oligos)):
@@ -54,28 +54,29 @@ def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file
         if not len(ids):
             break
         
-        new_partition = [ids[0]]
+        new_oligotype_set = [ids[0]]
         seed = oligos[ids[0]]
     
         for _id in ids[1:]:
             candidate = oligos[_id]
             if distances[seed][candidate] <= cosine_similarity_threshold:
-                new_partition.append(_id)
+                new_oligotype_set.append(_id)
     
-        for _id in new_partition:
+        for _id in new_oligotype_set:
             ids.remove(_id)
     
-        partitions.append(new_partition)
+        oligotype_sets.append(new_oligotype_set)
 
 
-    partitioned_oligos = [[oligos[i] for i in partition] for partition in partitions]
+    oligotype_sets_final = [[oligos[i] for i in oligotype_set] for oligotype_set in oligotype_sets]
 
     if output_file:
         f = open(output_file, 'w')
-        for group in partitioned_oligos:
-            f.write('%s\n' % ','.join(group))
+        for i in range(0, len(oligotype_sets_final)):
+            oligotype_set = oligotype_sets_final[i]
+            f.write('Set_%d\t%s\n' % (i, ','.join(oligotype_set)))
 
-    return partitioned_oligos
+    return oligotype_sets_final
 
 
 if __name__ == '__main__':
@@ -91,7 +92,7 @@ if __name__ == '__main__':
                                 the more oligotypes will be pulled together. Cosine similarity\
                                 would return 0 for perfectly similar two vectors. Default is %(default)f.')
     parser.add_argument('-o', '--output-file', default = None, metavar = 'OUTPUT_FILE',\
-                        help = 'Serialized list of lists object that contains partitions')
+                        help = 'Serialized list of lists object that contains oligotype sets')
 
 
     args = parser.parse_args()

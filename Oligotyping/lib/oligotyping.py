@@ -245,9 +245,10 @@ class Oligotyping:
         self._generate_FASTA_file()
         self._generate_NEXUS_file()
         self._generate_ENVIRONMENT_file()
-        self._generate_MATRIX_files()
+        self._generate_MATRIX_files_for_oligotypes()
         self._generate_random_colors()
         self._agglomerate_oligos_based_on_cosine_similarity()
+        self._generate_MATRIX_files_for_oligotype_sets()
         
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
@@ -551,7 +552,7 @@ class Oligotyping:
         self.run.info('environment_file_path', environment_file_path)
 
 
-    def _generate_MATRIX_files(self):
+    def _generate_MATRIX_files_for_oligotypes(self):
         # generate matrices..
         self.progress.new('Matrix Files')
         matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
@@ -665,7 +666,52 @@ class Oligotyping:
                 for oligo in self.datasets_dict[dataset]:
                     if oligo in oligotype_set:
                         self.datasets_dict_with_agglomerated_oligos[dataset][set_id] += self.datasets_dict[dataset][oligo]
+
         self.progress.end()
+
+
+    def _generate_MATRIX_files_for_oligotype_sets(self):
+        self.progress.new('Matrix Files for Oligotype Sets')
+        counts_file_path = self.generate_output_destination("MATRIX-COUNT-OLIGO-SETS.txt")
+        percents_file_path = self.generate_output_destination("MATRIX-PERCENT-OLIGO-SETS.txt")
+        
+        d = self.datasets_dict_with_agglomerated_oligos
+        oligotype_set_percents = {}
+        oligotype_set_counts = {}
+
+
+        self.progress.update('Generating the data')
+        for oligotype_set_id in self.oligotype_set_ids:
+            counts = []
+            percents = []
+            for dataset in self.datasets:
+                if d[dataset].has_key(oligotype_set_id):
+                    counts.append(d[dataset][oligotype_set_id])
+                    percents.append(d[dataset][oligotype_set_id] * 100.0 / sum(d[dataset].values()))
+                else:
+                    counts.append(0)
+                    percents.append(0.0)
+
+            oligotype_set_percents[oligotype_set_id] = percents
+            oligotype_set_counts[oligotype_set_id] = counts
+        
+        self.progress.update('Generating files')
+        counts_file = open(counts_file_path, 'w')
+        percents_file = open(percents_file_path, 'w')       
+        
+        counts_file.write('\t'.join([''] + self.datasets) + '\n')
+        percents_file.write('\t'.join([''] + self.datasets) + '\n')
+
+        for oligotype_set_id in self.oligotype_set_ids:
+            counts_file.write('\t'.join(['Set_' + str(oligotype_set_id)] + [str(c) for c in oligotype_set_counts[oligotype_set_id]]) + '\n')
+            percents_file.write('\t'.join(['Set_' + str(oligotype_set_id)] + [str(p) for p in oligotype_set_percents[oligotype_set_id]]) + '\n')
+        
+        counts_file.close()
+        percents_file.close()
+
+        self.progress.end()
+        self.run.info('matrix_count_oligo_sets_file_path', counts_file_path)
+        self.run.info('matrix_percent_oligo_sets_file_path', percents_file_path)
 
 
     def _generate_representative_sequences(self):
