@@ -51,6 +51,7 @@ class Oligotyping:
         self.number_of_auto_components = 5
         self.selected_components = None
         self.limit_oligotypes_to = None
+        self.exclude_oligotypes = None
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 0.0
         self.cosine_similarity_threshold = 0.1
@@ -77,6 +78,7 @@ class Oligotyping:
             self.number_of_auto_components = args.number_of_auto_components
             self.selected_components = args.selected_components
             self.limit_oligotypes_to = args.limit_oligotypes_to
+            self.exclude_oligotypes = args.exclude_oligotypes
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.min_actual_abundance = args.min_actual_abundance
@@ -138,7 +140,14 @@ class Oligotyping:
                 raise ConfigError, "There must be more than one oligotype for --limit-oligotypes parameter."
 
             if len([n for n in ''.join(self.limit_oligotypes_to) if n not in ['A', 'T', 'C', 'G', '-']]):
-                raise ConfigError, "Oligotypes defined by --limit-oligotypes parameter seems to have ambiguours characters."
+                raise ConfigError, "Oligotypes defined by --limit-oligotypes parameter seems to have ambiguous characters."
+
+        if self.exclude_oligotypes:
+            self.exclude_oligotypes = [o.strip().upper() for o in self.exclude_oligotypes.split(',')]
+            
+            if len([n for n in ''.join(self.exclude_oligotypes) if n not in ['A', 'T', 'C', 'G', '-']]):
+                raise ConfigError, "Oligotypes defined by --exclude-oligotypes parameter seems to have ambiguous characters."
+            
         
         if not self.output_directory:
              self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
@@ -225,6 +234,8 @@ class Oligotyping:
             self.run.info('q', self.min_base_quality)
         if self.limit_oligotypes_to:
             self.run.info('limit_oligotypes_to', self.limit_oligotypes_to)
+        if self.exclude_oligotypes:
+            self.run.info('exclude_oligotypes', self.exclude_oligotypes)
         
         if self.number_of_auto_components:
             # locations of interest based on the entropy scores
@@ -449,6 +460,11 @@ class Oligotyping:
             self.run.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
             if len(self.abundant_oligos) == 0:
                 raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
+
+        # if 'exclude_oligotypes' is defined, remove them from analysis if they are present
+        if self.exclude_oligotypes:
+            self.abundant_oligos = [oligo for oligo in self.abundant_oligos if not oligo in self.exclude_oligotypes]
+            self.run.info('num_oligos_after_e_elim', pretty_print(len(self.abundant_oligos)))
 
         self.progress.end()
 

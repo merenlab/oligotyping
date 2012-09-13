@@ -85,6 +85,8 @@ def oligotyping():
                         help = 'Comma separated list of oligotypes to be taken into account during the analysis.\
                                 All other oligotypes will be discarded if a list of oligotypes is being speficied\
                                 with this parameter.')
+    parser.add_argument('-e', '--exclude-oligotypes', type = str, default = None,
+                        help = 'Comma separated list of oligotypes to be excluded from the the analysis.')
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'Some relatively insignificant parts of the analysis may take a lot of time, such as\
                                 generating figures for representative sequences. When this parameter is set, all\

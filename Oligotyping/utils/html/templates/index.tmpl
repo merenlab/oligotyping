@@ -58,6 +58,12 @@
     <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
     {% endif %}
     <tr><td id="l">{{pretty_names.T}}</td><td id="r"> {{T}}</td></tr>
+    {% if limit_oligotypes_to %}
+    <tr><td id="l">{{pretty_names.limit_oligotypes_to}}</td><td id="r"> {{limit_oligotypes_to|join:", "}}</td></tr>
+    {% endif %}
+    {% if exclude_oligotypes %}
+    <tr><td id="l">{{pretty_names.exclude_oligotypes}}</td><td id="r"> {{exclude_oligotypes|join:", "}}</td></tr>
+    {% endif %}
             
 </table>
 </div>
@@ -81,6 +87,12 @@
     <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim}}</td></tr>
+    {% if limit_oligotypes_to %}
+    <tr><td id="l">{{pretty_names.num_oligos_after_l_elim}}</td><td id="r"> {{num_oligos_after_l_elim}}</td></tr>
+    {% endif %}
+    {% if exclude_oligotypes %}
+    <tr><td id="l">{{pretty_names.num_oligos_after_e_elim}}</td><td id="r"> {{num_oligos_after_e_elim}}</td></tr>
+    {% endif %}
     <tr><td colspan=2>&nbsp;</td></tr>
     <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
     <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
@@ -194,8 +206,13 @@
             </td> 
             <td style="padding: 10px; line-height:150%; border: 1px solid #808080; opacity: 0.90; filter:alpha(opacity=90);">
                 {% for oligo in set %}
-                    {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
-                    <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a> 
+                    {% if output_directory_for_reps %}
+                        {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
+                        <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a> 
+                    {% else %}
+                        {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
+                        <span style="padding: 20px;"><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong></span></span>
+                    {% endif %}
                 {% endfor %}
             </td> 
         </tr>
