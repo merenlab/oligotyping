@@ -67,6 +67,7 @@ class Oligotyping:
         self.gen_html = False
         self.gen_dataset_oligo_networks = False
         self.colors_list_file = None
+        self.gen_oligotype_sets = False
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -95,6 +96,7 @@ class Oligotyping:
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
+            self.gen_oligotype_sets = args.gen_oligotype_sets
         
         self.run = Run()
         self.progress = Progress()
@@ -227,6 +229,7 @@ class Oligotyping:
         self.run.info('alignment_length', pretty_print(self.alignment_length))
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.run.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
+        self.run.info('gen_oligotype_sets', self.gen_oligotype_sets)
         self.run.info('s', self.min_number_of_datasets)
         self.run.info('a', self.min_percent_abundance)
         self.run.info('A', self.min_actual_abundance)
@@ -258,16 +261,18 @@ class Oligotyping:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files_for_oligotypes()
         self._generate_random_colors()
-        self._agglomerate_oligos_based_on_cosine_similarity()
-        self._generate_MATRIX_files_for_oligotype_sets()
+        if self.gen_oligotype_sets:
+            self._agglomerate_oligos_based_on_cosine_similarity()
+            self._generate_MATRIX_files_for_oligotype_sets()
         
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
-            self._generate_stack_bar_figure_with_agglomerated_oligos()
-            self._generate_oligos_across_datasets_figure()
-            self._generate_oligotype_sets_across_datasets_figure()
+            if self.gen_oligotype_sets:
+                self._generate_stack_bar_figure_with_agglomerated_oligos()
+                self._generate_oligos_across_datasets_figure()
+                self._gen_oligotype_sets_across_datasets_figure()
 
         if not self.quick:
             self._generate_representative_sequences()
@@ -919,7 +924,7 @@ class Oligotyping:
         self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
 
 
-    def _generate_oligotype_sets_across_datasets_figure(self):
+    def _gen_oligotype_sets_across_datasets_figure(self):
         self.progress.new('Oligotype Sets Across Datasets Figure')
         figure_path = self.generate_output_destination('OLIGO-SETS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
