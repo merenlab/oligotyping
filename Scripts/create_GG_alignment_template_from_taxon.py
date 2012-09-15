@@ -14,8 +14,7 @@ import os
 import sys
 import argparse
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-import lib.fastalib as u
+import Oligotyping.lib.fastalib as u
 
 def gen_tmpl(taxon, otu_id_to_greengenes, greengenes_alignment, output_file_path = None):
     ids = []
