@@ -161,8 +161,6 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         except:
             html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'] + '.png'), 'entropy.png')
     html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
-    html_dict['oligos_across_datasets_MN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_MN_file_path'], 'oligos_across_datasets_max_normalized.txt')
-    html_dict['oligos_across_datasets_SN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_SN_file_path'], 'oligos_across_datasets_sum_normalized.txt')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
@@ -170,6 +168,8 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['oligos_nexus_file_path'] = copy_as(run_info_dict['oligos_nexus_file_path'], 'oligos.nex.txt')
 
     if html_dict['gen_oligotype_sets']:
+        html_dict['oligos_across_datasets_MN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_MN_file_path'], 'oligos_across_datasets_max_normalized.txt')
+        html_dict['oligos_across_datasets_SN_file_path'] = copy_as(run_info_dict['oligos_across_datasets_SN_file_path'], 'oligos_across_datasets_sum_normalized.txt')
         html_dict['oligo_sets_stackbar_figure'] = copy_as(run_info_dict['stack_bar_with_agglomerated_oligos_file_path'], 'stackbar_with_oligo_sets.png')
         html_dict['oligos_across_datasets_figure'] = copy_as(run_info_dict['oligos_across_datasets_file_path'], 'oligos_across_datasets.png')
         html_dict['oligotype_sets_figure'] = copy_as(run_info_dict['oligotype_sets_across_datasets_figure_path'], 'oligotype_sets.png')
