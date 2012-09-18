@@ -65,11 +65,13 @@ def oligotyping():
                         help = 'Minimum total abundance of an oligotype in all datastes. The default\
                                 is "0". If the total abundance of an oligotype is smaller than the number given\
                                 with this parameter, oligotype would be eliminated and not included in downstream\
-                                analyses.')
-    parser.add_argument('-T', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
-                        help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
-                                the threshold is, the more oligotypes will be pulled together. Cosine similarity\
-                                would return 0 for perfectly similar two vectors. Default is %(default)f.')
+                                analyses. Default is %(default)d.')
+    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=0,
+                        help = 'Unlike "actual" abundance, "substantive" abundance is interested in the abundance\
+                                of the most abundant read in an oligotype. If the abundance of the most abundant\
+                                unique sequence in an oligotype smaller than the number given with this parameter\
+                                the oligotype will be eliminated and not included in downstream analyses. Default\
+                                is %(default)d.')
     parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
@@ -110,6 +112,10 @@ def oligotyping():
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
                         datasets are similar. Oligotype sets simply put oligotypes into the same set if they \
                         co-occur in datasets consistenly.')
+    parser.add_argument('-T', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
+                        help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
+                                the threshold is, the more oligotypes will be pulled together. Cosine similarity\
+                                would return 0 for perfectly similar two vectors. Default is %(default)f.')
     parser.add_argument('--gen-dataset-oligo-networks', action = 'store_true', default = False,
                         help = 'Generate oligotype network structure figures for each dataset.')
     parser.add_argument('--project', default = None, type=str,

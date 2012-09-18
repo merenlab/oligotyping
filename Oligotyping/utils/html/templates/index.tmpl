@@ -50,6 +50,7 @@
     <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
     <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
     <tr><td id="l">{{pretty_names.A}}</td><td id="r"> {{A}}</td></tr>
+    <tr><td id="l">{{pretty_names.M}}</td><td id="r"> {{M}}</td></tr>
     <tr><td id="l">{{pretty_names.quals_provided}}</td><td id="r"> {{quals_provided}}</td></tr>
     {% if quals_provided %}
     <tr><td id="l">{{pretty_names.q}}</td><td id="r"> Q{{q}}</td></tr>
@@ -90,6 +91,9 @@
     <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim}}</td></tr>
+    {% if min_substantive_abundance %}
+    <tr><td id="l">{{pretty_names.num_oligos_after_M_elim}}</td><td id="r"> {{num_oligos_after_M_elim}}</td></tr>
+    {% endif %}
     {% if limit_oligotypes_to %}
     <tr><td id="l">{{pretty_names.num_oligos_after_l_elim}}</td><td id="r"> {{num_oligos_after_l_elim}}</td></tr>
     {% endif %}

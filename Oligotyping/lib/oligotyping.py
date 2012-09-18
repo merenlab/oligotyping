@@ -54,7 +54,8 @@ class Oligotyping:
         self.exclude_oligotypes = None
         self.min_number_of_datasets = 5
         self.min_percent_abundance = 0.0
-        self.cosine_similarity_threshold = 0.1
+        self.min_actual_abundance = 0
+        self.min_substantive_abundance = 0
         self.project = None
         self.output_directory = None
         self.dataset_name_separator = '_'
@@ -68,6 +69,7 @@ class Oligotyping:
         self.gen_dataset_oligo_networks = False
         self.colors_list_file = None
         self.gen_oligotype_sets = False
+        self.cosine_similarity_threshold = 0.1
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -83,6 +85,7 @@ class Oligotyping:
             self.min_number_of_datasets = args.min_number_of_datasets
             self.min_percent_abundance = args.min_percent_abundance
             self.min_actual_abundance = args.min_actual_abundance
+            self.min_substantive_abundance = args.min_substantive_abundance
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.output_directory = args.output_directory
             self.dataset_name_separator = args.dataset_name_separator
@@ -179,13 +182,16 @@ class Oligotyping:
 
 
     def get_prefix(self):
-        prefix = 's%d-a%.1f-A%d' % (self.min_number_of_datasets, self.min_percent_abundance, self.min_actual_abundance)
+        prefix = 's%d-a%.1f-A%d-M%d' % (self.min_number_of_datasets,
+                                        self.min_percent_abundance,
+                                        self.min_actual_abundance,
+                                        self.min_substantive_abundance)
 
         if self.selected_components:
             prefix = 'sc%d-%s' % (len(self.selected_components), prefix)
         else:
             prefix = 'c%d-%s' % (self.number_of_auto_components, prefix)
-
+        
         if self.quals_dict:
             prefix = '%s-q%d' % (prefix, self.min_base_quality)
 
@@ -235,6 +241,7 @@ class Oligotyping:
         self.run.info('s', self.min_number_of_datasets)
         self.run.info('a', self.min_percent_abundance)
         self.run.info('A', self.min_actual_abundance)
+        self.run.info('M', self.min_substantive_abundance)
         if self.quals_dict:
             self.run.info('q', self.min_base_quality)
         if self.limit_oligotypes_to:
@@ -441,23 +448,68 @@ class Oligotyping:
         
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
+
         # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all datasets
         # should should be more than 'self.min_actual_abundance'.
-        oligos_for_removal = []
-        for i in range(0, len(self.abundant_oligos)):
-            oligo = self.abundant_oligos[i]
+        if self.min_actual_abundance > 0:
+            oligos_for_removal = []
+            for i in range(0, len(self.abundant_oligos)):
+                oligo = self.abundant_oligos[i]
 
-            if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
-                 self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
+                if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
+                     self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
 
-            oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)])
-            if self.min_actual_abundance > oligo_actual_abundance:
-                oligos_for_removal.append(oligo)
+                oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)])
+                if self.min_actual_abundance > oligo_actual_abundance:
+                    oligos_for_removal.append(oligo)
 
-        for oligo in oligos_for_removal:
-            self.abundant_oligos.remove(oligo)
-        self.progress.reset()
-        self.run.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
+            for oligo in oligos_for_removal:
+                self.abundant_oligos.remove(oligo)
+            self.progress.reset()
+            self.run.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
+
+
+        # eliminate oligos based on -M / --min-substantive-abundance parameter.
+        #
+        # Here is a pesky problem. -A parameter eliminates oligotypes based on the number of sequences
+        # represented by them. But this is not a very reliable way to eliminate noise, and sometimes it
+        # eliminates more signal than noise. Here is an example: Say Oligotype #1 and Oligotype #2 both
+        # represent 20 reads. But O#1 has only one unique sequence, so all reads that are being
+        # represented by O#1 are actually the same. Meanwhile O#2 has 20 unique reads in it. So each
+        # read differs from each other at bases that are not being used by oligotyping. Simply one could
+        # argue that O#2 is full of noise, while O#1 is a robust oligotype that probably represents one
+        # and only one organism. If you set -A to 25, both will be eliminated. But if there would be a
+        # parameter that eliminates oligotypes based on the number of most abundant unique sequence
+        # they entail, it could be set to, say '5', and O#1 would have survived that filter while O#2
+        # the crappy oligotype would be filtered out. 
+        #
+        # Following function, _get_unique_sequence_distributions_within_abundant_oligos, returns the
+        # dictionary that can be used to do that.
+        #
+        # And here is the ugly part about implementing this: This has to be done before the generation
+        # of representative sequences. Upto the section where we generate representative sequences,
+        # we only work with 'abundances' and we don't actually know what is the distribution of unique
+        # sequences an oligotype conceals. This information is being computed when the representative
+        # sequences are being computed. But in order to compute representative sequences we need to
+        # know 'abundant' oligotypes first, and in order to finalize 'abundant' oligotypes
+        # we need to run this cool filter. Chicken/egg. It is extremely inefficient, and I hate
+        # to do this but this somewhat redundant step is mandatory and I can't think of any better
+        # solution... And if you read this comment all the way here you either must be very bored or
+        # very interested in using this codebase properly. Thanks.
+
+        if self.min_substantive_abundance:
+            oligos_for_removal = []
+            unique_sequence_distributions = self._get_unique_sequence_distributions_within_abundant_oligos()
+
+            for oligo in self.abundant_oligos:
+                if max(unique_sequence_distributions[oligo]) < self.min_substantive_abundance:
+                    oligos_for_removal.append(oligo)
+
+            for oligo in oligos_for_removal:
+                self.abundant_oligos.remove(oligo)
+
+            self.progress.reset()
+            self.run.info('num_oligos_after_M_elim', pretty_print(len(self.abundant_oligos)))
 
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
@@ -746,6 +798,34 @@ class Oligotyping:
         self.progress.end()
         self.run.info('matrix_count_oligo_sets_file_path', counts_file_path)
         self.run.info('matrix_percent_oligo_sets_file_path', percents_file_path)
+
+
+    def _get_unique_sequence_distributions_within_abundant_oligos(self):
+        # compute and return the unique sequence distribution within per oligo
+        # dictionary. see the explanation where the function is called.
+
+        self.progress.new('Unique Sequence Distributions Within Abundant Oligos')
+
+        self.unique_sequence_distribution_per_oligo = dict(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))]))
+
+        self.fasta.reset()
+        while self.fasta.next():
+            if self.fasta.pos % 1000 == 0:
+                self.progress.update('Computing: %.2f%%' \
+                                                % (self.fasta.pos * 100 / self.fasta.total_seq))
+            oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
+            if oligo in self.abundant_oligos:
+                try:
+                    self.unique_sequence_distribution_per_oligo[oligo][self.fasta.seq] += 1
+                except KeyError:
+                    self.unique_sequence_distribution_per_oligo[oligo][self.fasta.seq] = 1
+
+        for oligo in self.abundant_oligos:
+            self.unique_sequence_distribution_per_oligo[oligo] = sorted(self.unique_sequence_distribution_per_oligo[oligo].values(), reverse = True)
+
+        self.progress.end()
+
+        return self.unique_sequence_distribution_per_oligo
 
 
     def _generate_representative_sequences(self):

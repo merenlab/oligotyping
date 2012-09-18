@@ -46,7 +46,7 @@ class Tests(unittest.TestCase):
 
     def test_01_PrefixGenerator(self):
         prefix = self.oligotyping.get_prefix()
-        self.assertTrue(prefix == 'c20-s1-a1.0-A100')
+        self.assertTrue(prefix == 'c20-s1-a1.0-A100-M0')
 
     def test_02_Oligotyping(self):
         self.oligotyping.run_all()
