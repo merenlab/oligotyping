@@ -3,8 +3,7 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../lib'))
-import fastalib as u
+import Oligotyping.lib.fastalib as u
 
 alignment = u.SequenceSource(sys.argv[1])
 quals = u.SequenceSource(sys.argv[2])

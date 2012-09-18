@@ -17,9 +17,8 @@ import numpy
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-import lib.fastalib as u
-from utils.utils import pretty_print
+import Oligotyping.lib.fastalib as u
+from Oligotyping.utils.utils import pretty_print
 
 def length_distribution(fasta, output = None, title = None):
     length_abundance_dict = {}
