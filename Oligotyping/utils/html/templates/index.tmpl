@@ -26,7 +26,14 @@
 <div class="links-bar"><a href="http://oligotyping.org">Oligotyping.org</a></div>
 
 
-<div class="smallhead"><a name="General"></a>General</div>
+<div class="smallhead"><a name="General"></a>Overview</div>
+<p class="smallheadtitle">» A summary of what happened.
+<div class="info_table">
+<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">Oligotyping analysis was performed on {{total_seq}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta}} sample{{ num_datasets_in_fasta|pluralize }} for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using {% if number_of_auto_components %}{{number_of_auto_components}} component{{ number_of_auto_components|pluralize }} automatically selected form the highest entropy values{% else %}{{number_of_selected_components}} component{{ number_of_selected_components|pluralize }}{% endif %} following the initial entropy analysis. {% if quals_provided %}Additionally, machine reported PHRED scores were employed during the oligotyping analysis to make sure that any base used for oligotype formation was above quality score of Q{{q}}. {{num_reads_eliminated_due_to_min_base_quality}} reads that present a base call with a lower quality score than Q{{q}} at any of the {% if number_of_auto_components %}{{number_of_auto_components}}{% else %}{{number_of_selected_components}}{% endif %} locations of interest revealed by entropy analysis were discarded from the analysis. {% endif %}To reduce the noise, each oligotype required to (1) appear in at least {{s}} sample{{ s|pluralize }}, (2) occur in more than {{a}}% of the reads for at least one sample, (3) represent a minimum of {{A}} read{{ A|pluralize }} in all samples combined, and (4) have a most abundant unique sequence with a minimum abundance of {{M}}. Oligotypes that did not meet these criteria were removed from the analysis. The final number of quality controlled oligotypes revealed by the analysis was {{num_oligos_after_M_elim}} and they represented {{num_sequences_after_qc}} reads.{% if datasets_removed_after_qc %} {{datasets_removed_after_qc|length}} sample{{ datasets_removed_after_qc|length|pluralize }} were also removed from the analysis because all its reads were eliminated during the QC.{% endif %}
+</div>
+
+
+<div class="smallhead"><a name="General"></a>General Information</div>
 <br />
 
 <p class="smallheadtitle">» Meta
@@ -90,8 +97,10 @@
     <tr><td id="l">{{pretty_names.num_unique_oligos}}</td><td id="r"> {{num_unique_oligos}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
     <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
+    {% if A %}
     <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim}}</td></tr>
-    {% if min_substantive_abundance %}
+    {% endif %}
+    {% if M %}
     <tr><td id="l">{{pretty_names.num_oligos_after_M_elim}}</td><td id="r"> {{num_oligos_after_M_elim}}</td></tr>
     {% endif %}
     {% if limit_oligotypes_to %}
@@ -152,7 +161,7 @@
 
 
 <div class="smallhead"><a name="Oligotypes"></a>Oligotypes</div>
-<p class="smallheadtitle">» Abundant oligotypes along with their frequencies within the project are shown below. Every oligotype is followed by a representative sequence, which is the most frequent read in all reads that were collected by the given oligotype. Mouseover on an oligotype will popup a figure that shows the abundance distribution of unique sequences within the oligotype, along with the new entropy (in an ideal world there should be only one unique read with 0 entropy, but due to the random sequencing errors it is almost never the case). {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something during the BLAST search with 100% identity in {% if blast_ref_db and blast_ref_db_path %}the <a href="{{blast_ref_db_path}}">local search database</a> that was provided by the user{% else %}NCBI's <i>nr</i> database{% endif %}. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search.<br /><br /> Here are the oligotypes with a perfect hit: {% for oligo in oligos %} {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}{{oligo}},{% endif %}{% endfor %} (if you would like to limit your interest only to these oligotypes, you can use "--limit-oligotypes-to" directive from the command line interface and repeat the analysis).{% else %}BLAST results are missing for this analysis.{% endif %}
+<p class="smallheadtitle">» Abundant oligotypes along with their frequencies within the project are shown below. Every oligotype is followed by a representative sequence, which is the most frequent read in all reads that were collected by the given oligotype. Mouseover on an oligotype will popup a figure that shows the abundance distribution of unique sequences within the oligotype, along with the new entropy (in an ideal world there should be only one unique read with 0 entropy, but due to the random sequencing errors it is almost never the case). {% if blast_results_found %}<span class="check">✓</span> indicates that the most frequent sequence which was represented by the given oligotype hit something during the BLAST search with 100% identity in {% if blast_ref_db and blast_ref_db_path %}the <a href="{{blast_ref_db_path}}">local search database</a> that was provided by the user{% else %}NCBI's <i>nr</i> database{% endif %}. In contrary, <span class="cross">✗</span> sign means that there was no perfect hit during the BLAST search.{% endif %}
 
 {% if output_directory_for_reps %}
     <div class="wrap">
