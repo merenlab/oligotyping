@@ -631,35 +631,36 @@ class Oligotyping:
         self.progress.new('Matrix Files')
         matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
         matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")
-        
+       
         oligo_percents = {}
         oligo_counts = {}
 
         self.progress.update('Generating the data')
-        for oligo in self.abundant_oligos:
+        for dataset in self.datasets:
             counts = []
             percents = []
-            for dataset in self.datasets:
+            for oligo in self.abundant_oligos:
                 if self.datasets_dict[dataset].has_key(oligo):
                     counts.append(self.datasets_dict[dataset][oligo])
                     percents.append(self.datasets_dict[dataset][oligo] * 100.0 / sum(self.datasets_dict[dataset].values()))
                 else:
                     counts.append(0)
                     percents.append(0.0)
-
-            oligo_counts[oligo] = counts
-            oligo_percents[oligo] = percents
+                    
+            oligo_counts[dataset] = counts
+            oligo_percents[dataset] = percents
         
+
         self.progress.update('Generating files')
         count_file = open(matrix_count_file_path, 'w')
         percent_file = open(matrix_percent_file_path, 'w')       
         
-        count_file.write('\t'.join([''] + self.datasets) + '\n')
-        percent_file.write('\t'.join([''] + self.datasets) + '\n')
+        count_file.write('\t'.join(['samples'] + self.abundant_oligos) + '\n')
+        percent_file.write('\t'.join(['samples'] + self.abundant_oligos) + '\n')
  
-        for oligo in self.abundant_oligos:
-            count_file.write('\t'.join([oligo] + [str(c) for c in oligo_counts[oligo]]) + '\n')
-            percent_file.write('\t'.join([oligo] + [str(p) for p in oligo_percents[oligo]]) + '\n')
+        for dataset in self.datasets:
+            count_file.write('\t'.join([dataset] + [str(c) for c in oligo_counts[dataset]]) + '\n')
+            percent_file.write('\t'.join([dataset] + [str(p) for p in oligo_percents[dataset]]) + '\n')
         
         count_file.close()
         percent_file.close()
@@ -677,18 +678,18 @@ class Oligotyping:
             oligos_across_datasets_MN_file = open(oligos_across_datasets_MN_file_path, 'w')
             oligos_across_datasets_SN_file = open(oligos_across_datasets_SN_file_path, 'w')
 
-            oligos_across_datasets_MN_file.write('\t'.join([''] + self.datasets) + '\n')
-            oligos_across_datasets_SN_file.write('\t'.join([''] + self.datasets) + '\n')
+            oligos_across_datasets_MN_file.write('\t'.join(['sample'] + self.abundant_oligos) + '\n')
+            oligos_across_datasets_SN_file.write('\t'.join(['sample'] + self.abundant_oligos) + '\n')
 
             self.progress.update('Generating data for oligos across datasets')
-            for oligo in self.abundant_oligos:
-                self.oligos_across_datasets_sum_normalized[oligo] = [p * 100.0 / sum(oligo_percents[oligo]) for p in oligo_percents[oligo]]
-                self.oligos_across_datasets_max_normalized[oligo] = [p * 100.0 / max(oligo_percents[oligo]) for p in oligo_percents[oligo]]
+            for oligo in self.datasets:
+                self.oligos_across_datasets_sum_normalized[oligo] = [p * 100.0 / sum(oligo_percents[dataset]) for p in oligo_percents[dataset]]
+                self.oligos_across_datasets_max_normalized[oligo] = [p * 100.0 / max(oligo_percents[dataset]) for p in oligo_percents[dataset]]
 
             self.progress.update('Generating files')
-            for oligo in self.abundant_oligos:
-                oligos_across_datasets_MN_file.write('\t'.join([oligo] + [str(o) for o in self.oligos_across_datasets_max_normalized[oligo]]) + '\n')
-                oligos_across_datasets_SN_file.write('\t'.join([oligo] + [str(o) for o in self.oligos_across_datasets_sum_normalized[oligo]]) + '\n')
+            for oligo in self.datasets:
+                oligos_across_datasets_MN_file.write('\t'.join([dataset] + [str(o) for o in self.oligos_across_datasets_max_normalized[dataset]]) + '\n')
+                oligos_across_datasets_SN_file.write('\t'.join([dataset] + [str(o) for o in self.oligos_across_datasets_sum_normalized[dataset]]) + '\n')
             
             oligos_across_datasets_MN_file.close()
             oligos_across_datasets_SN_file.close()
