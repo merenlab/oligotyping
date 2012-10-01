@@ -1002,7 +1002,7 @@ class Oligotyping:
         self.progress.update('Generating')
         oligos = copy.deepcopy(self.abundant_oligos)
         oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, stack_bar_file_path, oligos = oligos,\
-                                         project_title = self.project, display = not self.no_display)
+                                         project_title = self.project, display = ((not self.no_display) and self.quick))
         self.progress.end()
         self.run.info('stack_bar_file_path', stack_bar_file_path)
 
