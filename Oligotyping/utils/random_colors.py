@@ -11,6 +11,7 @@
 
 import os
 import sys
+import copy
 import random
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -32,16 +33,20 @@ def get_hex_color(rgba_color):
 
 def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
 
+    oligotypes_shuffled = copy.deepcopy(oligotypes)
+    random.shuffle(oligotypes_shuffled)
+
     color_dict = {}
 
-    random.shuffle(oligotypes)
-    colors = getColor(colormap, len(oligotypes))
-    for i in range(0, len(oligotypes)):
+    colors = getColor(colormap, len(oligotypes_shuffled))
+    for i in range(0, len(oligotypes_shuffled)):
         rgba_color = colors(i)
-        color_dict[oligotypes[i]] = get_hex_color(colors(i))
+        color_dict[oligotypes_shuffled[i]] = get_hex_color(colors(i))
 
     if output_file_path:
-        open(output_file_path, 'w').write('\n'.join(['%s\t%s' % (c, color_dict[c]) for c in color_dict]) + '\n')
+        output_file = open(output_file_path, 'w')
+        for oligotype in oligotypes:
+            output_file.write('\n'.join(['%s\t%s\n' % (oligotype, color_dict[oligotype])]))
     
     return color_dict
 

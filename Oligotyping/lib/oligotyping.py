@@ -714,7 +714,7 @@ class Oligotyping:
 
             self.colors_dict = colors_dict
         else:
-            self.colors_dict = random_colors(copy.deepcopy(self.abundant_oligos), random_color_file_path)
+            self.colors_dict = random_colors(self.abundant_oligos, random_color_file_path)
         self.run.info('random_color_file_path', random_color_file_path)
 
 

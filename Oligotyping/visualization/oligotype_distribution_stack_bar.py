@@ -114,7 +114,9 @@ if __name__ == '__main__':
     parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE',\
                         help = 'Oligotype distribution in datasets')
     parser.add_argument('--colors-file', metavar = 'COLORS_FILE', default = None,\
-                        help = 'File that contains random colors for oligotypes')
+                        help = 'Two column file that contains colors for oligotypes')
+    parser.add_argument('--color-list-file', metavar = 'COLORS_FILE', default = None,\
+                        help = 'Single column file that contains a list of colors')
     parser.add_argument('--output-file', default = None, metavar = 'OUTPUT_FILE',\
                         help = 'File name for the figure to be stored. File name\
                                 must end with "png", "jpg", or "tiff".')
@@ -142,6 +144,16 @@ if __name__ == '__main__':
         colors_dict = {}
         for oligotype, color in [line.strip().split('\t') for line in open(args.colors_file).readlines()]:
             colors_dict[oligotype] = color
+    elif args.color_list_file:
+        colors_dict = {}
+        colors = [line.strip() for line in open(args.color_list_file).readlines()]
+        oligos = get_oligos_sorted_by_abundance(datasets_dict, None)
+        oligos.reverse()
+        if len(oligos) > len(colors):
+            sys.stderr.write('Error: number of colors in file is less than number of oligos. Quiting.\n')
+            sys.exit()
+        for oligo in oligos:
+            colors_dict[oligo] = colors[oligos.index(oligo)]
     else:
         colors_dict = None
 
