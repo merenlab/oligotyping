@@ -7,8 +7,8 @@ library(gtools)
 
 args <- commandArgs(trailingOnly = TRUE)
 csv_path <- args[1]
-title_text <- args[2]
-output_file_prefix <- args[3]
+output_file_prefix <- args[2]
+title_text <- args[3]
 
 
 if(invalid(title_text))
