@@ -26,7 +26,7 @@ def files_are_the_same(file1, file2):
 
 class Tests(unittest.TestCase):
     def setUp(self):
-        self.output_directory_path = os.path.join(my_path, 'test-oligotyping')
+        self.output_directory_path = os.path.join(my_path, 'test-oligotyping-illumina-25K')
         self.oligotyping = Oligotyping()
         self.oligotyping.alignment = os.path.join(my_path, 'files/unaligned-25K-illumina-test.fa')
         self.oligotyping.entropy = os.path.join(my_path, 'files/unaligned-25K-illumina-test-entropy.txt')
@@ -36,6 +36,8 @@ class Tests(unittest.TestCase):
         self.oligotyping.min_number_of_datasets = 1
         self.oligotyping.project = 'Unaligned 25K Illumina Test'
         self.oligotyping.quick = True
+        self.oligotyping.gen_oligotype_sets = True
+        self.oligotyping.cosine_similarity_threshold = 0.5
         self.oligotyping.output_directory = self.output_directory_path 
         self.oligotyping.no_display = True
         self.oligotyping.progress.verbose = False
@@ -54,6 +56,25 @@ class Tests(unittest.TestCase):
     def test_03_EnvironmentFile(self):
         self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-ENVIRONMENT.txt'),
                                            os.path.join(self.output_directory_path, 'ENVIRONMENT.txt')))
+    def test_04_MatrixPercentFile(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-MATRIX-PERCENT.txt'),
+                                           os.path.join(self.output_directory_path, 'MATRIX-PERCENT.txt')))
+       
+    def test_05_MatrixCountFile(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-MATRIX-COUNT.txt'),
+                                           os.path.join(self.output_directory_path, 'MATRIX-COUNT.txt')))
+       
+    def test_06_OligotypeSets(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOTYPE-SETS.txt'),
+                                           os.path.join(self.output_directory_path, 'OLIGOTYPE-SETS.txt')))
+       
+    def test_07_OligotypesAcrossDatasetsMaxNorm(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-MAX-NORM.txt'),
+                                           os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-MAX-NORM.txt')))
+
+    def test_08_OligotypesAcrossDatasetsSumNorm(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-SUM-NORM.txt'),
+                                           os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-SUM-NORM.txt')))
        
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)
