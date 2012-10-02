@@ -682,14 +682,24 @@ class Oligotyping:
             oligos_across_datasets_SN_file.write('\t'.join(['sample'] + self.abundant_oligos) + '\n')
 
             self.progress.update('Generating data for oligos across datasets')
-            for oligo in self.datasets:
-                self.oligos_across_datasets_sum_normalized[oligo] = [p * 100.0 / sum(oligo_percents[dataset]) for p in oligo_percents[dataset]]
-                self.oligos_across_datasets_max_normalized[oligo] = [p * 100.0 / max(oligo_percents[dataset]) for p in oligo_percents[dataset]]
+  
+            for oligo in self.abundant_oligos:
+                self.oligos_across_datasets_sum_normalized[oligo] = []
+                self.oligos_across_datasets_max_normalized[oligo] = []
+
+            for i in range(0, len(self.abundant_oligos)):
+                oligo = self.abundant_oligos[i]
+                sum_across_datasets = sum([oligo_percents[dataset][i] for dataset in self.datasets])
+                max_across_datasets = max([oligo_percents[dataset][i] for dataset in self.datasets])
+                for dataset in self.datasets:
+                    self.oligos_across_datasets_sum_normalized[oligo].append(oligo_percents[dataset][i]  * 100.0 / sum_across_datasets)
+                    self.oligos_across_datasets_max_normalized[oligo].append(oligo_percents[dataset][i]  * 100.0 / max_across_datasets)
 
             self.progress.update('Generating files')
-            for oligo in self.datasets:
-                oligos_across_datasets_MN_file.write('\t'.join([dataset] + [str(o) for o in self.oligos_across_datasets_max_normalized[dataset]]) + '\n')
-                oligos_across_datasets_SN_file.write('\t'.join([dataset] + [str(o) for o in self.oligos_across_datasets_sum_normalized[dataset]]) + '\n')
+            for i in range(0, len(self.datasets)):
+                dataset = self.datasets[i]
+                oligos_across_datasets_MN_file.write('\t'.join([dataset] + [str(self.oligos_across_datasets_max_normalized[oligo][i]) for oligo in self.abundant_oligos]) + '\n')
+                oligos_across_datasets_SN_file.write('\t'.join([dataset] + [str(self.oligos_across_datasets_sum_normalized[oligo][i]) for oligo in self.abundant_oligos]) + '\n')
             
             oligos_across_datasets_MN_file.close()
             oligos_across_datasets_SN_file.close()
