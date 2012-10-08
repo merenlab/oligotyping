@@ -32,6 +32,16 @@ try:
 except ImportError:
     raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
 
+@register.filter(name='diffs')
+def diffs(l, index):
+    """this filter is being used in oligo.tmpl, takes first 20 unique sequence
+       as an argument (l) and compares l[index] to l[0] to return differences"""
+    _diffs = []
+    for i in range(0, len(l[0])):
+        if l[0][i] != l[index][i]:
+            _diffs.append(i)
+
+    return ', '.join([str(i) for i in _diffs])
 
 @register.filter(name='lookup')
 def lookup(d, index):
