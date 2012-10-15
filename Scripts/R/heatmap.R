@@ -25,18 +25,19 @@ m = as.matrix(csv[,-1])
 
 hmap <- function(){
     heatmap.2(t(m),
-              dendrogram="column",
+              dendrogram="both",
               scale="row",
               trace="none",
-              cexRow=0.9,
-              cexCol=0.9,
+              cexRow=0.4,
+              cexCol=1.5,
+              distfun=function(m) vegdist(m,method="bray"), #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
+              hclustfun=function(x) hclust(x,method="ward"), # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
               symm=F,
               symkey=T,
               symbreaks=T, 
-              col=heat.colors(256),
+              col=colorRampPalette(c("red","green","green4","violet","purple"))(100),
               labRow=NA,
               margins = c(10,10),
-              key=FALSE,
               )
 
     title(title_text, col.main = "gray")

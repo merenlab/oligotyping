@@ -20,8 +20,9 @@ if(invalid(output_file_prefix))
 csv <- read.csv(csv_path, header=TRUE, sep="\t")
 rownames(csv) <- csv[,1]
 
-d <- vegdist(csv[,-1], method = "bray")
-fit <- hclust(d, method="ward") 
+
+d <- vegdist(csv[,-1], method="bray") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
+fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
 
 P <- function(){
     plot(fit, labels=rownames(csv), cex = 0.7) # display dendogram
