@@ -204,7 +204,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     # include pretty names
     html_dict['pretty_names'] = pretty_names
     # get colors dict
-    html_dict['color_dict'] = get_colors_dict(run_info_dict['random_color_file_path'])
+    html_dict['color_dict'] = get_colors_dict(run_info_dict['colors_file_path'])
     # get abundant oligos list
     html_dict['oligos'] = get_oligos_list(run_info_dict['oligos_fasta_file_path'])
     # get oligo frequencies
@@ -253,9 +253,9 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
 
     return index_page
 
-def get_colors_dict(random_color_file_path):
+def get_colors_dict(colors_file_path):
     colors_dict = {}
-    for oligo, color in [line.strip().split('\t') for line in open(random_color_file_path).readlines()]:
+    for oligo, color in [line.strip().split('\t') for line in open(colors_file_path).readlines()]:
         colors_dict[oligo] = color
     return colors_dict
 

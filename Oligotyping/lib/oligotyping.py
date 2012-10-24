@@ -111,6 +111,7 @@ class Oligotyping:
         self.oligotype_sets = None
         self.datasets = []
         self.abundant_oligos = []
+        self.final_oligo_counts_dict = {}
         self.colors_dict = None
 
     def sanity_check(self):
@@ -459,7 +460,8 @@ class Oligotyping:
                 if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
                      self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
 
-                oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict if self.datasets_dict[dataset].has_key(oligo)])
+                oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict\
+                                                        if self.datasets_dict[dataset].has_key(oligo)])
                 if self.min_actual_abundance > oligo_actual_abundance:
                     oligos_for_removal.append(oligo)
 
@@ -524,6 +526,12 @@ class Oligotyping:
             self.abundant_oligos = [oligo for oligo in self.abundant_oligos if not oligo in self.exclude_oligotypes]
             self.run.info('num_oligos_after_e_elim', pretty_print(len(self.abundant_oligos)))
 
+
+        # storing final counts
+        for oligo in self.abundant_oligos:
+            self.final_oligo_counts_dict[oligo] = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict\
+                                                        if self.datasets_dict[dataset].has_key(oligo)])
+
         self.progress.end()
 
 
@@ -562,8 +570,8 @@ class Oligotyping:
                                number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
 
         if len(datasets_to_remove):
-            self.run.info('datasets_removed_after_qc', datasets_to_remove)
-
+            self.run.info('datasets_removed_after_qc', datasets_to_remove)               
+        
 
     def _generate_FASTA_file(self): 
         # store abundant oligos
@@ -651,7 +659,7 @@ class Oligotyping:
             oligo_percents[dataset] = percents
         
 
-        self.progress.update('Generating files')
+        self.progress.update('Generating Matrix Counts and Percents')
         count_file = open(matrix_count_file_path, 'w')
         percent_file = open(matrix_percent_file_path, 'w')       
         
@@ -669,6 +677,48 @@ class Oligotyping:
         self.run.info('matrix_count_file_path', matrix_count_file_path)
         self.run.info('matrix_percent_file_path', matrix_percent_file_path)
 
+        #
+        # yes, I know git has branches. I am just being lazy. let me be.
+        #
+        #self.progress.new('Cytoscape Network Files')
+        #self.progress.new('Being generated')
+        #cytoscape_edges_file_path = self.generate_output_destination("CYTOSCAPE-EDGES.txt")
+        #cytoscape_nodes_file_path = self.generate_output_destination("CYTOSCAPE-NODES.txt")
+
+        #cytoscape_edges_file = open(cytoscape_edges_file_path, 'w')
+        #cytoscape_nodes_file = open(cytoscape_nodes_file_path, 'w')
+
+        #cytoscape_edges_file.write('from\tto\tweight\tconsensus\n')
+        #for dataset in self.datasets:
+        #    for i in range(0, len(self.abundant_oligos)):
+        #        if oligo_percents[dataset][i]:
+        #            cytoscape_edges_file.write('%s\t%s\t%.4f\t%s\n' % (dataset,
+        #                                                               self.abundant_oligos[i],
+        #                                                               oligo_percents[dataset][i],
+        #                                                               self.abundant_oligos[i]))
+
+        #cytoscape_nodes_file.write('source\tinteraction\ttarget\n')
+        #for source in self.datasets:
+        #    for oligo in self.datasets_dict[source]:
+        #        for target in self.datasets:
+        #            if target == source:
+        #                continue
+        #            if self.datasets_dict[target].has_key(oligo):
+        #                cytoscape_nodes_file.write('%s\t%s\t%s\n' % (source,
+        #                                                             oligo,
+        #                                                             target))
+        #for oligo in self.abundant_oligos: 
+        #    cytoscape_nodes_file.write('%s\t%s\t%s\n' % (oligo,
+        #                                                   'oligo',
+        #                                                   self.final_oligo_counts_dict[oligo]))
+        #                                                   
+        #cytoscape_edges_file.close()
+        #cytoscape_nodes_file.close()
+        #self.progress.end()
+        #self.run.info('cytoscape_edges_file_path', cytoscape_edges_file_path)
+        #self.run.info('cytoscape_nodes_file_path', cytoscape_nodes_file_path)
+                
+                
 
         if self.gen_oligotype_sets:
             self.progress.new('Matrix Files For Oligos Across Datasets')
@@ -710,7 +760,7 @@ class Oligotyping:
 
 
     def _generate_random_colors(self):
-        random_color_file_path = self.generate_output_destination('COLORS')
+        colors_file_path = self.generate_output_destination('COLORS')
         if self.colors_list_file:
             # it means user provided a list of colors to be used for oligotypes
             colors = [c.strip() for c in open(self.colors_list_file).readlines()]
@@ -723,9 +773,16 @@ class Oligotyping:
                 colors_dict[self.abundant_oligos[i]] = colors[i]
 
             self.colors_dict = colors_dict
+            
+            # generate COLORS file derived from --colors-list-file
+            colors_file = open(colors_file_path, 'w')
+            for oligotype in self.abundant_oligos:
+                colors_file.write('%s\t%s\n' % (oligotype, self.colors_dict[oligotype]))
+            colors_file.close()
+
         else:
-            self.colors_dict = random_colors(self.abundant_oligos, random_color_file_path)
-        self.run.info('random_color_file_path', random_color_file_path)
+            self.colors_dict = random_colors(self.abundant_oligos, colors_file_path)
+        self.run.info('colors_file_path', colors_file_path)
 
 
     def _agglomerate_oligos_based_on_cosine_similarity(self):

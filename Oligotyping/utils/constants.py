@@ -60,7 +60,7 @@ pretty_names = {'output_directory': 'Output directory',
                 'oligotype_sets_figure_path': 'Oligotype sets figure',
                 'oligos_across_datasets_file_path': 'Oligotypes across datasets figure',
                 'output_directory_for_reps': 'Representative sequences for oligotypes directory',
-                'random_color_file_path': 'Random colors for oligotypes',
+                'colors_file_path': 'Random colors for oligotypes',
                 'stack_bar_file_path': 'Oligotype distribution stack-bar figure',
                 'stack_bar_with_agglomerated_oligos_file_path': 'Stack-bar figure with oligotype sets',
                 'output_directory_for_datasets': 'Directory to store datasets associted information'}
