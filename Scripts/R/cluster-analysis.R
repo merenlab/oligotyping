@@ -21,7 +21,7 @@ csv <- read.csv(csv_path, header=TRUE, sep="\t")
 rownames(csv) <- csv[,1]
 
 
-d <- vegdist(csv[,-1], method="bray") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
+d <- vegdist(csv[,-1], method="horn") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
 fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
 
 P <- function(){

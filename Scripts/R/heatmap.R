@@ -30,8 +30,7 @@ hmap <- function(){
               trace="none",
               cexRow=0.4,
               cexCol=1.5,
-              distfun=function(m) vegdist(m,method="bray"), #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
-              hclustfun=function(x) hclust(x,method="ward"), # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
+              distfun=function(m) vegdist(m,method="horn"), #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
               symm=F,
               symkey=T,
               symbreaks=T, 
