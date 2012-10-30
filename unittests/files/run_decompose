@@ -1,5 +1,5 @@
 #!/bin/bash
 
 entropy-decomposition clone43-v6v4.fa -A 1 -m 0.2 --number-of-discriminants 3 --output test-decomposition-output
-python ../../visualization/decomposition_topology.py test-decomposition-output/TOPOLOGY.txt 
+python ../../Oligotyping/visualization/decomposition_topology.py test-decomposition-output/TOPOLOGY.txt 
 rm -rf test-decomposition-output

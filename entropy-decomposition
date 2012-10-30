@@ -10,9 +10,23 @@
 #
 # Please read the COPYING file.
 
-from lib.decomposer import Decomposer
-from utils.utils import ConfigError
-from utils import parsers
+import sys
+
+try:
+    import Oligotyping
+except ImportError:
+    import inspect
+    print '''
+    Oligotyping package seems to be missing from your PYTHONPATH. Running this may help:
+        
+        export PYTHONPATH="$PYTHONPATH:%s"
+
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    sys.exit()
+
+from Oligotyping.lib.decomposer import Decomposer
+from Oligotyping.utils.utils import ConfigError
+from Oligotyping.utils import parsers
 
 
 if __name__ == '__main__':

@@ -10,6 +10,8 @@
 #
 # Please read the COPYING file.
 
+__version__ = '0.1'
+
 import os
 import sys
 import copy
@@ -17,13 +19,13 @@ import numpy
 import shutil
 import cPickle
 
-from lib import fastalib as u
-from lib.entropy import entropy_analysis
-from utils.utils import Run
-from utils.utils import Progress
-from utils.utils import ConfigError
-from utils.utils import pretty_print
-from visualization.frequency_curve_and_entropy import vis_freq_curve
+from Oligotyping.lib import fastalib as u
+from Oligotyping.lib.entropy import entropy_analysis
+from Oligotyping.utils.utils import Run
+from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import ConfigError
+from Oligotyping.utils.utils import pretty_print
+from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
 class Node:
