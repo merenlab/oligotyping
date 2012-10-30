@@ -217,14 +217,19 @@ def blast_pretty_print(blast_results_dict, num_results = 1):
         print 'Coverage : %.2f' % b['coverage']
         print 'Identity : %.2f' % b['identity']
         print
-        for j in range(0, len(b['hsp_query']) - 80, 80):
-            print b['hsp_query'][j:j+80]
-            print b['hsp_match'][j:j+80]
-            print b['hsp_subject'][j:j+80]
-            print
-        print b['hsp_query'][j+80:]
-        print b['hsp_match'][j+80:]
-        print b['hsp_subject'][j+80:]
+        if len(b['hsp_query']) > 80:
+            for j in range(0, len(b['hsp_query']) - 80, 80):
+                print b['hsp_query'][j:j+80]
+                print b['hsp_match'][j:j+80]
+                print b['hsp_subject'][j:j+80]
+                print
+            print b['hsp_query'][j+80:]
+            print b['hsp_match'][j+80:]
+            print b['hsp_subject'][j+80:]
+        else:
+            print b['hsp_query']
+            print b['hsp_match']
+            print b['hsp_subject']
             
         
 
