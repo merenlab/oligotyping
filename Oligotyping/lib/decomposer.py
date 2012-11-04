@@ -52,6 +52,7 @@ class Decomposer:
         self.min_actual_abundance = 10
         self.output_directory = None
         self.project = None
+        self.dataset_name_separator = '_'
  
         if args:
             self.alignment = args.alignment
@@ -60,6 +61,7 @@ class Decomposer:
             self.min_actual_abundance = args.min_actual_abundance
             self.output_directory = args.output_directory
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
+            self.dataset_name_separator = args.dataset_name_separator
         
         self.decomposition_depth = -1
 
@@ -95,6 +97,9 @@ class Decomposer:
         self.node_ids_to_analyze = ['root']
         self.next_node_id = 1
 
+        self.datasets_dict = {}
+        self.datasets = []
+
 
     def sanity_check(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
@@ -108,12 +113,12 @@ class Decomposer:
         self.alignment_length = len(alignment.seq)
         alignment.reset()
         
-        # FIXME: first 1K can't be expected to be representative for the entire dataset.
-        # following code must be replaced with a smarter one at some point.
-        read_lengths_first_1K = []
-        while alignment.next() and alignment.pos < 1000:
-            read_lengths_first_1K.append(len(alignment.seq.replace('-', '')))
-        self.average_read_length = numpy.mean(read_lengths_first_1K)
+        # compute and store the average read length
+        read_lengths = []
+        while alignment.next():
+            read_lengths.append(len(alignment.seq.replace('-', '')))
+        self.average_read_length = numpy.mean(read_lengths)
+        alignment.reset()
 
         alignment.close()
 
@@ -171,10 +176,14 @@ class Decomposer:
         self.generate_raw_topology()
         self.store_topology_dict()
         self.store_topology_text()
+        
+        self._generate_datasets_dict()
+        self._generate_ENVIRONMENT_file()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
         self.run.quit()
+
 
     def store_unique_alignment(self, alignment_path, output_path):
         output = u.FastaOutput(output_path)
@@ -187,6 +196,7 @@ class Decomposer:
         alignment.close()
         return total_reads
 
+
     def estimate_expected_max_frequency_of_an_erronous_unique_sequence(self, number_of_reads, average_read_length, expected_error = 1/250.0):
         # maximum number of occurence of an error driven unique sequence among N reads.
         # of course this maximum assumes that all reads are coming from one template,
@@ -196,11 +206,54 @@ class Decomposer:
         return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads) 
 
 
+    def _generate_datasets_dict(self):
+        self.progress.new('Computing Samples Dict')
+        for node_id in [n for n in sorted(self.topology.keys()) if not self.topology[n].children]:
+            node = self.topology[node_id]
+            self.progress.update('Analyzing Node ID: "%s" (size: %d)'\
+                                                        % (node_id, node.size))
+        
+            for read_id in node.read_ids:
+                dataset = self.dataset_name_from_defline(read_id)
+        
+                if not self.datasets_dict.has_key(dataset):
+                    self.datasets_dict[dataset] = {}
+                    self.datasets.append(dataset)
+
+                if self.datasets_dict[dataset].has_key(node_id):
+                    self.datasets_dict[dataset][node_id] += 1
+                else:
+                    self.datasets_dict[dataset][node_id] = 1
+
+        self.datasets.sort()
+        self.progress.end()
+
+
+    def _generate_ENVIRONMENT_file(self):
+        # generate environment file
+        self.progress.new('ENVIRONMENT File')
+        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
+        f = open(environment_file_path, 'w')
+        self.progress.update('Being generated')
+        for dataset in self.datasets:
+            for node in self.datasets_dict[dataset]:
+                f.write("%s\t%s\t%d\n" % (node, dataset, self.datasets_dict[dataset][node]))
+        f.close()
+        self.progress.end()
+        self.run.info('environment_file_path', environment_file_path)
+
+
+    def dataset_name_from_defline(self, defline):
+        return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
+
+
     def generate_raw_topology(self):
+        self.progress.new('Raw Topology')
         # main loop
         while 1:
             self.decomposition_depth += 1
             if not len(self.node_ids_to_analyze):
+                self.progress.end()
                 break
 
             # following for loop will go through all nodes that are stored in
@@ -211,13 +264,21 @@ class Decomposer:
             new_node_ids_to_analyze = []
 
             for node_id in self.node_ids_to_analyze:
+                
                 node = self.topology[node_id]
+                
+                self.progress.update('Number of nodes to analyze: %d, Analyzing node id: %s (#%d, size: %d)'\
+                                                         % (len(self.node_ids_to_analyze),
+                                                            node_id,
+                                                            self.node_ids_to_analyze.index(node_id),
+                                                            node.size))
+
                 if node.size <= self.min_actual_abundance:
                     # FIXME: Finalize this node.
                     continue
 
                 # FIXME: This part is extremely inefficient, take care of it.
-                node_file_path_prefix = os.path.join(self.nodes_directory, '%.5d_' % self.decomposition_depth + node_id)
+                node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
                 
                 node.unique_alignment = node_file_path_prefix + '.unique'
                 self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
@@ -235,6 +296,13 @@ class Decomposer:
                 # entropy_tpls look like this:
                 #
                 #   [(0.01018386415077845, 0), (0.045599806834330125, 1), (0.0093838641507784544, 2), ... ]
+                #
+                # Probably a function should be called here to make sure discriminants are not high entropy
+                # locations driven by homopolymer region associated indels, or dynamicaly set the number of 
+                # discriminants for a given node. for instance, if there is one base left in a node that is
+                # to define two different organisms, this process should be able to *overwrite* the parameter
+                # self.number_of_discriminants.
+                #
                 node.discriminants = [d[1] for d in sorted(node.entropy_tpls, reverse = True)[0:self.number_of_discriminants] if d[0] > self.min_entropy]
 
                 if not len(node.discriminants):
@@ -302,7 +370,7 @@ class Decomposer:
     def get_new_node_id(self):
         new_node_id = self.next_node_id
         self.next_node_id += 1
-        return '%.5d' % new_node_id
+        return '%.12d' % new_node_id
 
     def store_topology_dict(self):
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')

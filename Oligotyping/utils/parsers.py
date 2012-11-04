@@ -27,6 +27,10 @@ def decomposer():
                                 will continue for any node that has more reads than this number as far as they\
                                 present an entropy that is larger than --min-entropy. This number should be\
                                 chosen carefully depending on the size of the dataset')
+    parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
+                        help = 'Character that separates dataset name from unique info in the defline. For insatnce\
+                                if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
+                                (which is the default character).')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')

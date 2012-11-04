@@ -57,7 +57,13 @@ def topology_graph(topology_file, match_levels = False):
         
         if node['parent']:
             if node['type'] == 'node':
-                G.add_edge(node_id, node['parent'], size = int(node['size']), label = node_id.replace('_', ':'))
+                label = node_id
+                while 1:
+                    if label[0] == '0':
+                        label = label[1:]
+                    else:
+                        break
+                G.add_edge(node_id, node['parent'], size = int(node['size']), label = label)
             else:
                 G.add_edge(node_id, node['parent'], size = int(node['size']), label = '')
    
