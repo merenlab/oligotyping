@@ -30,6 +30,7 @@ class Tests(unittest.TestCase):
         self.decomposer.alignment = os.path.join(my_path, 'files/clone43-v6v4.fa')
         self.decomposer.min_entropy = 0.2
         self.decomposer.min_actual_abundance = 1
+        self.decomposer.min_substantive_abundance = 0
         self.decomposer.number_of_discriminants = 3
         self.decomposer.progress.verbose = False
         self.decomposer.run.verbose = False
