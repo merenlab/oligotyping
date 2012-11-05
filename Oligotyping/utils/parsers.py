@@ -133,7 +133,7 @@ def oligotyping():
                         help = 'When set, no figures will be shown.')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
                         help = 'Generate static HTML output to browse analysis results.')
-    parser.add_argument('--gen-oligotype-sets', action = 'store_true', default = False,
+    parser.add_argument('--generate-sets', action = 'store_true', default = False,
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
                         datasets are similar. Oligotype sets simply put oligotypes into the same set if they \
                         co-occur in datasets consistenly.')

@@ -65,8 +65,8 @@
     {% if blast_ref_db %}
     <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
     {% endif %}
-    <tr><td id="l">{{pretty_names.gen_oligotype_sets}}</td><td id="r"> {{gen_oligotype_sets}}</td></tr>
-    {% if gen_oligotype_sets %}
+    <tr><td id="l">{{pretty_names.generate_sets}}</td><td id="r"> {{generate_sets}}</td></tr>
+    {% if generate_sets %}
     <tr><td id="l">{{pretty_names.T}}</td><td id="r"> {{T}}</td></tr>
     {% endif %}
     {% if limit_oligotypes_to %}
@@ -134,9 +134,9 @@
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
-    {% if gen_oligotype_sets %}
-    <tr><td id="l">{{pretty_names.oligos_across_datasets_MN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_MN_file_path}}">oligos_across_datasets_max_normalized.txt</a></td></tr>
-    <tr><td id="l">{{pretty_names.oligos_across_datasets_SN_file_path}}</td><td id="r"><a href="{{oligos_across_datasets_SN_file_path}}">oligos_across_datasets_sum_normalized.txt</a></td></tr>
+    {% if generate_sets %}
+    <tr><td id="l">{{pretty_names.across_datasets_MN_file_path}}</td><td id="r"><a href="{{across_datasets_MN_file_path}}">across_datasets_max_normalized.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.across_datasets_SN_file_path}}</td><td id="r"><a href="{{across_datasets_SN_file_path}}">across_datasets_sum_normalized.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligotype_sets_file_path}}</td><td id="r"><a href="{{oligotype_sets_file}}">oligotype_sets.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_percent_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_percent_oligo_sets_file_path}}">matrix_percents_oligo_sets.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_count_oligo_sets_file_path}}">matrix_counts_oligo_sets.txt</a></td></tr>
@@ -209,7 +209,7 @@
 
 
 
-{% if gen_oligotype_sets %}
+{% if generate_sets %}
 
 <div class="smallhead"><a name="AcrossDatasets"></a>Oligotype Frequency Patterns Across Datasets</div>
 <p class="smallheadtitle">» Figures show the presence of oligotypes across datasets normalized by sum of the percent abundance of an oligotype in all datasets and normalized by max percent abundance of an oligotype in all datasets.

@@ -36,6 +36,8 @@ from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_terminal_size
+from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
 
 # FIXME: test whether Biopython is installed or not here.
@@ -44,6 +46,7 @@ from Oligotyping.utils.blast_interface import remote_blast_search, local_blast_s
 
 class Oligotyping:
     def __init__(self, args = None):
+        self.analysis = 'oligotyping'
         self.entropy   = None
         self.alignment = None
         self.quals_dict = None
@@ -68,7 +71,7 @@ class Oligotyping:
         self.gen_html = False
         self.gen_dataset_oligo_networks = False
         self.colors_list_file = None
-        self.gen_oligotype_sets = False
+        self.generate_sets = False
         self.cosine_similarity_threshold = 0.1
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
@@ -99,15 +102,15 @@ class Oligotyping:
             self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
-            self.gen_oligotype_sets = args.gen_oligotype_sets
+            self.generate_sets = args.generate_sets
         
         self.run = Run()
         self.progress = Progress()
 
         self.datasets_dict = {}
         self.representative_sequences_per_oligotype = {}
-        self.oligos_across_datasets_sum_normalized = {}
-        self.oligos_across_datasets_max_normalized = {}
+        self.across_datasets_sum_normalized = {}
+        self.across_datasets_max_normalized = {}
         self.oligotype_sets = None
         self.datasets = []
         self.abundant_oligos = []
@@ -236,8 +239,8 @@ class Oligotyping:
         self.run.info('alignment_length', pretty_print(self.alignment_length))
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.run.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
-        self.run.info('gen_oligotype_sets', self.gen_oligotype_sets)
-        if self.gen_oligotype_sets:
+        self.run.info('generate_sets', self.generate_sets)
+        if self.generate_sets:
             self.run.info('T', self.cosine_similarity_threshold)
         self.run.info('s', self.min_number_of_datasets)
         self.run.info('a', self.min_percent_abundance)
@@ -267,10 +270,12 @@ class Oligotyping:
         self._refine_datasets_dict()
         self._generate_FASTA_file()
         self._generate_NEXUS_file()
-        self._generate_ENVIRONMENT_file()
-        self._generate_MATRIX_files_for_oligotypes()
         self._generate_random_colors()
-        if self.gen_oligotype_sets:
+        
+        generate_ENVIRONMENT_file(self)
+        generate_MATRIX_files(self.abundant_oligos, self)
+        
+        if self.generate_sets:
             self._agglomerate_oligos_based_on_cosine_similarity()
             self._generate_MATRIX_files_for_oligotype_sets()
         
@@ -278,10 +283,10 @@ class Oligotyping:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
             self._generate_stack_bar_figure()
-            if self.gen_oligotype_sets:
+            if self.generate_sets:
                 self._generate_stack_bar_figure_with_agglomerated_oligos()
                 self._generate_oligos_across_datasets_figure()
-                self._gen_oligotype_sets_across_datasets_figure()
+                self._generate_sets_across_datasets_figure()
 
         if not self.quick:
             self._generate_representative_sequences()
@@ -620,145 +625,6 @@ class Oligotyping:
         self.run.info('oligos_nexus_file_path', oligos_nexus_file_path)
     
 
-    def _generate_ENVIRONMENT_file(self):
-        # generate environment file
-        self.progress.new('ENVIRONMENT File')
-        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
-        f = open(environment_file_path, 'w')
-        self.progress.update('Being generated')
-        for dataset in self.datasets:
-            for oligo in self.datasets_dict[dataset]:
-                f.write("%s\t%s\t%d\n" % (oligo, dataset, self.datasets_dict[dataset][oligo]))
-        f.close()
-        self.progress.end()
-        self.run.info('environment_file_path', environment_file_path)
-
-
-    def _generate_MATRIX_files_for_oligotypes(self):
-        # generate matrices..
-        self.progress.new('Matrix Files')
-        matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
-        matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")
-       
-        oligo_percents = {}
-        oligo_counts = {}
-
-        self.progress.update('Generating the data')
-        for dataset in self.datasets:
-            counts = []
-            percents = []
-            for oligo in self.abundant_oligos:
-                if self.datasets_dict[dataset].has_key(oligo):
-                    counts.append(self.datasets_dict[dataset][oligo])
-                    percents.append(self.datasets_dict[dataset][oligo] * 100.0 / sum(self.datasets_dict[dataset].values()))
-                else:
-                    counts.append(0)
-                    percents.append(0.0)
-                    
-            oligo_counts[dataset] = counts
-            oligo_percents[dataset] = percents
-        
-
-        self.progress.update('Generating Matrix Counts and Percents')
-        count_file = open(matrix_count_file_path, 'w')
-        percent_file = open(matrix_percent_file_path, 'w')       
-        
-        count_file.write('\t'.join(['samples'] + self.abundant_oligos) + '\n')
-        percent_file.write('\t'.join(['samples'] + self.abundant_oligos) + '\n')
- 
-        for dataset in self.datasets:
-            count_file.write('\t'.join([dataset] + [str(c) for c in oligo_counts[dataset]]) + '\n')
-            percent_file.write('\t'.join([dataset] + [str(p) for p in oligo_percents[dataset]]) + '\n')
-        
-        count_file.close()
-        percent_file.close()
-
-        self.progress.end()
-        self.run.info('matrix_count_file_path', matrix_count_file_path)
-        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
-
-        #
-        # yes, I know git has branches. I am just being lazy. let me be.
-        #
-        #self.progress.new('Cytoscape Network Files')
-        #self.progress.new('Being generated')
-        #cytoscape_edges_file_path = self.generate_output_destination("CYTOSCAPE-EDGES.txt")
-        #cytoscape_nodes_file_path = self.generate_output_destination("CYTOSCAPE-NODES.txt")
-
-        #cytoscape_edges_file = open(cytoscape_edges_file_path, 'w')
-        #cytoscape_nodes_file = open(cytoscape_nodes_file_path, 'w')
-
-        #cytoscape_edges_file.write('from\tto\tweight\tconsensus\n')
-        #for dataset in self.datasets:
-        #    for i in range(0, len(self.abundant_oligos)):
-        #        if oligo_percents[dataset][i]:
-        #            cytoscape_edges_file.write('%s\t%s\t%.4f\t%s\n' % (dataset,
-        #                                                               self.abundant_oligos[i],
-        #                                                               oligo_percents[dataset][i],
-        #                                                               self.abundant_oligos[i]))
-
-        #cytoscape_nodes_file.write('source\tinteraction\ttarget\n')
-        #for source in self.datasets:
-        #    for oligo in self.datasets_dict[source]:
-        #        for target in self.datasets:
-        #            if target == source:
-        #                continue
-        #            if self.datasets_dict[target].has_key(oligo):
-        #                cytoscape_nodes_file.write('%s\t%s\t%s\n' % (source,
-        #                                                             oligo,
-        #                                                             target))
-        #for oligo in self.abundant_oligos: 
-        #    cytoscape_nodes_file.write('%s\t%s\t%s\n' % (oligo,
-        #                                                   'oligo',
-        #                                                   self.final_oligo_counts_dict[oligo]))
-        #                                                   
-        #cytoscape_edges_file.close()
-        #cytoscape_nodes_file.close()
-        #self.progress.end()
-        #self.run.info('cytoscape_edges_file_path', cytoscape_edges_file_path)
-        #self.run.info('cytoscape_nodes_file_path', cytoscape_nodes_file_path)
-                
-                
-
-        if self.gen_oligotype_sets:
-            self.progress.new('Matrix Files For Oligos Across Datasets')
-            oligos_across_datasets_MN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-MAX-NORM.txt")
-            oligos_across_datasets_SN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-SUM-NORM.txt")
-
-            oligos_across_datasets_MN_file = open(oligos_across_datasets_MN_file_path, 'w')
-            oligos_across_datasets_SN_file = open(oligos_across_datasets_SN_file_path, 'w')
-
-            oligos_across_datasets_MN_file.write('\t'.join(['sample'] + self.abundant_oligos) + '\n')
-            oligos_across_datasets_SN_file.write('\t'.join(['sample'] + self.abundant_oligos) + '\n')
-
-            self.progress.update('Generating data for oligos across datasets')
-  
-            for oligo in self.abundant_oligos:
-                self.oligos_across_datasets_sum_normalized[oligo] = []
-                self.oligos_across_datasets_max_normalized[oligo] = []
-
-            for i in range(0, len(self.abundant_oligos)):
-                oligo = self.abundant_oligos[i]
-                sum_across_datasets = sum([oligo_percents[dataset][i] for dataset in self.datasets])
-                max_across_datasets = max([oligo_percents[dataset][i] for dataset in self.datasets])
-                for dataset in self.datasets:
-                    self.oligos_across_datasets_sum_normalized[oligo].append(oligo_percents[dataset][i]  * 100.0 / sum_across_datasets)
-                    self.oligos_across_datasets_max_normalized[oligo].append(oligo_percents[dataset][i]  * 100.0 / max_across_datasets)
-
-            self.progress.update('Generating files')
-            for i in range(0, len(self.datasets)):
-                dataset = self.datasets[i]
-                oligos_across_datasets_MN_file.write('\t'.join([dataset] + [str(self.oligos_across_datasets_max_normalized[oligo][i]) for oligo in self.abundant_oligos]) + '\n')
-                oligos_across_datasets_SN_file.write('\t'.join([dataset] + [str(self.oligos_across_datasets_sum_normalized[oligo][i]) for oligo in self.abundant_oligos]) + '\n')
-            
-            oligos_across_datasets_MN_file.close()
-            oligos_across_datasets_SN_file.close()
-
-            self.progress.end()
-            self.run.info('oligos_across_datasets_MN_file_path', oligos_across_datasets_MN_file_path)
-            self.run.info('oligos_across_datasets_SN_file_path', oligos_across_datasets_SN_file_path)
-
-
     def _generate_random_colors(self):
         colors_file_path = self.generate_output_destination('COLORS')
         if self.colors_list_file:
@@ -790,7 +656,7 @@ class Oligotyping:
         oligotype_sets_file_path = self.generate_output_destination("OLIGOTYPE-SETS.txt")
         self.progress.update('Computing')
         self.oligotype_sets = get_oligotype_sets(self.abundant_oligos,
-                                                 self.oligos_across_datasets_sum_normalized,
+                                                 self.across_datasets_sum_normalized,
                                                  self.cosine_similarity_threshold,
                                                  oligotype_sets_file_path)
         
@@ -1085,11 +951,11 @@ class Oligotyping:
         self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
 
 
-    def _gen_oligotype_sets_across_datasets_figure(self):
+    def _generate_sets_across_datasets_figure(self):
         self.progress.new('Oligotype Sets Across Datasets Figure')
         figure_path = self.generate_output_destination('OLIGO-SETS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
-        vis_oligotype_sets_distribution(self.oligotype_sets, self.oligos_across_datasets_sum_normalized, self.datasets,\
+        vis_oligotype_sets_distribution(self.oligotype_sets, self.across_datasets_sum_normalized, self.datasets,\
                                display = False, colors_dict = self.colors_dict, output_file = figure_path,\
                                project_title = 'Oligotype Sets Across Datasets for "%s", at Cosine Similarity Threshold of %.4f'\
                                         % (self.project, self.cosine_similarity_threshold), legend = False)

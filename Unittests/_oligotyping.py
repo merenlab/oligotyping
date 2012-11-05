@@ -36,7 +36,7 @@ class Tests(unittest.TestCase):
         self.oligotyping.min_number_of_datasets = 1
         self.oligotyping.project = 'Unaligned 25K Illumina Test'
         self.oligotyping.quick = True
-        self.oligotyping.gen_oligotype_sets = True
+        self.oligotyping.generate_sets = True
         self.oligotyping.cosine_similarity_threshold = 0.5
         self.oligotyping.output_directory = self.output_directory_path 
         self.oligotyping.no_display = True

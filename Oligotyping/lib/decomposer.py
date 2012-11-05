@@ -25,6 +25,8 @@ from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
@@ -53,6 +55,7 @@ class Decomposer:
         self.output_directory = None
         self.project = None
         self.dataset_name_separator = '_'
+        self.generate_sets = False
  
         if args:
             self.alignment = args.alignment
@@ -78,7 +81,6 @@ class Decomposer:
         # reads:
         self.expected_error = 1 / 250.0
 
-
         self.run = Run()
         self.progress = Progress()
 
@@ -99,6 +101,7 @@ class Decomposer:
 
         self.datasets_dict = {}
         self.datasets = []
+        self.final_nodes = None
 
 
     def sanity_check(self):
@@ -178,7 +181,9 @@ class Decomposer:
         self.store_topology_text()
         
         self._generate_datasets_dict()
-        self._generate_ENVIRONMENT_file()
+        
+        generate_ENVIRONMENT_file(self)
+        generate_MATRIX_files(self.final_nodes, self)
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
@@ -208,7 +213,7 @@ class Decomposer:
 
     def _generate_datasets_dict(self):
         self.progress.new('Computing Samples Dict')
-        for node_id in [n for n in sorted(self.topology.keys()) if not self.topology[n].children]:
+        for node_id in self.final_nodes:
             node = self.topology[node_id]
             self.progress.update('Analyzing Node ID: "%s" (size: %d)'\
                                                         % (node_id, node.size))
@@ -365,7 +370,10 @@ class Decomposer:
             # this is time to set new nodes for the analysis.
             self.node_ids_to_analyze = [n for n in new_node_ids_to_analyze]
 
-            # fin.
+        #finally:
+        self.final_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].children]
+
+        # fin.
 
     def get_new_node_id(self):
         new_node_id = self.next_node_id
