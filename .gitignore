@@ -8,3 +8,8 @@
 *.DS_Store
 *ignore*
 *~
+
+# eclipse stuff
+.project
+.pydevproject
+.settings/
