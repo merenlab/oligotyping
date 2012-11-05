@@ -6,10 +6,9 @@ import sys
 import shutil
 import unittest
 
-my_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(my_path, '..'))
+from Oligotyping.lib.decomposer import Decomposer
 
-from lib.decomposer import Decomposer
+my_path = os.path.dirname(os.path.realpath(__file__))
 
 def files_are_the_same(file1, file2):
     lines1 = open(file1).readlines()
