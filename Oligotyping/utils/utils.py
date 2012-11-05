@@ -440,6 +440,15 @@ def get_terminal_size():
     return int(cr[1]), int(cr[0])
 
 
+def estimate_expected_max_frequency_of_an_erronous_unique_sequence(number_of_reads, average_read_length, expected_error = 1/250.0):
+    # maximum number of occurence of an error driven unique sequence among N reads.
+    # of course this maximum assumes that all reads are coming from one template,
+    # substitution probabilities are homogeneous and there are no systemmatical errors,
+    # so it is a mere approximation, but for our purpose, it is going to be enough:
+
+    return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads) 
+
+
 def HTMLColorToRGB(colorstring):
     """ convert #RRGGBB to an (R, G, B) tuple """
     colorstring = colorstring.strip()

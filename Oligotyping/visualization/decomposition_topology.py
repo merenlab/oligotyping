@@ -113,7 +113,7 @@ def topology(topology_file, output_file = None, title = None):
     network_nodes = nx.draw_networkx_nodes(G, pos, node_shape = 'o', node_size = [sizes[i] for i in G], node_color=['#FFFFFF' for (u, v, d) in G.edges(data=True)])
     network_nodes.set_edgecolor('#FFFFFF')
     nx.draw_networkx_edges(G, pos, alpha=0.4, node_size=10, width = 1, edge_color='#808080')
-    nx.draw_networkx_labels(G, pos, font_size=12, font_weight = 'bold', labels = dict([(u, '%s\n(%s)' % (d['label'], pretty_print(d['size']))) for u, v, d in G.edges(data=True)]))
+    nx.draw_networkx_labels(G, pos, font_size=8, font_weight = 'bold', labels = dict([(u, '%s\n(%s)' % (d['label'], pretty_print(d['size']))) for u, v, d in G.edges(data=True)]))
     
     # adjust the plot limits
     xmax = 1.02 * max(x for x, y in pos.values())

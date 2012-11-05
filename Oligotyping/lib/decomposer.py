@@ -23,6 +23,7 @@ from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.entropy import entropy_analysis
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import generate_MATRIX_files 
@@ -32,18 +33,22 @@ from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 class Node:
     def __init__(self, node_id):
-        self.node_id          = node_id
-        self.entropy          = None
-        self.entropy_tpls     = None
-        self.parent           = None
-        self.children         = []
-        self.discriminants    = None
-        self.max_entropy      = None
-        self.alignment        = None
-        self.unique_alignment = None
-        self.read_ids         = []
-        self.size             = 0
-        self.level            = None
+        self.node_id            = node_id
+        self.removed            = False
+        self.entropy            = None
+        self.entropy_tpls       = None
+        self.parent             = None
+        self.children           = []
+        self.discriminants      = None
+        self.max_entropy        = None
+        self.alignment          = None
+        self.unique_alignment   = None
+        self.read_ids           = []
+        self.unique_read_counts = []
+        self.size               = 0
+        self.level              = None
+        self.density            = None
+        self.competing_unique_sequences_ratio = None
 
 
 class Decomposer:
@@ -51,7 +56,8 @@ class Decomposer:
         self.alignment = None
         self.min_entropy = 0.2
         self.number_of_discriminants = 3
-        self.min_actual_abundance = 10
+        self.min_actual_abundance = 0
+        self.min_substantive_abundance = 4
         self.output_directory = None
         self.project = None
         self.dataset_name_separator = '_'
@@ -62,6 +68,7 @@ class Decomposer:
             self.min_entropy = args.min_entropy or 0.2
             self.number_of_discriminants = args.number_of_discriminants or 3
             self.min_actual_abundance = args.min_actual_abundance
+            self.min_substantive_abundance = args.min_substantive_abundance
             self.output_directory = args.output_directory
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.dataset_name_separator = args.dataset_name_separator
@@ -75,11 +82,6 @@ class Decomposer:
         # must be the same for each read in the file.
         self.average_read_length = None
         self.alignment_length = None
-
-        # this variable is going to be used together with 'average read length' and
-        # dataset size to calculate the maximum expected number of error driven unique
-        # reads:
-        self.expected_error = 1 / 250.0
 
         self.run = Run()
         self.progress = Progress()
@@ -168,8 +170,12 @@ class Decomposer:
         self.run.init_info_file_obj(self.info_file_path)
 
         self.run.info('project', self.project)
+        self.run.info('run_date', get_date())
+        self.run.info('version', __version__)
         self.run.info('root alignment', self.alignment)
         self.run.info('total_seq', pretty_print(self.topology['root'].size))
+        self.run.info('A', self.min_actual_abundance)
+        self.run.info('M', self.min_substantive_abundance)
         self.run.info('output_directory', self.output_directory)
         self.run.info('nodes_directory', self.nodes_directory)
         self.run.info('info_file_path', self.info_file_path)
@@ -193,22 +199,13 @@ class Decomposer:
     def store_unique_alignment(self, alignment_path, output_path):
         output = u.FastaOutput(output_path)
         alignment = u.SequenceSource(alignment_path, unique = True)
-        total_reads = 0
+        unique_read_counts = []
         while alignment.next():
-            total_reads += len(alignment.ids)
+            unique_read_counts.append(len(alignment.ids))
             output.store(alignment, split = False)
         output.close()
         alignment.close()
-        return total_reads
-
-
-    def estimate_expected_max_frequency_of_an_erronous_unique_sequence(self, number_of_reads, average_read_length, expected_error = 1/250.0):
-        # maximum number of occurence of an error driven unique sequence among N reads.
-        # of course this maximum assumes that all reads are coming from one template,
-        # substitution probabilities are homogeneous and there are no systemmatical errors,
-        # so it is a mere approximation, but for our purpose, it is going to be enough:
-
-        return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads) 
+        return unique_read_counts
 
 
     def _generate_datasets_dict(self):
@@ -278,25 +275,59 @@ class Decomposer:
                                                             self.node_ids_to_analyze.index(node_id),
                                                             node.size))
 
+
+
                 if node.size <= self.min_actual_abundance:
                     # FIXME: Finalize this node.
                     continue
 
-                # FIXME: This part is extremely inefficient, take care of it.
+                # FIXME: This part is extremely inefficient, take care of it. Maybe it shouldn't be working with
+                #        files but everything should be stored in memory..
                 node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
-                
                 node.unique_alignment = node_file_path_prefix + '.unique'
-                self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
+                node.unique_read_counts = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
 
-                expected_max_frequency_of_an_erronous_unique_sequence = self.estimate_expected_max_frequency_of_an_erronous_unique_sequence(node.size,
-                                                                                                                                            self.average_read_length,
-                                                                                                                                            self.expected_error)
 
+                # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node.
+                if node.unique_read_counts[0] < self.min_substantive_abundance:
+                    node.removed = True
+                    continue
+
+                # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
+                # read count and the second most abundant unique read count in a node. smaller the number,
+                # better the level of decomposition. however it is important to consider that one organism
+                # might be overprinting, increasing the ratio over a closely related organism that trapped
+                # in the same node.
+                if len(node.unique_read_counts) == 1:
+                    node.competing_unique_sequences_ratio = 0
+                else:
+                    node.competing_unique_sequences_ratio = node.unique_read_counts[1] * 1.0 / node.unique_read_counts[0]
+
+                # 'node density' refers to the ratio of most abundant unique read count to all reads
+                # that are accumulated in the node. higher the number, lower the variation within the
+                # node.
+                node.density = node.unique_read_counts[0] * 1.0 / sum(node.unique_read_counts)
+                
+                if node.competing_unique_sequences_ratio < 0.025 or node.density > 0.85:
+                    # Finalize this node.
+                    continue
+
+                # find out about the entropy distribution in the given node:
                 node_entropy_output_path = node_file_path_prefix + '.entropy'
                 node.entropy = entropy_analysis(node.unique_alignment, verbose = False, uniqued = True, output_file = node_entropy_output_path)
                 node.entropy_tpls = [(node.entropy[i], i) for i in range(0, self.alignment_length)]
                 #vis_freq_curve(node.unique_alignment, output_file = node_file_path_prefix + '.png') 
 
+                # IF all the unique reads in the node are smaller than the self.min_substantive_abundance,
+                # there is no need to further compose this node.
+                if sorted(node.unique_read_counts, reverse = True)[1] < self.min_substantive_abundance:
+                    # we are done with this node.
+                    continue
+
+                print
+                print node.unique_read_counts[0:10], node.competing_unique_sequences_ratio, node.density
+                
+                
                 # discriminants for this node are being selected from the list of entropy tuples:
                 # entropy_tpls look like this:
                 #
@@ -307,7 +338,6 @@ class Decomposer:
                 # discriminants for a given node. for instance, if there is one base left in a node that is
                 # to define two different organisms, this process should be able to *overwrite* the parameter
                 # self.number_of_discriminants.
-                #
                 node.discriminants = [d[1] for d in sorted(node.entropy_tpls, reverse = True)[0:self.number_of_discriminants] if d[0] > self.min_entropy]
 
                 if not len(node.discriminants):
@@ -370,8 +400,9 @@ class Decomposer:
             # this is time to set new nodes for the analysis.
             self.node_ids_to_analyze = [n for n in new_node_ids_to_analyze]
 
+        
         #finally:
-        self.final_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].children]
+        self.final_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].children and not self.topology[n].removed]
 
         # fin.
 
@@ -391,11 +422,15 @@ class Decomposer:
         topology_text_file_obj = open(topology_text_file_path, 'w')
         for node_id in self.topology:
             node = self.topology[node_id]
-            topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' % (node.node_id,
-                                                               node.size,
-                                                               node.parent or '',
-                                                               node.level,
-                                                               ','.join(node.children) or ''))
+            if node.removed == True:
+                continue
+            else:
+                topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' \
+                                                        % (node.node_id,
+                                                           node.size,
+                                                           node.parent or '',
+                                                           node.level,
+                                                           ','.join(node.children) or ''))
         topology_text_file_obj.close()
         self.run.info('topology_text', topology_text_file_path)
 

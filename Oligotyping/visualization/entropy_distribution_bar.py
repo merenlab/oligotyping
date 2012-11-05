@@ -40,6 +40,8 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     progress.update('Computing ')
 
     y_maximum = max(entropy_values) + (max(entropy_values) / 10.0)
+    y_maximum = 1 if y_maximum < 1 else y_maximum
+
     number_of_uniques_to_show = int(y_maximum * 100)
     unique_sequences = get_unique_sequences_from_FASTA(alignment, limit = number_of_uniques_to_show)
 
