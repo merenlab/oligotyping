@@ -9,16 +9,12 @@
 #
 # Please read the COPYING file.
 
-import os
-import sys
-import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
 
 from Oligotyping.utils.random_colors import get_list_of_colors
 from Oligotyping.utils.utils import HTMLColorToRGB
-from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
 
 
@@ -32,7 +28,7 @@ def vis_oligotype_sets_distribution(partitions, vectors, datasets, colors_dict =
             #    print '%s,%s' % (oligo, list_of_colors[i])
 
     # figure.. 
-    fig = plt.figure(figsize=(20, 7))
+    plt.figure(figsize=(20, 7))
     
     if legend:
         plt.subplots_adjust(left=0.03, bottom = 0.25, top = 0.95, right = 0.87)
@@ -143,5 +139,5 @@ if __name__ == '__main__':
 
     oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
 
-    partitioned_oligotypes(partitions, vectors, datasets, colors_dict, output_file = args.output_file,\
+    vis_oligotype_sets_distribution(partitions, vectors, datasets, colors_dict, output_file = args.output_file,\
                            legend = args.legend, project_title = args.project_title, display = True)
