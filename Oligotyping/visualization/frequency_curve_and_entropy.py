@@ -11,7 +11,6 @@
 
 import os
 import sys
-import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
