@@ -10,15 +10,10 @@
 #
 # Please read the COPYING file.
 
-import os
-import sys
-import math
 import networkx as nx
 import matplotlib.pyplot as plt
-from networkx import graphviz_layout
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from utils.utils import pretty_print
+from Oligotyping.utils.utils import pretty_print
 
 def topology_graph(topology_file, match_levels = False):
     G = nx.MultiDiGraph()
@@ -70,9 +65,6 @@ def topology_graph(topology_file, match_levels = False):
     for node_id in nodes['root']['children']:
         G.add_edge('root', node_id, size = int(nodes['root']['size']), label = 'root')
    
-
-    
-
     return G
 
 
