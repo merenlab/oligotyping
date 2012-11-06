@@ -399,7 +399,7 @@ class Oligotyping:
         non_singleton_oligos = []
         for i in range(0, len(oligo_dataset_abundance)):
             if i % 100 == 0 or i == len(oligo_dataset_abundance) - 1:
-                 self.progress.update('Eliminating singletons: ' + P(i, len(oligo_dataset_abundance)))
+                self.progress.update('Eliminating singletons: ' + P(i, len(oligo_dataset_abundance)))
             tpl = oligo_dataset_abundance[i]
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
@@ -420,7 +420,7 @@ class Oligotyping:
         for i in range(0, len(non_singleton_oligos)):
             oligo = non_singleton_oligos[i]
             if i % 100 == 0 or i == len(non_singleton_oligos) - 1:
-                 self.progress.update('Applying -a parameter: ' + P(i, len(non_singleton_oligos)))
+                self.progress.update('Applying -a parameter: ' + P(i, len(non_singleton_oligos)))
             
             percent_abundances = []
             for dataset in self.datasets:
@@ -460,7 +460,7 @@ class Oligotyping:
                 oligo = self.abundant_oligos[i]
 
                 if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
-                     self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
+                    self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
 
                 oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict\
                                                         if self.datasets_dict[dataset].has_key(oligo)])
