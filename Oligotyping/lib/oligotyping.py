@@ -156,7 +156,7 @@ class Oligotyping:
             
         
         if not self.output_directory:
-             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
+            self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
         
         if not os.path.exists(self.output_directory):
             try:
