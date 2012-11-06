@@ -40,6 +40,8 @@ def decomposer():
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
+    parser.add_argument('--debug', action = 'store_true', default = False,
+                        help = 'When set, debug messages will be shown.')
 
 
     return parser
