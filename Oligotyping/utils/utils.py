@@ -14,9 +14,10 @@ import sys
 import fcntl
 import time
 import shutil
+import struct
 import termios 
 import cPickle
-import struct
+import tempfile
 import numpy as np
 
 from Oligotyping.lib import fastalib as u
@@ -206,6 +207,7 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
 
         percent_abundances.sort(reverse = True)
 
+        # FIXME: excuse me, WTF is going on here?:
         for abundance_percent, abundance_count, dataset_size, dataset in percent_abundances:
             abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
             break
@@ -434,7 +436,7 @@ def get_terminal_size():
             pass
     if not cr:
         try:
-            cr = (env['LINES'], env['COLUMNS'])
+            cr = (os.environ['LINES'], os.environ['COLUMNS'])
         except:
             cr = (25, 80)
     return int(cr[1]), int(cr[0])
