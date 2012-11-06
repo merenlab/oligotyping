@@ -17,8 +17,6 @@ import sys
 import copy
 import shutil
 import cPickle
-import tempfile
-import operator
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
@@ -35,7 +33,6 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import get_terminal_size
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
