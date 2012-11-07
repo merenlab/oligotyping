@@ -26,6 +26,7 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
@@ -34,6 +35,7 @@ from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 class Node:
     def __init__(self, node_id):
         self.node_id            = node_id
+        self.pretty_id          = None
         self.killed             = False
         self.entropy            = None
         self.entropy_tpls       = None
@@ -49,6 +51,7 @@ class Node:
         self.size               = 0
         self.level              = None
         self.density            = None
+        self.freq_curve_img_path = None
         self.competing_unique_sequences_ratio = None
 
 
@@ -63,6 +66,7 @@ class Decomposer:
         self.project = None
         self.dataset_name_separator = '_'
         self.generate_sets = False
+        self.generate_frequency_curves = False
         self.debug = False
          
         if args:
@@ -74,6 +78,7 @@ class Decomposer:
             self.output_directory = args.output_directory
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.dataset_name_separator = args.dataset_name_separator
+            self.generate_frequency_curves = args.generate_frequency_curves
             self.debug = args.debug
         
         self.decomposition_depth = -1
@@ -90,6 +95,7 @@ class Decomposer:
         self.progress = Progress()
 
         self.root = Node('root')
+        self.root.pretty_id = 'root'
         self.root.size = sys.maxint
         self.root.level = 0
 
@@ -106,6 +112,7 @@ class Decomposer:
 
         self.datasets_dict = {}
         self.datasets = []
+        self.alive_nodes = None
         self.final_nodes = None
 
 
@@ -186,6 +193,10 @@ class Decomposer:
 
         # business time.
         self.generate_raw_topology()
+        
+        if self.generate_frequency_curves:
+            self._generate_frequency_curves()
+            
         self.store_topology_dict()
         self.store_topology_text()
         self._generate_datasets_dict()
@@ -288,8 +299,7 @@ class Decomposer:
                 node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
                 node.unique_alignment = node_file_path_prefix + '.unique'
                 node.unique_read_counts = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
-
-
+                
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node.
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
                     node.killed = True
@@ -381,6 +391,13 @@ class Decomposer:
                         new_node_ids = set(new_node_ids)
 
                         new_node = Node(new_node_id)
+                        pretty_id = new_node_id
+                        while 1:
+                            if pretty_id[0] == '0':
+                                pretty_id = pretty_id[1:]
+                            else:
+                                break
+                        new_node.pretty_id = pretty_id
                         new_node.alignment = os.path.join(self.nodes_directory, new_node_id + '.fa')
                         new_node.read_ids.append(alignment.id)
                         new_node.level = node.level + 1
@@ -408,18 +425,36 @@ class Decomposer:
 
         
         #finally:
-        self.final_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].children and not self.topology[n].killed]
+        self.alive_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].killed]
+        self.final_nodes = [n for n in self.alive_nodes if not self.topology[n].children]
+        self.progress.end()
 
         if self.debug:
             for node_id in self.final_nodes:
                 vis_freq_curve(self.node.unique_alignment, output_file = self.node.unique_alignment + '.png') 
-
 
         num_sequences_after_qc = sum([self.topology[node_id].size for node_id in self.final_nodes])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
         self.run.info('num_final_nodes', pretty_print(len(self.final_nodes)))
 
         # fin.
+
+
+    def _generate_frequency_curves(self):
+        self.progress.new('Generating mini entropy figures')
+        for i in range(0, len(self.alive_nodes)):
+            node = self.topology[self.alive_nodes[i]]
+            
+            if node.killed:
+                continue
+            
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.alive_nodes)))
+                                 
+            node.freq_curve_img_path = node.unique_alignment + '.png'
+            vis_freq_curve(node.unique_alignment, output_file = node.freq_curve_img_path, mini = True,\
+                           title = '%s\n(%s)' % (node.pretty_id, human_readable_number(node.size))) 
+        
+        self.progress.end()
 
 
     def get_new_node_id(self):
@@ -437,22 +472,16 @@ class Decomposer:
     def store_topology_text(self):
         topology_text_file_path = self.generate_output_destination('TOPOLOGY.txt')
         topology_text_file_obj = open(topology_text_file_path, 'w')
-        for node_id in self.topology:
+        for node_id in self.alive_nodes:
             node = self.topology[node_id]
-            if node.killed == True:
-                continue
-            else:
-                topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' \
-                                                        % (node.node_id,
-                                                           node.size,
-                                                           node.parent or '',
-                                                           node.level,
-                                                           ','.join(node.children) or ''))
+            topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' \
+                                               % (node.node_id,
+                                                  node.size,
+                                                  node.parent or '',
+                                                  node.level,
+                                                  ','.join(node.children) or ''))
         topology_text_file_obj.close()
         self.run.info('topology_text', topology_text_file_path)
-
-
-
 
 
 if __name__ == '__main__':
