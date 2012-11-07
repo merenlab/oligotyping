@@ -49,15 +49,19 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
         plt.setp(ax, frame_on=False)
         
         y_maximum = 1.1
+        x_maximum = len(entropy_values)
         ind = np.arange(len(entropy_values))
 
-        text_x, text_y = len(entropy_values) / 2, y_maximum / 2
+        text_x, text_y = x_maximum / 2, y_maximum / 2
         
         plt.text(text_x, text_y, title if title else 'title',
-        horizontalalignment='center',
-        verticalalignment='center',
-        backgroundcolor='white',
-        fontsize=40, color='red')
+                        horizontalalignment='center',
+                        verticalalignment='center',
+                        backgroundcolor='white',
+                        fontsize=40, color='red')
+        
+        plt.ylim(ymax = y_maximum)
+        plt.xlim(xmax = x_maximum)
         
         plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
         
