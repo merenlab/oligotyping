@@ -11,8 +11,9 @@
 
 import os
 import sys
-import fcntl
 import time
+import math
+import fcntl
 import shutil
 import struct
 import termios 
@@ -368,6 +369,13 @@ def get_datasets_dict_from_environment_file(environment_file_path):
         else:
             datasets_dict[dataset] = {oligo: int(count)}
     return datasets_dict
+
+
+def human_readable_number(n):
+    postfix = ['','K','M']
+    level = max(0, min(len(postfix) - 1, int(math.floor(math.log10(abs(n))/3.0))))
+    return '%.0f%s' % (n/10 ** (3 * level), postfix[level])
+
 
 def pretty_print(n):
     """Pretty print function for very big numbers.."""
