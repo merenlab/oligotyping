@@ -42,6 +42,10 @@ def decomposer():
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
     parser.add_argument('--debug', action = 'store_true', default = False,
                         help = 'When set, debug messages will be shown.')
+    parser.add_argument('-F', '--generate-frequency-curves', action = 'store_true', default = False,
+                        help = 'When set, figure with frequency curve for unique reads and entropy distribution\
+                                will be generated for each node. Depending on the number of nodes, this might\
+                                be a time consuming step.')
 
 
     return parser
