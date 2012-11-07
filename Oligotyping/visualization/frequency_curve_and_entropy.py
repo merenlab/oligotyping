@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import Oligotyping.lib.fastalib as u
 from Oligotyping.lib.entropy import entropy_analysis
 
-def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None, verbose = False):
+def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = False, freq_from_defline = None, entropy_output_file = None, verbose = False, mini = False, title = None):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -34,48 +34,75 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     frequency_list_to_plot = frequency_list[0:x_limit] + [0] * (x_limit - len(frequency_list) \
                                             if len(frequency_list) < x_limit else 0)
 
-    
-    fig = plt.figure(figsize=(24, 10))
-
-    plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
-  
-    plt.subplot(2, 1, 1)
-    plt.grid(True) 
-    plt.rcParams.update({'axes.linewidth' : 0.9})
-    plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
-  
-    plt.plot(frequency_list_to_plot, lw = 3, c = 'black')
- 
-    plt.xlabel('Order in the File', size = 'x-large')
-    plt.ylabel('Frequency of the Unique Sequence', size = 'x-large')
-    plt.title('Frequency Distribution of Unique Sequences in %s' % os.path.basename(fasta_file_path))
-    plt.ylim(ymin = -max(frequency_list_to_plot) * 0.05, ymax = max(frequency_list_to_plot) * 1.05)
-    plt.xlim(xmin = -0.05, xmax = x_limit - 1)
-    plt.xticks(range(0, x_limit), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
-    
-
-    plt.subplot(2, 1, 2)
-    plt.subplots_adjust(left=0.05, bottom = 0.1, top = 0.95, right = 0.99)
-
-    try:
-        plt.grid(axis='y') 
-    except:
-        plt.grid(True)
-    plt.rcParams.update({'axes.linewidth' : 0.9})
-    plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
 
     entropy_values = entropy_analysis(fasta_file_path, output_file = entropy_output_file, verbose = verbose, uniqued = True)
-
-    y_maximum = max(entropy_values) * 1.1
-    y_maximum = 1.1 if y_maximum < 1 else y_maximum
-    ind = np.arange(len(entropy_values))
-    plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
-    plt.xlim([0, len(entropy_values)])
-    plt.ylim([0, y_maximum])
-    plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
     
-    plt.xlabel('Position in the Alignment', size = 'x-large')
-    plt.ylabel('Shannon Entropy', size = 'x-large')
+    if mini:
+        plt.figure(figsize=(2, 2))
+        plt.subplots_adjust(left=0.01, bottom = 0, top = 1, right = 1)
+        plt.subplot(1, 1, 1)
+        plt.grid(False)
+        plt.xticks([])
+        plt.yticks([])
+        
+        ax=plt.gca()
+        plt.setp(ax, frame_on=False)
+        
+        y_maximum = 1.1
+        ind = np.arange(len(entropy_values))
+
+        text_x, text_y = len(entropy_values) / 2, y_maximum / 2
+        
+        plt.text(text_x, text_y, title if title else 'title',
+        horizontalalignment='center',
+        verticalalignment='center',
+        backgroundcolor='white',
+        fontsize=40, color='red')
+        
+        plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
+        
+    else:
+        plt.figure(figsize=(24, 10))
+        plt.subplots_adjust(left=0.05, bottom = 0.15, top = 0.95, right = 0.99)
+        plt.subplot(2, 1, 1)
+        plt.grid(True) 
+        plt.rcParams.update({'axes.linewidth' : 0.9})
+        plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
+        plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
+      
+        plt.plot(frequency_list_to_plot, lw = 3, c = 'black')
+     
+        plt.xlabel('Order in the File', size = 'x-large')
+        plt.ylabel('Frequency of the Unique Sequence', size = 'x-large')
+        if title:
+            plt.title(title)
+        else:
+            plt.title('Frequency Distribution of Unique Sequences in %s' % os.path.basename(fasta_file_path))
+        plt.ylim(ymin = -max(frequency_list_to_plot) * 0.05, ymax = max(frequency_list_to_plot) * 1.05)
+        plt.xlim(xmin = -0.05, xmax = x_limit - 1)
+        plt.xticks(range(0, x_limit), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
+        
+    
+        plt.subplot(2, 1, 2)
+        plt.subplots_adjust(left=0.05, bottom = 0.1, top = 0.95, right = 0.99)
+    
+        try:
+            plt.grid(axis='y') 
+        except:
+            plt.grid(True)
+        plt.rcParams.update({'axes.linewidth' : 0.9})
+        plt.rc('grid', color='0.40', linestyle='-', linewidth=0.1)
+        
+        y_maximum = max(entropy_values) * 1.1
+        y_maximum = 1.1 if y_maximum < 1 else y_maximum
+        ind = np.arange(len(entropy_values))
+        plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
+        plt.xlim([0, len(entropy_values)])
+        plt.ylim([0, y_maximum])
+        plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
+        
+        plt.xlabel('Position in the Alignment', size = 'x-large')
+        plt.ylabel('Shannon Entropy', size = 'x-large')
 
     if output_file:
         plt.savefig(output_file)
@@ -92,8 +119,12 @@ if __name__ == '__main__':
     parser.add_argument('fasta', metavar = 'FASTA_FILE', help = 'Sequences file in FASTA format')
     parser.add_argument('-x', '--x-limit', default = 20, type = int, metavar = 'X_LIMIT',\
                         help = 'Number of items to show from frequency list')
+    parser.add_argument('--mini', action = 'store_true', default = False,
+                        help = 'Generate mini images')
+    parser.add_argument('--title', metavar = 'TITLE_TEXT', help = 'Title to appear on top of the\
+                         figure')
 
-    fasta_file_path = parser.parse_args().fasta
-    x_limit = parser.parse_args().x_limit
-    vis_freq_curve(fasta_file_path, x_limit = x_limit, output_file = fasta_file_path + '.png', display = True, verbose = True)
+    args = parser.parse_args()
+    
+    vis_freq_curve(args.fasta, args.x_limit, output_file = args.fasta + '.png', display = True, verbose = True, mini = args.mini, title = args.title)
 
