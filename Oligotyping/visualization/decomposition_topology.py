@@ -10,23 +10,32 @@
 #
 # Please read the COPYING file.
 
+import cPickle
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 from Oligotyping.utils.utils import pretty_print
 
-def topology_graph(topology_file, match_levels = False):
+def topology_graph(topology_dict_path, match_levels = False):
     G = nx.MultiDiGraph()
     
-    datafile = open(topology_file)
+    topology = cPickle.load(open(topology_dict_path))
    
     nodes = {}
     levels = []
-    for line in [l.strip('\n') for l in datafile.readlines()]:
-        node_id, node_size, node_parent, node_level, node_children = line.split('\t')
-        nodes[node_id] = {'size': node_size, 'parent': node_parent, 'level': int(node_level),
-                          'children': node_children.split(',') if node_children else [], 'type': 'node'}
-        levels.append(int(node_level))
+    
+    for node_id in topology:
+        node = topology[node_id]
+        
+        if node.killed:
+            continue
+        
+        nodes[node_id] = {'size': node.size, 'parent': node.parent, 'level': node.level,
+                          'children': [child_node_id for child_node_id in node.children if not topology[child_node_id].killed], 'type': 'node'}
+        if node.freq_curve_img_path:
+            nodes[node_id]['freq_curve_img_path'] = node.freq_curve_img_path
+        levels.append(int(node.level))
     
     # match levels
     if match_levels:
@@ -39,10 +48,10 @@ def topology_graph(topology_file, match_levels = False):
                 for level in levels_to_cover:
                     if levels_to_cover.index(level) == 0:
                         new_nodes[node_id + ':l%d' % level] = {'size': node['size'], 'parent': node_id, 
-                                                               'level': level, 'children': [], 'type': 'spam'}
+                                                               'level': level, 'children': [], 'type': 'spam', 'freq_curve_img_path': None}
                     else:
                         new_nodes[node_id + ':l%d' % level] = {'size': node['size'], 'parent': node_id + ':l%d' % (level - 1),
-                                                               'level': level, 'children': [], 'type': 'spam'}
+                                                               'level': level, 'children': [], 'type': 'spam', 'freq_curve_img_path': None}
 
         for node_id in new_nodes:
             nodes[node_id] = new_nodes[node_id]
@@ -58,18 +67,22 @@ def topology_graph(topology_file, match_levels = False):
                         label = label[1:]
                     else:
                         break
-                G.add_edge(node_id, node['parent'], size = int(node['size']), label = label)
+                G.add_edge(node_id, node['parent'], size = int(node['size']), label = label,\
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
             else:
-                G.add_edge(node_id, node['parent'], size = int(node['size']), label = '')
+                G.add_edge(node_id, node['parent'], size = int(node['size']), label = '',\
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
    
     for node_id in nodes['root']['children']:
-        G.add_edge('root', node_id, size = int(nodes['root']['size']), label = 'root')
+        node = nodes['root']
+        G.add_edge('root', node_id, size = int(nodes['root']['size']), label = 'root',\
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
    
-    return G
+    return (G, nodes)
 
 
-def topology(topology_file, output_file = None, title = None):
-    G = topology_graph(topology_file)
+def topology(topology_dict_path, output_file = None, title = None):
+    G, nodes_dict = topology_graph(topology_dict_path)
 
     number_of_edges = G.number_of_edges()
     number_of_nodes = G.number_of_nodes()
@@ -94,7 +107,7 @@ def topology(topology_file, output_file = None, title = None):
     shapes = dict.fromkeys(G.nodes(), 0.0)
     for (u, v, d) in G.edges(data=True):
         shapes[u] = 'o' if d['size'] > 1 else ''
- 
+
  
     # edge width, not in use at this moment
     edgewidth = []
@@ -114,7 +127,6 @@ def topology(topology_file, output_file = None, title = None):
     plt.ylim(0, ymax)
     plt.xticks([])
     plt.yticks([])
-    plt.axis('equal')
 
     plt.subplots_adjust(hspace = 0, wspace = 0, right = 0.995, left = 0.005, top = 0.995, bottom = 0.005)
 
@@ -123,22 +135,40 @@ def topology(topology_file, output_file = None, title = None):
              transform=plt.gca().transAxes)
 
     #plt.axis('off')
-    plt.show()
+
+    if nodes_dict['root'].has_key('freq_curve_img_path'):
+        AX=plt.gca()
+        f=plt.gcf()
+
+        for node in nodes_dict.keys():
+            (x, y) = pos[node]
+            xt,yt = AX.transData.transform((x, y)) # figure coordinates
+            xf, yf = f.transFigure.inverted().transform((xt, yt)) # axes coordinates
+            print xf, yf
+            imsize = 0.025
+            img =  mpimg.imread(nodes_dict[node]['freq_curve_img_path'])
+            a = plt.axes([xf - imsize / 2.0, yf - imsize / 2.0, imsize, imsize ])
+            a.imshow(img)
+            a.axis('off')
+
+    if output_file:
+        plt.savefig('/Users/meren/test.png')
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Graph Representation of Minimum Entropy Decomposition Topology')
-    parser.add_argument('topology_file', metavar = 'TOPOLOGY',\
-                        help = 'Description of the topology in text format')
+    parser.add_argument('topology_dict', metavar = 'TOPOLOGY',\
+                        help = 'Serialized topology dictionary')
     parser.add_argument('--output-file', default = None, metavar = 'OUTPUT_FILE',\
                         help = 'File name for the figure to be stored. File name\
                                 must end with "png", "jpg", or "tiff".')
     parser.add_argument('--title', default = None, metavar = 'TITLE',\
                         help = 'Title for the figure (project name would be appropriate).')
 
-
     args = parser.parse_args()
 
-    topology(args.topology_file, args.output_file, args.title)
+    topology(args.topology_dict, args.output_file, args.title)
