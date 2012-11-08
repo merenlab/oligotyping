@@ -36,6 +36,7 @@ class Node:
     def __init__(self, node_id):
         self.node_id            = node_id
         self.pretty_id          = None
+        self.representative_seq = None
         self.killed             = False
         self.entropy            = None
         self.entropy_tpls       = None
@@ -133,8 +134,6 @@ class Decomposer:
         while alignment.next():
             read_lengths.append(len(alignment.seq.replace('-', '')))
         self.average_read_length = numpy.mean(read_lengths)
-        alignment.reset()
-
         alignment.close()
 
         # check output associated stuff
@@ -184,7 +183,7 @@ class Decomposer:
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
         self.run.info('version', __version__)
-        self.run.info('root alignment', self.alignment)
+        self.run.info('root_alignment', self.alignment)
         self.run.info('total_seq', pretty_print(self.topology['root'].size))
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
@@ -198,7 +197,7 @@ class Decomposer:
         
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
-            
+
         self.store_topology_dict()
         self.store_topology_text()
         self._generate_datasets_dict()
@@ -301,12 +300,19 @@ class Decomposer:
                 node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
                 node.unique_alignment = node_file_path_prefix + '.unique'
                 node.unique_read_counts = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
-                
+                                
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node.
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
                     node.killed = True
                     continue
 
+                # assign the most abundant unique read in the node as representative. it will be useful
+                # during the refinement step.
+                node_unique_alignment = u.SequenceSource(node.unique_alignment)
+                node_unique_alignment.next()
+                node.representative_seq = node_unique_alignment.seq
+                node_unique_alignment.close()
+                
                 # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
                 # read count and the second most abundant unique read count in a node. smaller the number,
                 # better the level of decomposition. however it is important to consider that one organism
