@@ -212,13 +212,20 @@ class Decomposer:
     def store_unique_alignment(self, alignment_path, output_path):
         output = u.FastaOutput(output_path)
         alignment = u.SequenceSource(alignment_path, unique = True)
+        
+        alignment.next()
+        most_abundant_unique_read = alignment.seq
+        alignment.reset()
+        
         unique_read_counts = []
         while alignment.next():
             unique_read_counts.append(len(alignment.ids))
             output.store(alignment, split = False)
+            
         output.close()
         alignment.close()
-        return unique_read_counts
+        
+        return (unique_read_counts, most_abundant_unique_read)
 
 
     def _generate_datasets_dict(self):
@@ -297,22 +304,19 @@ class Decomposer:
 
                 # FIXME: This part is extremely inefficient, take care of it. Maybe it shouldn't be working with
                 #        files but everything should be stored in memory..
+                #
+                # 1. unique all reads in the node and store them for entropy analysis.
+                # 2. store unique read counts.
+                # 3. store the most abundant unique read in the node as representative.
                 node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
                 node.unique_alignment = node_file_path_prefix + '.unique'
-                node.unique_read_counts = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
+                node.unique_read_counts, node.representative_seq = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
                                 
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node.
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
                     node.killed = True
                     continue
 
-                # assign the most abundant unique read in the node as representative. it will be useful
-                # during the refinement step.
-                node_unique_alignment = u.SequenceSource(node.unique_alignment)
-                node_unique_alignment.next()
-                node.representative_seq = node_unique_alignment.seq
-                node_unique_alignment.close()
-                
                 # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
                 # read count and the second most abundant unique read count in a node. smaller the number,
                 # better the level of decomposition. however it is important to consider that one organism
