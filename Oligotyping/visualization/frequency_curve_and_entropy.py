@@ -130,5 +130,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    vis_freq_curve(args.fasta, args.x_limit, output_file = args.fasta + '.png', display = True, verbose = True, mini = args.mini, title = args.title)
+    vis_freq_curve(args.fasta, x_limit = args.x_limit, display = True, verbose = True, mini = args.mini, title = args.title)
 
