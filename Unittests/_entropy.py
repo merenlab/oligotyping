@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import shutil
 import inspect
 import unittest
 
 from Oligotyping.lib.entropy import entropy_analysis
+from Oligotyping.lib.entropy import quick_entropy
 
 my_path = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 
@@ -47,5 +47,9 @@ class Tests(unittest.TestCase):
         entropy_analysis(self.unique_alignment, output_file = output_file, uniqued = True, verbose = False)
         self.assertTrue(files_are_the_same(self.expected_result, output_file))
 
+    def test_03_RunQuickEntropy(self):
+        n = len(quick_entropy(['ATCGATCGATCG', 'AACGATCGATGG']))
+        self.assertTrue(n == 2)
+        
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)
