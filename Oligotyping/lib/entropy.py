@@ -10,13 +10,10 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.1' # Jul 26, 2012
+__version__ = '0.2' # Nov 08, 2012
 
-import os
-import sys
 import numpy
 import operator
-import cPickle
 from scipy import log2 as log
 
 import Oligotyping.lib.fastalib as u
@@ -147,3 +144,22 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     return [x[1] for x in entropy_tpls]
 
 
+def quick_entropy(l):
+    if len(set([len(x) for x in l])) != 1:
+        raise EntropyError, "Not all vectors have the same length."
+    
+    entropy_tpls = []
+    for position in range(0, len(l[0])):
+        if len(set([x[position] for x in l])) == 1:
+            entropy_tpls.append((position, 0.0),)
+        else:
+            column = "".join([x[position] for x in l])
+
+            e = entropy(column)
+
+            if e < 0.00001:
+                entropy_tpls.append((position, 0.0),)
+            else:
+                entropy_tpls.append((position, e),)
+
+    return [x[1] for x in entropy_tpls if x[1] > 0]
