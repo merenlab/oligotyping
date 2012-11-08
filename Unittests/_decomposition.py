@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import shutil
 import unittest
 
@@ -42,7 +41,7 @@ class Tests(unittest.TestCase):
 
     def test_01_PrefixGenerator(self):
         prefix = self.decomposer.get_prefix()
-        self.assertTrue(prefix == 'm0.20-A1')
+        self.assertTrue(prefix == 'm0.20-A1-d3')
 
     def test_02_Decompose(self):
         self.decomposer.decompose()

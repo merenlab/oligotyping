@@ -157,7 +157,9 @@ class Decomposer:
                                                                 (self.topology['root'].size, self.min_actual_abundance)
             
     def get_prefix(self):
-        prefix = 'm%.2f-A%d' % (self.min_entropy, self.min_actual_abundance)
+        prefix = 'm%.2f-A%d-d%d' % (self.min_entropy,
+                                    self.min_actual_abundance,
+                                    self.number_of_discriminants)
 
         return prefix
 
