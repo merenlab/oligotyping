@@ -89,7 +89,7 @@ def topology(topology_dict_path, output_file = None, title = None):
 
     print("Loaded %d edges and %d nodes." % (number_of_edges, number_of_nodes))
 
-    plt.figure(figsize=(16, 16))
+    plt.figure(figsize=(24, 16))
     
     # use graphviz to find radial layout
     # twopi, gvcolor, wc, ccomps, tred, sccmap, fdp, circo, neato, acyclic, nop, gvpr, dot
@@ -130,10 +130,11 @@ def topology(topology_dict_path, output_file = None, title = None):
 
     plt.subplots_adjust(hspace = 0, wspace = 0, right = 0.995, left = 0.005, top = 0.995, bottom = 0.005)
 
-    plt.text(0.5, 0.97, "Topology",
-             horizontalalignment='center',
-             transform=plt.gca().transAxes)
+    plt.text(0.03, 0.97, title or "Topology", fontsize='xx-large',
+             fontname="Arial", fontweight="bold", transform=plt.gca().transAxes)
 
+    ax=plt.gca()
+    plt.setp(ax, frame_on=False)
     #plt.axis('off')
 
     if nodes_dict['root'].has_key('freq_curve_img_path'):
@@ -145,7 +146,10 @@ def topology(topology_dict_path, output_file = None, title = None):
             xt,yt = AX.transData.transform((x, y)) # figure coordinates
             xf, yf = f.transFigure.inverted().transform((xt, yt)) # axes coordinates
             print xf, yf
-            imsize = 0.025
+            if node == 'root':
+                imsize = 0.04
+            else:
+                imsize = 0.025
             img =  mpimg.imread(nodes_dict[node]['freq_curve_img_path'])
             a = plt.axes([xf - imsize / 2.0, yf - imsize / 2.0, imsize, imsize ])
             a.imshow(img)
