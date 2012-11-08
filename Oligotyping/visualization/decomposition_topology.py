@@ -152,7 +152,7 @@ def topology(topology_dict_path, output_file = None, title = None):
             a.axis('off')
 
     if output_file:
-        plt.savefig('/Users/meren/test.png')
+        plt.savefig(output_file)
     else:
         plt.show()
 
