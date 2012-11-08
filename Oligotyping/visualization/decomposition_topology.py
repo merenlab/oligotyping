@@ -93,7 +93,7 @@ def topology(topology_dict_path, output_file = None, title = None):
     
     # use graphviz to find radial layout
     # twopi, gvcolor, wc, ccomps, tred, sccmap, fdp, circo, neato, acyclic, nop, gvpr, dot
-    pos=nx.graphviz_layout(G, prog="twopi")
+    pos=nx.graphviz_layout(G, prog="fdp")
 
     # node size is proportional to number of reads went into it
     sizes = dict.fromkeys(G.nodes(), 0.0)
