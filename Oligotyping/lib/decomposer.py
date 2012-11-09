@@ -101,6 +101,7 @@ class Decomposer:
         self.skip_removing_outliers = False
         self.relocate_outliers = False
         self.maximum_variation_allowed = sys.maxint
+        self.store_full_topology = False
          
         if args:
             self.alignment = args.alignment
@@ -114,6 +115,7 @@ class Decomposer:
             self.generate_frequency_curves = args.generate_frequency_curves
             self.skip_removing_outliers = args.skip_removing_outliers
             self.relocate_outliers = args.relocate_outliers
+            self.store_full_topology = args.store_full_topology
             self.debug = args.debug
         
         self.decomposition_depth = -1
@@ -250,7 +252,10 @@ class Decomposer:
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
 
-        self._store_topology_dict()
+        if self.store_full_topology:
+            self._store_topology_dict()
+
+        self._store_light_topology_dict()
         self._store_topology_text()
         self._generate_datasets_dict()
         
@@ -618,9 +623,30 @@ class Decomposer:
 
 
     def _store_topology_dict(self):
+        self.progress.new('Generating topology dict (full)')
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')
         cPickle.dump(self.topology, open(topology_dict_file_path, 'w'))
         self.run.info('topology_dict', topology_dict_file_path)
+        self.progress.end()
+
+
+    def _store_light_topology_dict(self):
+        self.progress.new('Generating topology dict (lightweight)')
+        lightweight_topology_dict = {}
+        for node_id in self.topology:
+            node = self.topology[node_id]
+            if node.killed:
+                continue
+            new_node = copy.deepcopy(node)
+            new_node.read_ids = None
+            new_node.entropy_tpls = None
+            
+            lightweight_topology_dict[node_id] = new_node
+
+        topology_dict_file_path = self.generate_output_destination('TOPOLOGY-LIGHT.cPickle')
+        cPickle.dump(lightweight_topology_dict, open(topology_dict_file_path, 'w'))
+        self.run.info('topology_light_dict', topology_dict_file_path)
+        self.progress.end()
 
 
     def _store_topology_text(self):
