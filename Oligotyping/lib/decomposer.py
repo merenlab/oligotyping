@@ -328,12 +328,14 @@ class Decomposer:
   
                 node = self.topology[node_id]
                 
-                self.progress.update('LEVEL: %d: Number of nodes to analyze: %d, Analyzing node id: %s (#%d, size: %d)'\
+                
+                p = 'LEVEL: %d: Number of nodes to analyze: %d, Analyzing node id: %s (#%d, size: %d)'\
                                                          % (self.decomposition_depth,
                                                             len(self.node_ids_to_analyze),
                                                             node_id,
                                                             self.node_ids_to_analyze.index(node_id),
-                                                            node.size))
+                                                            node.size)
+                self.progress.update(p)
 
 
 
@@ -373,7 +375,8 @@ class Decomposer:
                 # node.
                 node.do_competing_unique_sequences_ratio_and_density()
 
-                self.progress.append(' CUSR: %.2f / D: %.2f' % (node.competing_unique_sequences_ratio, node.density))
+                p += ' CUSR: %.2f / D: %.2f' % (node.competing_unique_sequences_ratio, node.density)
+                self.progress.update(p)
 
                 if node.competing_unique_sequences_ratio < 0.025 or node.density > 0.85:
                     # Finalize this node.
@@ -382,7 +385,8 @@ class Decomposer:
                 # find out about the entropy distribution in the given node:
                 node.do_entropy()
 
-                self.progress.append(' / ME: %.2f / AE: %.2f' % (max(node.entropy), node.average_entropy))
+                p += ' / ME: %.2f / AE: %.2f' % (max(node.entropy), node.average_entropy)
+                self.progress.update(p)
                 
                 # IF all the unique reads in the node are smaller than the self.min_substantive_abundance,
                 # there is no need to further compose this node.
@@ -410,7 +414,7 @@ class Decomposer:
                     # FIXME: Finalize this node.
                     continue
                 
-                alignment = u.SequenceSource(node.alignment)
+                alignment = u.SequenceSource(node.alignment, lazy_init = False)
                 
                 # before we go through the parent alignment to find new set of nodes, we need to keep
                 # track of new nodes.
@@ -421,6 +425,8 @@ class Decomposer:
 
                 # go through the parent alignment
                 while alignment.next():
+                    if alignment.pos % 1000 == 0 or alignment.pos == alignment.total_seq - 1:
+                        self.progress.update(p + ' / %.1f%%' % (alignment.pos * 100.0 / alignment.total_seq))
                     oligo = ''.join([alignment.seq[d] for d in node.discriminants])
                    
                     # new_node_id has to be unique, so things wouldn't overwrite each other.
@@ -461,7 +467,10 @@ class Decomposer:
                         new_nodes[new_node_id]['node_obj'] = new_node
 
                 # all reads in the parent alignment are analyzed.
-                for new_node_id in new_nodes:
+                new_node_ids = new_nodes.keys()
+                for i in range(0, len(new_node_ids)):
+                    new_node_id = new_node_ids[i]
+                    self.progress.update(p + ' / new nodes are being stored in the topology: %d of %d ' % (i + 1, len(new_node_ids)))
                     # finalize new nodes
                     new_nodes[new_node_id]['file_obj'].close()
                     new_nodes[new_node_id]['node_obj'].size = len(new_nodes[new_node_id]['node_obj'].read_ids)
