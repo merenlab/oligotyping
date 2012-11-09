@@ -20,6 +20,7 @@ import shutil
 import cPickle
 
 from Oligotyping.lib import fastalib as u
+from Oligotyping.lib.entropy import quick_entropy
 from Oligotyping.lib.entropy import entropy_analysis
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
@@ -29,11 +30,12 @@ from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
+from Oligotyping.utils.utils import unique_and_store_alignment
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
 class Node:
-    def __init__(self, node_id):
+    def __init__(self, node_id, output_directory):
         self.node_id            = node_id
         self.pretty_id          = None
         self.representative_seq = None
@@ -52,8 +54,35 @@ class Node:
         self.size               = 0
         self.level              = None
         self.density            = None
+        self.output_directory   = output_directory
+        self.file_path_prefix   = os.path.join(self.output_directory, node_id)
         self.freq_curve_img_path = None
         self.competing_unique_sequences_ratio = None
+
+    def do_unique(self):
+        self.unique_alignment = self.file_path_prefix + '.unique'
+        self.unique_read_counts, self.representative_seq = unique_and_store_alignment(self.alignment,
+                                                                                      output_path = self.unique_alignment)
+        self.size = sum(self.unique_read_counts)
+
+    def do_entropy(self):
+        node_entropy_output_path = self.file_path_prefix + '.entropy'
+        self.entropy = entropy_analysis(self.unique_alignment, verbose = False, uniqued = True, output_file = node_entropy_output_path)
+        self.entropy_tpls = [(self.entropy[i], i) for i in range(0, len(self.entropy))]
+        self.average_entropy = numpy.mean([e for e in self.entropy if e > 0.05])
+
+    def do_competing_unique_sequences_ratio_and_density(self):
+        if len(self.unique_read_counts) == 1:
+            self.competing_unique_sequences_ratio = 0
+        else:
+            self.competing_unique_sequences_ratio = self.unique_read_counts[1] * 1.0 / self.unique_read_counts[0]
+                    
+        self.density = self.unique_read_counts[0] * 1.0 / sum(self.unique_read_counts)
+
+    def refresh(self):
+        self.do_unique()
+        self.do_entropy()
+        self.do_competing_unique_sequences_ratio_and_density()
 
 
 class Decomposer:
@@ -69,6 +98,9 @@ class Decomposer:
         self.generate_sets = False
         self.generate_frequency_curves = False
         self.debug = False
+        self.skip_removing_outliers = False
+        self.relocate_outliers = False
+        self.maximum_variation_allowed = sys.maxint
          
         if args:
             self.alignment = args.alignment
@@ -80,6 +112,8 @@ class Decomposer:
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.dataset_name_separator = args.dataset_name_separator
             self.generate_frequency_curves = args.generate_frequency_curves
+            self.skip_removing_outliers = args.skip_removing_outliers
+            self.relocate_outliers = args.relocate_outliers
             self.debug = args.debug
         
         self.decomposition_depth = -1
@@ -95,46 +129,28 @@ class Decomposer:
         self.run = Run()
         self.progress = Progress()
 
-        self.root = Node('root')
-        self.root.pretty_id = 'root'
-        self.root.size = sys.maxint
-        self.root.level = 0
-
-        self.topology = {'root': self.root}
-
+        self.root = None
+        self.topology = None
+        
         # A recursive method could have solved the puzzle entirely in a dataset,
         # however there are a couple of reasons to not approach this problem with
         # recursion. This list is going to keep all leafs of the topology that needs
         # to be analyzed. Things will be added and removed to the list, while
         # self.topology is being formed, and main loop will check this variable its
         # every cycle.
-        self.node_ids_to_analyze = ['root']
-        self.next_node_id = 1
+        self.node_ids_to_analyze = None
+        self.next_node_id = None
 
         self.datasets_dict = {}
         self.datasets = []
         self.alive_nodes = None
         self.final_nodes = None
+        self.outliers = {}
 
 
     def sanity_check(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
             raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
-
-        self.topology['root'].alignment = self.alignment
-        alignment = u.SequenceSource(self.alignment, lazy_init = False)
-        self.topology['root'].size = alignment.total_seq
-
-        alignment.next()
-        self.alignment_length = len(alignment.seq)
-        alignment.reset()
-        
-        # compute and store the average read length
-        read_lengths = []
-        while alignment.next():
-            read_lengths.append(len(alignment.seq.replace('-', '')))
-        self.average_read_length = numpy.mean(read_lengths)
-        alignment.close()
 
         # check output associated stuff
         if not self.output_directory:
@@ -150,10 +166,36 @@ class Decomposer:
             raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
 
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
+
+
+    def init_topology(self):
+        self.root = Node('root', self.nodes_directory)
+        self.root.pretty_id = 'root'
+        self.root.level = 0       
+        
+        self.root.alignment = self.alignment
+        alignment = u.SequenceSource(self.alignment, lazy_init = False)
+        self.root.size = alignment.total_seq
+
+        alignment.next()
+        self.alignment_length = len(alignment.seq)
+        alignment.reset()
+        
+        # compute and store the average read length
+        read_lengths = []
+        while alignment.next():
+            read_lengths.append(len(alignment.seq.replace('-', '')))
+        self.average_read_length = numpy.mean(read_lengths)
+        alignment.close()
  
-        if self.topology['root'].size < self.min_actual_abundance:
+        if self.root.size < self.min_actual_abundance:
             raise ConfigError, "The number of reads in alignment file (%d) is smaller than --min-actual-abundance (%d)" % \
-                                                                (self.topology['root'].size, self.min_actual_abundance)
+                                                                (self.root.size, self.min_actual_abundance)
+
+        self.node_ids_to_analyze = ['root']
+        self.next_node_id = 1 
+        self.topology = {'root': self.root}
+            
             
     def get_prefix(self):
         prefix = 'm%.2f-A%d-d%d' % (self.min_entropy,
@@ -176,6 +218,7 @@ class Decomposer:
 
     def decompose(self):
         self.sanity_check()
+        self.init_topology()
 
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
@@ -195,37 +238,28 @@ class Decomposer:
         # business time.
         self.generate_raw_topology()
         
+        if not self.skip_removing_outliers:
+            self.remove_outliers()
+            
+        if self.relocate_outliers:
+            self._relocate_outliers()
+        
+        if (not self.skip_removing_outliers) or self.relocate_outliers:
+            self._refresh_final_nodes()
+        
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
 
-        self.store_topology_dict()
-        self.store_topology_text()
+        self._store_topology_dict()
+        self._store_topology_text()
         self._generate_datasets_dict()
+        
         generate_ENVIRONMENT_file(self)
         generate_MATRIX_files(self.final_nodes, self)
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
         self.run.quit()
-
-
-    def store_unique_alignment(self, alignment_path, output_path):
-        output = u.FastaOutput(output_path)
-        alignment = u.SequenceSource(alignment_path, unique = True)
-        
-        alignment.next()
-        most_abundant_unique_read = alignment.seq
-        alignment.reset()
-        
-        unique_read_counts = []
-        while alignment.next():
-            unique_read_counts.append(len(alignment.ids))
-            output.store(alignment, split = False)
-            
-        output.close()
-        alignment.close()
-        
-        return (unique_read_counts, most_abundant_unique_read)
 
 
     def _generate_datasets_dict(self):
@@ -298,39 +332,41 @@ class Decomposer:
 
 
 
-                if node.size <= self.min_actual_abundance:
-                    # FIXME: Finalize this node.
-                    continue
-
                 # FIXME: This part is extremely inefficient, take care of it. Maybe it shouldn't be working with
                 #        files but everything should be stored in memory..
                 #
                 # 1. unique all reads in the node and store them for entropy analysis.
                 # 2. store unique read counts.
                 # 3. store the most abundant unique read in the node as representative.
-                node_file_path_prefix = os.path.join(self.nodes_directory, node_id)
-                node.unique_alignment = node_file_path_prefix + '.unique'
-                node.unique_read_counts, node.representative_seq = self.store_unique_alignment(node.alignment, output_path = node.unique_alignment)
+                node.do_unique()
                                 
-                # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node.
+                # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node
+                # and store read information into self.outliers
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
+                    unique_alignment = u.SequenceSource(node.alignment, unique = True)
+                    while unique_alignment.next():
+                        self.outliers[unique_alignment.seq] = {'from': None, 'to': None, 'ids': unique_alignment.ids}
+                    unique_alignment.close()
+                    os.remove(node.alignment)
+                    os.remove(node.unique_alignment)
                     node.killed = True
                     continue
 
+                if node.size <= self.min_actual_abundance:
+                    # FIXME: Finalize this node.
+                    continue
+
+                
                 # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
                 # read count and the second most abundant unique read count in a node. smaller the number,
                 # better the level of decomposition. however it is important to consider that one organism
                 # might be overprinting, increasing the ratio over a closely related organism that trapped
                 # in the same node.
-                if len(node.unique_read_counts) == 1:
-                    node.competing_unique_sequences_ratio = 0
-                else:
-                    node.competing_unique_sequences_ratio = node.unique_read_counts[1] * 1.0 / node.unique_read_counts[0]
-
+                #
                 # 'node density' refers to the ratio of most abundant unique read count to all reads
                 # that are accumulated in the node. higher the number, lower the variation within the
                 # node.
-                node.density = node.unique_read_counts[0] * 1.0 / sum(node.unique_read_counts)
+                node.do_competing_unique_sequences_ratio_and_density()
 
                 self.progress.append(' CUSR: %.2f / D: %.2f' % (node.competing_unique_sequences_ratio, node.density))
 
@@ -339,10 +375,7 @@ class Decomposer:
                     continue
 
                 # find out about the entropy distribution in the given node:
-                node_entropy_output_path = node_file_path_prefix + '.entropy'
-                node.entropy = entropy_analysis(node.unique_alignment, verbose = False, uniqued = True, output_file = node_entropy_output_path)
-                node.entropy_tpls = [(node.entropy[i], i) for i in range(0, self.alignment_length)]
-                node.average_entropy = numpy.mean([e for e in node.entropy if e > 0.05])
+                node.do_entropy()
 
                 self.progress.append(' / ME: %.2f / AE: %.2f' % (max(node.entropy), node.average_entropy))
                 
@@ -402,7 +435,7 @@ class Decomposer:
                         new_node_ids.append(new_node_id)
                         new_node_ids = set(new_node_ids)
 
-                        new_node = Node(new_node_id)
+                        new_node = Node(new_node_id, self.nodes_directory)
                         pretty_id = new_node_id
                         while 1:
                             if pretty_id[0] == '0':
@@ -446,12 +479,121 @@ class Decomposer:
                 vis_freq_curve(self.node.unique_alignment, output_file = self.node.unique_alignment + '.png') 
 
         num_sequences_after_qc = sum([self.topology[node_id].size for node_id in self.final_nodes])
+        num_outliers_after_raw_topology = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if not self.outliers[seq]['from']])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
+        self.run.info('num_outliers_after_raw_topology', pretty_print(num_outliers_after_raw_topology))
         self.run.info('num_final_nodes', pretty_print(len(self.final_nodes)))
 
         # fin.
 
 
+    def remove_outliers(self):
+        # there are potential issues with the raw topology generated. 
+        #
+        # when one organism dominates a given node (when there are a lot of reads in the node from one template),
+        # the entropy peaks indicating variation from organisms with lower abundances may be buried deep, and not
+        # meet the minimum entropy for further decomposition criteria. therefore the node would not be fully
+        # decomposed. In some cases reads from very distant organisms may end up together in one node.
+        #
+        # one solution might be (1) going through every read and compare these reads with the representative read of
+        # the node, (2) binning reads that are distant from the representative read, and (3) re-assigning them by
+        # comparing each read to previously found final nodes.
+        
+        # to decide at what level should algorithm be concerned about divergent reads in a node, there has to be a
+        # threshold that defines what is the maximum variation from the most abundant unique sequence. following
+        # variable serves for this purpose. FIXME: this is a very crude way to do it. 
+        self.maximum_variation_allowed = int(round(self.average_read_length * 1.0 / 100)) or 1
+
+        self.progress.new('Refined Topology: Removing Outliers')
+        for i in range(0, len(self.final_nodes)):
+            node = self.topology[self.final_nodes[i]]
+            outlier_seqs = []
+
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.final_nodes)))
+
+            unique_alignment = u.SequenceSource(node.unique_alignment)
+            
+            # skip the most abundant one
+            unique_alignment.next()
+
+            while unique_alignment.next():
+                e = quick_entropy([node.representative_seq, unique_alignment.seq])
+                if len(e) > self.maximum_variation_allowed:
+                    # this read does not belong in this node.
+                    outlier_seqs.append(unique_alignment.seq)
+
+            unique_alignment.close()
+            
+            # we have all the ids for this node to be removed. these reads should be remove from the actual alignment.
+            alignment = u.SequenceSource(node.alignment, unique=True)
+            alignment_temp = u.FastaOutput(node.alignment + '.temp')
+            
+            self.progress.append(' / screening node for %d sequences' % len(outlier_seqs))
+            outlier_seqs = set(outlier_seqs)
+            
+            while alignment.next():
+                if alignment.seq in outlier_seqs:
+                    self.outliers[alignment.seq] = {'from': node.node_id, 'to': None, 'ids': alignment.ids}
+                    outlier_seqs.remove(alignment.seq)
+                else:
+                    for read_id in alignment.ids:
+                        alignment_temp.write_id(read_id)
+                        alignment_temp.write_seq(alignment.seq, split=False)
+
+            alignment.close()
+            alignment_temp.close()
+
+            # now all the reads that we wanted to keep stored in the '.temp' fasta, and all the reads we wanted
+            # to remove are stored in outliers dict, we can overwrite original fasta with '.temp'.
+            shutil.move(node.alignment + '.temp', node.alignment)
+            
+        self.progress.end()
+        
+        num_outliers_after_refine_nodes = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if self.outliers[seq]['from']])
+        self.run.info('num_outliers_after_refine_nodes', pretty_print(num_outliers_after_refine_nodes))
+        
+    
+    def _relocate_outliers(self):
+        self.progress.new('Refined Topology: Processing Outliers')
+        
+        counter = 0
+        relocated = 0
+        for seq in self.outliers:
+            counter += 1
+            self.progress.update('Processing %d of %d / relocated: %d' % (counter, len(self.outliers), relocated))
+            scores = []
+            for node_id in self.final_nodes:
+                node = self.topology[node_id]
+                scores.append((len(quick_entropy([seq, node.representative_seq])),
+                               node.size, node_id))
+            
+            best_score = sorted(scores)[0]
+            
+            entropy_score = best_score[0]
+            suggested_node = best_score[2]
+            
+            if suggested_node != self.outliers[seq]['from'] and entropy_score <= self.maximum_variation_allowed:
+                # FIXME: put this guy in suggested_node..
+                relocated += 1
+                pass
+            
+        self.progress.end()
+
+
+    def _refresh_final_nodes(self):
+        """Refresh nodes using the alignment files"""
+        self.progress.new('Refreshing Nodes')
+        
+        for i in range(0, len(self.final_nodes)):
+            node = self.topology[self.final_nodes[i]]
+            self.progress.update('Processing %d of %d (current size: %d)' % (i + 1, len(self.final_nodes), node.size))
+            node.refresh()
+            
+        self.progress.end()
+        
+        num_sequences_after_qc = sum([self.topology[node_id].size for node_id in self.final_nodes])
+        self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
+        
     def _generate_frequency_curves(self):
         self.progress.new('Generating mini entropy figures')
         for i in range(0, len(self.alive_nodes)):
@@ -475,13 +617,13 @@ class Decomposer:
         return '%.12d' % new_node_id
 
 
-    def store_topology_dict(self):
+    def _store_topology_dict(self):
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')
         cPickle.dump(self.topology, open(topology_dict_file_path, 'w'))
         self.run.info('topology_dict', topology_dict_file_path)
 
 
-    def store_topology_text(self):
+    def _store_topology_text(self):
         topology_text_file_path = self.generate_output_destination('TOPOLOGY.txt')
         topology_text_file_obj = open(topology_text_file_path, 'w')
         for node_id in self.alive_nodes:

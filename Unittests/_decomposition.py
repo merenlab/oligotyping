@@ -33,6 +33,7 @@ class Tests(unittest.TestCase):
         self.decomposer.number_of_discriminants = 3
         self.decomposer.progress.verbose = False
         self.decomposer.run.verbose = False
+        self.decomposer.skip_removing_outliers = True
         self.decomposer.output_directory = self.output_directory_path 
 
 
