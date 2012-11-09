@@ -160,6 +160,25 @@ def generate_MATRIX_files(units, obj):
         obj.run.info('across_datasets_SN_file_path', across_datasets_SN_file_path)
 
  
+def unique_and_store_alignment(alignment_path, output_path):
+    output = u.FastaOutput(output_path)
+    alignment = u.SequenceSource(alignment_path, unique = True)
+        
+    alignment.next()
+    most_abundant_unique_read = alignment.seq
+    alignment.reset()
+ 
+    unique_read_counts = []
+    while alignment.next():
+        unique_read_counts.append(len(alignment.ids))
+        output.store(alignment, split = False)
+            
+    output.close()
+    alignment.close()
+        
+    return (unique_read_counts, most_abundant_unique_read)
+
+
 def generate_ENVIRONMENT_file(obj):
     # generate environment file
     obj.progress.new('ENVIRONMENT File')
