@@ -168,15 +168,17 @@ def unique_and_store_alignment(alignment_path, output_path):
     most_abundant_unique_read = alignment.seq
     alignment.reset()
  
+    read_ids = []
     unique_read_counts = []
     while alignment.next():
+        read_ids += alignment.ids
         unique_read_counts.append(len(alignment.ids))
         output.store(alignment, split = False)
             
     output.close()
     alignment.close()
         
-    return (unique_read_counts, most_abundant_unique_read)
+    return (read_ids, unique_read_counts, most_abundant_unique_read)
 
 
 def generate_ENVIRONMENT_file(obj):
