@@ -46,8 +46,14 @@ def decomposer():
                                 be a time consuming step.')
     parser.add_argument('--debug', action = 'store_true', default = False,
                         help = 'When set, debug messages will be shown.')
-    parser.add_argument('-S', '--skip-refinement-step', action = 'store_true', default = False,
-                        help = 'When set, raw topology will not further refined.')
+    parser.add_argument('-S', '--skip-removing-outliers', action = 'store_true', default = False,
+                        help = 'When set, outliers will not be removed from nodes.')
+    parser.add_argument('-R', '--relocate-outliers', action = 'store_true', default = False,
+                        help = 'Outliers are identified in two places: (1) during the raw topology computation\
+                                and (2) during the refinement step where distant reads are removed from nodes.\
+                                This parameter, when set, makes the pipeline go through each read identified as\
+                                an outlier and try to find the best nodes for them. Please read the documentation\
+                                for details. This step might take a long time. Default: %(default)s')
     
 
 
