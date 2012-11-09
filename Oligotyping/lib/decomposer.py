@@ -61,8 +61,8 @@ class Node:
 
     def do_unique(self):
         self.unique_alignment = self.file_path_prefix + '.unique'
-        self.unique_read_counts, self.representative_seq = unique_and_store_alignment(self.alignment,
-                                                                                      output_path = self.unique_alignment)
+        self.read_ids, self.unique_read_counts, self.representative_seq = \
+                    unique_and_store_alignment(self.alignment, output_path = self.unique_alignment)
         self.size = sum(self.unique_read_counts)
 
     def do_entropy(self):
