@@ -30,9 +30,9 @@ def topology_graph(topology_dict_path, match_levels = False):
         
         if node.killed:
             continue
-        
+        print node_id 
         nodes[node_id] = {'size': node.size, 'parent': node.parent, 'level': node.level,
-                          'children': [child_node_id for child_node_id in node.children if not topology[child_node_id].killed], 'type': 'node'}
+                          'children': [child_node_id for child_node_id in node.children if topology.has_key(child_node_id) and not topology[child_node_id].killed], 'type': 'node'}
         if node.freq_curve_img_path:
             nodes[node_id]['freq_curve_img_path'] = node.freq_curve_img_path
         levels.append(int(node.level))
