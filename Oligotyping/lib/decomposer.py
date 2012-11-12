@@ -530,6 +530,33 @@ class Decomposer:
 
         # fin.
 
+    def _agglomerate_nodes(self):
+        # since we generate nodes based on selected components immediately, some of the nodes will obviously
+        # be error driven, since systematic errors can inflate entropy to a point where a column can create
+        # its own entropy peak to be selected among all other things. most of the time sequencing errors are
+        # random (except some platform-dependent systematic errors, such as homopolymer region indels). so,
+        # the errors should not change beta diversity, and frequency distributin patterns of error driven nodes
+        # should follow their parent node very tightly (because if a node is very abundant in a dataset, the erronous
+        # node stemmed from the same parent will also be relatively abundant in the same dataset). a metric that
+        # has the ability to describe similar patterns of frequency distribution, such as cosine similarity, can 
+        # be used to agglomerate nodes that diverge from each other by one base and has almost the exact frequency
+        # distribution pattern across datasets. this type of process would agglomerate operons, and sometimes very
+        # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
+        # in diversity much, I am not sure whether this is a bad thing.
+        
+        self.progress.new('Agglomerating nodes')
+        
+        for i in range(0, len(self.final_nodes)):
+            node = self.topology(self.final_nodes[i])
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.final_nodes)))
+            
+#            TODO: 
+#            
+#            1. GET SUM NORMALIZED FREQUENCY ACROSS DATASETS LIST
+#            2. COMPARE NODES THAT ARE 1 NUCLEOTIDE DIFFERENT FROM EACH OTHER WITH COSINE SIMILARITY
+#            3. COSINE SIMILARITY < 0.1 THEN MERGE THEM.
+            
+        self.progress.end()
 
     def remove_outliers(self):
         # there are potential issues with the raw topology generated. 
