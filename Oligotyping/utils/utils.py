@@ -35,49 +35,44 @@ class ConfigError(Exception):
     def __str__(self):
         return 'Config Error: %s' % self.e
 
+def get_unit_counts_and_percents(units, datasets_dict):
+    # this function returns two dictionaries that contain unit counts and percents
+    # across datasets. that can be used for agglomeration, as well as generation of
+    # environment and matrix files.
 
-def generate_MATRIX_files(units, obj):
-    # generate matrices..
-    obj.progress.new('Matrix Files')
-    matrix_count_file_path = obj.generate_output_destination("MATRIX-COUNT.txt")
-    matrix_percent_file_path = obj.generate_output_destination("MATRIX-PERCENT.txt")
-   
     unit_percents = {}
     unit_counts = {}
 
-    obj.progress.update('Generating the data')
-    for dataset in obj.datasets:
+    for dataset in datasets_dict:
         counts = []
         percents = []
         for unit in units:
-            if obj.datasets_dict[dataset].has_key(unit):
-                counts.append(obj.datasets_dict[dataset][unit])
-                percents.append(obj.datasets_dict[dataset][unit] * 100.0 / sum(obj.datasets_dict[dataset].values()))
+            if datasets_dict[dataset].has_key(unit):
+                counts.append(datasets_dict[dataset][unit])
+                percents.append(datasets_dict[dataset][unit] * 100.0 / sum(datasets_dict[dataset].values()))
             else:
                 counts.append(0)
                 percents.append(0.0)
                 
         unit_counts[dataset] = counts
         unit_percents[dataset] = percents
-    
 
-    obj.progress.update('Generating Matrix Counts and Percents')
+    return (unit_counts, unit_percents)
+
+def generate_MATRIX_files(units, datasets, unit_counts, unit_percents, matrix_count_file_path, matrix_percent_file_path):
     count_file = open(matrix_count_file_path, 'w')
     percent_file = open(matrix_percent_file_path, 'w')       
     
     count_file.write('\t'.join(['samples'] + units) + '\n')
     percent_file.write('\t'.join(['samples'] + units) + '\n')
 
-    for dataset in obj.datasets:
+    for dataset in datasets:
         count_file.write('\t'.join([dataset] + [str(c) for c in unit_counts[dataset]]) + '\n')
         percent_file.write('\t'.join([dataset] + [str(p) for p in unit_percents[dataset]]) + '\n')
     
     count_file.close()
     percent_file.close()
 
-    obj.progress.end()
-    obj.run.info('matrix_count_file_path', matrix_count_file_path)
-    obj.run.info('matrix_percent_file_path', matrix_percent_file_path)
 
     #
     # yes, I know git has branches. I am just being lazy. let me be.
@@ -120,44 +115,41 @@ def generate_MATRIX_files(units, obj):
     #obj.run.info('cytoscape_edges_file_path', cytoscape_edges_file_path)
     #obj.run.info('cytoscape_nodes_file_path', cytoscape_nodes_file_path)
 
-    if obj.generate_sets:
-        unit_type = 'Oligos' if obj.analysis == 'oligotyping' else 'Nodes'
-        obj.progress.new('Matrix Files For %s Across Datasets' % unit_type)
-        across_datasets_MN_file_path = obj.generate_output_destination("%s-ACROSS-DATASETS-MAX-NORM.txt" % unit_type.upper())
-        across_datasets_SN_file_path = obj.generate_output_destination("%s-ACROSS-DATASETS-SUM-NORM.txt" % unit_type.upper())
 
-        across_datasets_MN_file = open(across_datasets_MN_file_path, 'w')
-        across_datasets_SN_file = open(across_datasets_SN_file_path, 'w')
+def get_units_across_datasets_dicts(units, datasets, unit_percents):
+    across_datasets_sum_normalized = {}
+    across_datasets_max_normalized = {}
+  
+    for unit in units:
+        across_datasets_sum_normalized[unit] = []
+        across_datasets_max_normalized[unit] = []
+
+    for i in range(0, len(units)):
+        unit = units[i]
+        sum_across_datasets = sum([unit_percents[dataset][i] for dataset in datasets])
+        max_across_datasets = max([unit_percents[dataset][i] for dataset in datasets])
+            
+        for dataset in datasets:
+            across_datasets_sum_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / sum_across_datasets)
+            across_datasets_max_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / max_across_datasets)
+
+    return (across_datasets_sum_normalized, across_datasets_max_normalized)
+
+
+def generate_MATRIX_files_for_units_across_datasets(units, datasets, MN_fp, SN_fp, MN_dict, SN_dict):
+        across_datasets_MN_file = open(MN_fp, 'w')
+        across_datasets_SN_file = open(SN_fp, 'w')
 
         across_datasets_MN_file.write('\t'.join(['sample'] + units) + '\n')
         across_datasets_SN_file.write('\t'.join(['sample'] + units) + '\n')
 
-        obj.progress.update('Generating data for %s across datasets' % unit_type)
-  
-        for unit in units:
-            obj.across_datasets_sum_normalized[unit] = []
-            obj.across_datasets_max_normalized[unit] = []
-
-        for i in range(0, len(units)):
-            unit = units[i]
-            sum_across_datasets = sum([unit_percents[dataset][i] for dataset in obj.datasets])
-            max_across_datasets = max([unit_percents[dataset][i] for dataset in obj.datasets])
-            for dataset in obj.datasets:
-                obj.across_datasets_sum_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / sum_across_datasets)
-                obj.across_datasets_max_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / max_across_datasets)
-
-        obj.progress.update('Generating files')
-        for i in range(0, len(obj.datasets)):
-            dataset = obj.datasets[i]
-            across_datasets_MN_file.write('\t'.join([dataset] + [str(obj.across_datasets_max_normalized[unit][i]) for unit in units]) + '\n')
-            across_datasets_SN_file.write('\t'.join([dataset] + [str(obj.across_datasets_sum_normalized[unit][i]) for unit in units]) + '\n')
+        for i in range(0, len(datasets)):
+            dataset = datasets[i]
+            across_datasets_MN_file.write('\t'.join([dataset] + [str(MN_dict[unit][i]) for unit in units]) + '\n')
+            across_datasets_SN_file.write('\t'.join([dataset] + [str(SN_dict[unit][i]) for unit in units]) + '\n')
         
         across_datasets_MN_file.close()
         across_datasets_SN_file.close()
-
-        obj.progress.end()
-        obj.run.info('across_datasets_MN_file_path', across_datasets_MN_file_path)
-        obj.run.info('across_datasets_SN_file_path', across_datasets_SN_file_path)
 
  
 def unique_and_store_alignment(alignment_path, output_path):
@@ -181,18 +173,13 @@ def unique_and_store_alignment(alignment_path, output_path):
     return (read_ids, unique_read_counts, most_abundant_unique_read)
 
 
-def generate_ENVIRONMENT_file(obj):
+def generate_ENVIRONMENT_file(datasets, datasets_dict, environment_file_path):
     # generate environment file
-    obj.progress.new('ENVIRONMENT File')
-    environment_file_path = obj.generate_output_destination("ENVIRONMENT.txt")
     f = open(environment_file_path, 'w')
-    obj.progress.update('Being generated')
-    for dataset in obj.datasets:
-        for unit in obj.datasets_dict[dataset]:
-            f.write("%s\t%s\t%d\n" % (unit, dataset, obj.datasets_dict[dataset][unit]))
+    for dataset in datasets:
+        for unit in datasets_dict[dataset]:
+            f.write("%s\t%s\t%d\n" % (unit, dataset, datasets_dict[dataset][unit]))
     f.close()
-    obj.progress.end()
-    obj.run.info('environment_file_path', environment_file_path)
 
 
 def get_unique_sequences_from_FASTA(alignment, limit = 10):

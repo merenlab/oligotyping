@@ -29,8 +29,9 @@ from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
-from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
+from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import unique_and_store_alignment
+from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
@@ -69,7 +70,7 @@ class Node:
         node_entropy_output_path = self.file_path_prefix + '.entropy'
         self.entropy = entropy_analysis(self.unique_alignment, verbose = False, uniqued = True, output_file = node_entropy_output_path)
         self.entropy_tpls = [(self.entropy[i], i) for i in range(0, len(self.entropy))]
-        self.average_entropy = numpy.mean([e for e in self.entropy if e > 0.05])
+        self.average_entropy = numpy.mean([e for e in self.entropy if e > 0.05] or [0])
 
     def do_competing_unique_sequences_ratio_and_density(self):
         if len(self.unique_read_counts) == 1:
@@ -145,6 +146,8 @@ class Decomposer:
 
         self.datasets_dict = {}
         self.datasets = []
+        self.unit_counts = None
+        self.unit_percents = None
         self.alive_nodes = None
         self.final_nodes = None
         self.outliers = {}
@@ -258,9 +261,10 @@ class Decomposer:
         self._store_light_topology_dict()
         self._store_topology_text()
         self._generate_datasets_dict()
+        self._get_unit_counts_and_percents()
         
-        generate_ENVIRONMENT_file(self)
-        generate_MATRIX_files(self.final_nodes, self)
+        self._generate_ENVIRONMENT_file()
+        self._generate_MATRIX_files()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
@@ -291,18 +295,44 @@ class Decomposer:
 
 
     def _generate_ENVIRONMENT_file(self):
-        # generate environment file
         self.progress.new('ENVIRONMENT File')
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
-        f = open(environment_file_path, 'w')
         self.progress.update('Being generated')
-        for dataset in self.datasets:
-            for node in self.datasets_dict[dataset]:
-                f.write("%s\t%s\t%d\n" % (node, dataset, self.datasets_dict[dataset][node]))
-        f.close()
-        self.progress.end()
-        self.run.info('environment_file_path', environment_file_path)
+        
+        generate_ENVIRONMENT_file(self.datasets,
+                                  self.datasets_dict,
+                                  environment_file_path)
 
+        self.progress.end()
+        self.run.info('environment_file_path', environment_file_path)        
+
+
+    def _get_unit_counts_and_percents(self):
+        self.progress.new('Unit counts and percents')
+        self.progress.update('Data is being generated')
+            
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.final_nodes, self.datasets_dict)
+            
+        self.progress.end()
+
+
+    def _generate_MATRIX_files(self):
+        self.progress.new('Matrix Files')
+        self.progress.update('Being generated')
+            
+        matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
+        matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
+            
+        generate_MATRIX_files(self.final_nodes,
+                              self.datasets,
+                              self.unit_counts,
+                              self.unit_percents,
+                              matrix_count_file_path,
+                              matrix_percent_file_path)
+            
+        self.progress.end()
+        self.run.info('matrix_count_file_path', matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
 
     def dataset_name_from_defline(self, defline):
         return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])

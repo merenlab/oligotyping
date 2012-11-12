@@ -33,9 +33,12 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import generate_MATRIX_files
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
+from Oligotyping.utils.utils import get_unit_counts_and_percents
+from Oligotyping.utils.utils import get_units_across_datasets_dicts
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
+from Oligotyping.utils.utils import generate_MATRIX_files_for_units_across_datasets
 
 # FIXME: test whether Biopython is installed or not here.
 from Oligotyping.utils.blast_interface import remote_blast_search, local_blast_search
@@ -108,6 +111,8 @@ class Oligotyping:
         self.representative_sequences_per_oligotype = {}
         self.across_datasets_sum_normalized = {}
         self.across_datasets_max_normalized = {}
+        self.unit_counts = None
+        self.unit_percents = None
         self.oligotype_sets = None
         self.datasets = []
         self.abundant_oligos = []
@@ -265,17 +270,20 @@ class Oligotyping:
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
         self._refine_datasets_dict()
-        self._generate_FASTA_file()
-        self._generate_NEXUS_file()
+        self._get_unit_counts_and_percents()
         self._generate_random_colors()
         
-        generate_ENVIRONMENT_file(self)
-        generate_MATRIX_files(self.abundant_oligos, self)
+        self._generate_FASTA_file()
+        self._generate_NEXUS_file()        
+        self._generate_ENVIRONMENT_file()
+        self._generate_MATRIX_files()
         
         if self.generate_sets:
+            self._get_units_across_datasets_dicts()
+            self._generate_MATRIX_files_for_units_across_datasets()
             self._agglomerate_oligos_based_on_cosine_similarity()
-            self._generate_MATRIX_files_for_oligotype_sets()
-        
+            self._generate_MATRIX_files_for_oligotype_sets()       
+             
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
         if not self.no_figures:
@@ -620,7 +628,75 @@ class Oligotyping:
         f.close()
         self.progress.end()
         self.run.info('oligos_nexus_file_path', oligos_nexus_file_path)
-    
+
+
+    def _get_unit_counts_and_percents(self):
+        self.progress.new('Unit counts and percents')
+        self.progress.update('Data is being generated')
+            
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.abundant_oligos, self.datasets_dict)
+            
+        self.progress.end()
+
+
+    def _generate_MATRIX_files_for_units_across_datasets(self):
+        self.progress.new('Oligos across datasets')
+        self.progress.update('Matrix files are being generated')
+
+        across_datasets_MN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-MAX-NORM.txt")
+        across_datasets_SN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-SUM-NORM.txt")
+             
+        generate_MATRIX_files_for_units_across_datasets(self.abundant_oligos,
+                                                        self.datasets,
+                                                        across_datasets_MN_file_path,
+                                                        across_datasets_SN_file_path,
+                                                        self.across_datasets_max_normalized,
+                                                        self.across_datasets_sum_normalized)
+
+        self.progress.end()
+        self.run.info('across_datasets_MN_file_path', across_datasets_MN_file_path)
+        self.run.info('across_datasets_SN_file_path', across_datasets_SN_file_path)
+
+
+    def _get_units_across_datasets_dicts(self):
+        self.progress.new('Oligos across datasets')
+        self.progress.update('Data is being generated')
+
+        self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
+                get_units_across_datasets_dicts(self.abundant_oligos, self.datasets, self.unit_percents) 
+            
+        self.progress.end()
+
+ 
+    def _generate_ENVIRONMENT_file(self):
+        self.progress.new('ENVIRONMENT File')
+        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
+        self.progress.update('Being generated')
+        
+        generate_ENVIRONMENT_file(self.datasets,
+                                  self.datasets_dict,
+                                  environment_file_path)
+
+        self.progress.end()
+        self.run.info('environment_file_path', environment_file_path)
+        
+    def _generate_MATRIX_files(self):
+        self.progress.new('Matrix Files')
+        self.progress.update('Being generated')
+            
+        matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
+        matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
+            
+        generate_MATRIX_files(self.abundant_oligos,
+                              self.datasets,
+                              self.unit_counts,
+                              self.unit_percents,
+                              matrix_count_file_path,
+                              matrix_percent_file_path)
+            
+        self.progress.end()
+        self.run.info('matrix_count_file_path', matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
 
     def _generate_random_colors(self):
         colors_file_path = self.generate_output_destination('COLORS')
