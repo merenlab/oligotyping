@@ -48,6 +48,9 @@ def decomposer():
                         help = 'When set, debug messages will be shown.')
     parser.add_argument('-S', '--skip-removing-outliers', action = 'store_true', default = False,
                         help = 'When set, outliers will not be removed from nodes.')
+    parser.add_argument('--skip-agglomerating-nodes', action = 'store_true', default = False,
+                        help = 'When set, agglomeration of nodes step will be skipped. See documentation for\
+                                details.')
     parser.add_argument('-R', '--relocate-outliers', action = 'store_true', default = False,
                         help = 'Outliers are identified in two places: (1) during the raw topology computation\
                                 and (2) during the refinement step where distant reads are removed from nodes.\
