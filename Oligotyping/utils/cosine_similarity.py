@@ -33,6 +33,9 @@ from scipy import spatial
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 
+def cosine_distance(v1, v2):
+    return spatial.distance.cosine(v1, v2)
+
 def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file = None):
     oligotype_sets = []
     distances = {}
@@ -44,8 +47,8 @@ def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file
             if not distances.has_key(oligos[j]):
                 distances[oligos[j]] = {}
             
-            distances[oligos[i]][oligos[j]] = spatial.distance.cosine(vectors[oligos[i]], vectors[oligos[j]])
-            distances[oligos[j]][oligos[i]] = spatial.distance.cosine(vectors[oligos[i]], vectors[oligos[j]])
+            distances[oligos[i]][oligos[j]] = cosine_distance(vectors[oligos[i]], vectors[oligos[j]])
+            distances[oligos[j]][oligos[i]] = cosine_distance(vectors[oligos[i]], vectors[oligos[j]])
     
     ids = range(0, len(oligos))
     while 1:
