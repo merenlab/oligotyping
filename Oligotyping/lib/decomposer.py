@@ -25,14 +25,98 @@ from Oligotyping.lib.entropy import entropy_analysis
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
+from Oligotyping.utils.utils import append_file
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import homopolymer_indel_exists
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import unique_and_store_alignment
 from Oligotyping.utils.utils import get_unit_counts_and_percents
+from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.cosine_similarity import cosine_distance
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
+
+class Topology:
+    def __init__(self):
+        self.nodes = {}
+        self.alive_nodes = None
+        self.final_nodes = None
+
+    def get_node(self, node_id):
+        return self.nodes[node_id]
+
+    def print_node(self, node_id):
+        node = self.nodes[node_id]
+        print
+        print 'Node "%s"' % node
+        print '---------------------------------'
+        print 'Killed    : %s' % node.killed
+        print 'Dirty     : %s' % node.dirty
+        print 'Size      : %d' % node.size
+        print 'Parent    : %s' % node.parent
+        print 'Children  : ', node.children
+        print 'Alignment : %s' % node.alignment
+        print
+    
+    def get_siblings(self, node_id):
+        node = self.nodes[node_id]
+        siblings = []
+        
+        parent_nodes_to_analyze = [self.get_node(node.parent)]
+        
+        while len(parent_nodes_to_analyze):
+            parent = parent_nodes_to_analyze.pop(0)
+            
+            for candidate in [self.get_node(c) for c in parent.children if c != node.node_id]:
+                if candidate.children:
+                    parent_nodes_to_analyze.append(candidate)
+                else:
+                    siblings.append((candidate.size, candidate.node_id))
+
+        # sort siblings most abundant to least
+        siblings.sort(reverse = True)
+        
+        return [s[1] for s in siblings]
+
+    def merge_sibling(self, source_node_id, target_node_id):
+        source = self.get_node(source_node_id)
+        target = self.get_node(target_node_id)
+        
+        parent = self.get_node(source.parent)
+        
+        # append source stuff to target node:
+        target.read_ids += source.read_ids
+        append_file(source.alignment, target.alignment)
+        target.dirty = True
+        
+        # remove source from the topology
+        parent.children.remove(source.node_id)
+        self.final_nodes.remove(source.node_id)
+        self.alive_nodes.remove(source.node_id)
+        
+        # kill the source
+        source.killed = True
+        os.remove(source.alignment)
+        os.remove(source.unique_alignment)
+        
+        # refresh target node
+        target.refresh()
+
+        
+    def get_parent_node(self, node_id):
+        return self.nodes[self.nodes[node_id].parent]
+
+    def update_final_nodes(self):
+        self.alive_nodes = [n for n in sorted(self.nodes.keys()) if not self.nodes[n].killed]
+        self.final_nodes = [n for n in self.alive_nodes if not self.nodes[n].children]
+
+    def recompute_nodes(self):
+        for node_id in self.final_nodes:
+            node = self.get_node(node_id)
+            if node.dirty:
+                node.refresh()
 
 
 class Node:
@@ -41,6 +125,7 @@ class Node:
         self.pretty_id          = None
         self.representative_seq = None
         self.killed             = False
+        self.dirty              = False
         self.entropy            = None
         self.entropy_tpls       = None
         self.parent             = None
@@ -59,6 +144,9 @@ class Node:
         self.file_path_prefix   = os.path.join(self.output_directory, node_id)
         self.freq_curve_img_path = None
         self.competing_unique_sequences_ratio = None
+        
+    def __str__(self):
+        return self.pretty_id
 
     def do_unique(self):
         self.unique_alignment = self.file_path_prefix + '.unique'
@@ -84,6 +172,7 @@ class Node:
         self.do_unique()
         self.do_entropy()
         self.do_competing_unique_sequences_ratio_and_density()
+        self.dirty = False
 
 
 class Decomposer:
@@ -100,9 +189,11 @@ class Decomposer:
         self.generate_frequency_curves = False
         self.debug = False
         self.skip_removing_outliers = False
+        self.skip_agglomerating_nodes = False
         self.relocate_outliers = False
         self.maximum_variation_allowed = sys.maxint
         self.store_full_topology = False
+        self.merge_homopolymer_splits = False
          
         if args:
             self.alignment = args.alignment
@@ -115,8 +206,10 @@ class Decomposer:
             self.dataset_name_separator = args.dataset_name_separator
             self.generate_frequency_curves = args.generate_frequency_curves
             self.skip_removing_outliers = args.skip_removing_outliers
+            self.skip_agglomerating_nodes = args.skip_agglomerating_nodes
             self.relocate_outliers = args.relocate_outliers
             self.store_full_topology = args.store_full_topology
+            self.merge_homopolymer_splits = args.merge_homopolymer_splits
             self.debug = args.debug
         
         self.decomposition_depth = -1
@@ -133,7 +226,7 @@ class Decomposer:
         self.progress = Progress()
 
         self.root = None
-        self.topology = None
+        self.topology = Topology()
         
         # A recursive method could have solved the puzzle entirely in a dataset,
         # however there are a couple of reasons to not approach this problem with
@@ -148,8 +241,8 @@ class Decomposer:
         self.datasets = []
         self.unit_counts = None
         self.unit_percents = None
-        self.alive_nodes = None
-        self.final_nodes = None
+        self.across_datasets_sum_normalized = {}
+        self.across_datasets_max_normalized = {}
         self.outliers = {}
 
 
@@ -199,7 +292,7 @@ class Decomposer:
 
         self.node_ids_to_analyze = ['root']
         self.next_node_id = 1 
-        self.topology = {'root': self.root}
+        self.topology.nodes['root'] = self.root
             
             
     def get_prefix(self):
@@ -232,7 +325,11 @@ class Decomposer:
         self.run.info('run_date', get_date())
         self.run.info('version', __version__)
         self.run.info('root_alignment', self.alignment)
-        self.run.info('total_seq', pretty_print(self.topology['root'].size))
+        self.run.info('skip_agglomerating_nodes', self.skip_agglomerating_nodes)
+        self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
+        self.run.info('skip_removing_outliers', self.skip_removing_outliers)
+        self.run.info('store_full_topology', self.store_full_topology)
+        self.run.info('total_seq', pretty_print(self.topology.nodes['root'].size))
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
         self.run.info('output_directory', self.output_directory)
@@ -241,22 +338,29 @@ class Decomposer:
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
 
         # business time.
-        self.generate_raw_topology()
+        self._generate_raw_topology()
+        
+        if not self.skip_agglomerating_nodes:
+            self._agglomerate_nodes()
+            self._refresh_topology()
+            
+        if self.merge_homopolymer_splits:
+            self._merge_homopolymer_splits()
         
         if not self.skip_removing_outliers:
-            self.remove_outliers()
+            self._remove_outliers()
             
         if self.relocate_outliers:
             self._relocate_outliers()
         
-        if (not self.skip_removing_outliers) or self.relocate_outliers:
-            self._refresh_final_nodes()
+        if (not self.skip_removing_outliers) or (not self.skip_agglomerating_nodes) or self.relocate_outliers:
+            self._refresh_topology()
         
-        if self.generate_frequency_curves:
-            self._generate_frequency_curves()
-
         if self.store_full_topology:
             self._store_topology_dict()
+
+        if self.generate_frequency_curves:
+            self._generate_frequency_curves()
 
         self._store_light_topology_dict()
         self._store_topology_text()
@@ -265,7 +369,7 @@ class Decomposer:
         
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
-
+ 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
         self.run.quit()
@@ -273,8 +377,9 @@ class Decomposer:
 
     def _generate_datasets_dict(self):
         self.progress.new('Computing Samples Dict')
-        for node_id in self.final_nodes:
-            node = self.topology[node_id]
+        
+        for node_id in self.topology.final_nodes:
+            node = self.topology.nodes[node_id]
             self.progress.update('Analyzing Node ID: "%s" (size: %d)'\
                                                         % (node_id, node.size))
         
@@ -311,7 +416,7 @@ class Decomposer:
         self.progress.new('Unit counts and percents')
         self.progress.update('Data is being generated')
             
-        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.final_nodes, self.datasets_dict)
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.datasets_dict)
             
         self.progress.end()
 
@@ -323,7 +428,7 @@ class Decomposer:
         matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
         matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
-        generate_MATRIX_files(self.final_nodes,
+        generate_MATRIX_files(self.topology.final_nodes,
                               self.datasets,
                               self.unit_counts,
                               self.unit_percents,
@@ -334,11 +439,12 @@ class Decomposer:
         self.run.info('matrix_count_file_path', matrix_count_file_path)
         self.run.info('matrix_percent_file_path', matrix_percent_file_path)
 
+
     def dataset_name_from_defline(self, defline):
         return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
 
 
-    def generate_raw_topology(self):
+    def _generate_raw_topology(self):
         self.progress.new('Raw Topology')
         # main loop
         while 1:
@@ -356,7 +462,7 @@ class Decomposer:
 
             for node_id in self.node_ids_to_analyze:
   
-                node = self.topology[node_id]
+                node = self.topology.nodes[node_id]
                 
                 
                 p = 'LEVEL: %d: Number of nodes to analyze: %d, Analyzing node id: %s (#%d, size: %d)'\
@@ -366,8 +472,6 @@ class Decomposer:
                                                             self.node_ids_to_analyze.index(node_id),
                                                             node.size)
                 self.progress.update(p)
-
-
 
                 # FIXME: This part is extremely inefficient, take care of it. Maybe it shouldn't be working with
                 #        files but everything should be stored in memory..
@@ -386,6 +490,12 @@ class Decomposer:
                     unique_alignment.close()
                     os.remove(node.alignment)
                     os.remove(node.unique_alignment)
+                    
+                    # remove its entry from the parents children
+                    parent = self.topology.nodes[node.parent]
+                    if node_id in parent.children:
+                        parent.children.remove(node_id)
+                    
                     node.killed = True
                     continue
 
@@ -506,7 +616,7 @@ class Decomposer:
                     new_nodes[new_node_id]['node_obj'].size = len(new_nodes[new_node_id]['node_obj'].read_ids)
                     
                     # and add them into the topology:
-                    self.topology[new_node_id] = copy.deepcopy(new_nodes[new_node_id]['node_obj'])
+                    self.topology.nodes[new_node_id] = copy.deepcopy(new_nodes[new_node_id]['node_obj'])
                     new_node_ids_to_analyze.append(new_node_id)
 
             # this is time to set new nodes for the analysis.
@@ -514,21 +624,77 @@ class Decomposer:
 
         
         #finally:
-        self.alive_nodes = [n for n in sorted(self.topology.keys()) if not self.topology[n].killed]
-        self.final_nodes = [n for n in self.alive_nodes if not self.topology[n].children]
+        self.topology.update_final_nodes()
         self.progress.end()
 
         if self.debug:
-            for node_id in self.final_nodes:
+            for node_id in self.topology.final_nodes:
                 vis_freq_curve(self.node.unique_alignment, output_file = self.node.unique_alignment + '.png') 
 
-        num_sequences_after_qc = sum([self.topology[node_id].size for node_id in self.final_nodes])
+        num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
         num_outliers_after_raw_topology = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if not self.outliers[seq]['from']])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
         self.run.info('num_outliers_after_raw_topology', pretty_print(num_outliers_after_raw_topology))
-        self.run.info('num_final_nodes', pretty_print(len(self.final_nodes)))
+        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
 
         # fin.
+
+
+    def _refresh_topology(self):
+        self.progress.new('Refreshing the topology')
+        self.progress.update('Updating final nodes...')
+        self.topology.update_final_nodes()
+
+        dirty_nodes = []
+        for node_id in self.topology.final_nodes:
+            node = self.topology.get_node(node_id)
+            if node.dirty:
+                dirty_nodes.append(node)
+                
+        for node in dirty_nodes:
+            self.progress.update('Synchronizing dirty node (%d of %d)' % (dirty_nodes.index(node) + 1, len(dirty_nodes)))
+            node.refresh()
+
+        self.progress.end()
+
+
+    def _merge_homopolymer_splits(self):
+        self.progress.new('Merge homopolymer splits')
+        
+        final_nodes = copy.deepcopy(self.topology.final_nodes)
+        
+        while final_nodes:
+            node = self.topology.nodes[final_nodes.pop()]
+            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(final_nodes)))
+
+            siblings = self.topology.get_siblings(node.node_id)
+            
+            while len(siblings):
+                sibling = self.topology.nodes[siblings.pop()]
+                
+                e = quick_entropy([node.representative_seq, sibling.representative_seq])
+                
+                if len(e) == 1 and homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
+                    print ''
+                    print 'HP INDEL for %s and %s' % (node.node_id, sibling.node_id)
+                    self.topology.merge_sibling(node.node_id, sibling.node_id)
+                        
+                    try:
+                        final_nodes.remove(node.node_id)
+                        siblings.remove(node.node_id)
+                    except:
+                        pass
+                        
+                    # we are done here, goto the next node
+                    break
+            
+        self.progress.end()
+        
+        # reset temporary stuff
+        self.datasets = []
+        self.datasets_dict = {}
+        self.unit_counts = {}
+        self.unit_percents = {}
 
     def _agglomerate_nodes(self):
         # since we generate nodes based on selected components immediately, some of the nodes will obviously
@@ -546,19 +712,50 @@ class Decomposer:
         
         self.progress.new('Agglomerating nodes')
         
-        for i in range(0, len(self.final_nodes)):
-            node = self.topology(self.final_nodes[i])
-            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.final_nodes)))
+        # generating a temporary datasets dict.
+        self._generate_datasets_dict()
+        self._get_unit_counts_and_percents()
+        
+        self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
+                get_units_across_datasets_dicts(self.topology.final_nodes, self.datasets, self.unit_percents) 
+
+        # compare final nodes with their parent nodes.
+        final_nodes = copy.deepcopy(self.topology.final_nodes)
+        
+        while final_nodes:
+            node = self.topology.nodes[final_nodes.pop()]
             
-#            TODO: 
-#            
-#            1. GET SUM NORMALIZED FREQUENCY ACROSS DATASETS LIST
-#            2. COMPARE NODES THAT ARE 1 NUCLEOTIDE DIFFERENT FROM EACH OTHER WITH COSINE SIMILARITY
-#            3. COSINE SIMILARITY < 0.1 THEN MERGE THEM.
+            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(final_nodes)))
+            
+            siblings = self.topology.get_siblings(node.node_id)
+            
+            while len(siblings):
+                sibling = self.topology.nodes[siblings.pop()]
+                
+                e = quick_entropy([node.representative_seq, sibling.representative_seq])
+                
+                if len(e) == 1:
+                    d = cosine_distance(self.across_datasets_max_normalized[node.node_id], self.across_datasets_max_normalized[sibling.node_id])
+                    if d < 0.1:
+                        self.topology.merge_sibling(node.node_id, sibling.node_id)
+                        try:
+                            final_nodes.remove(node.node_id)
+                            siblings.remove(node.node_id)
+                        except:
+                            pass
+                        
+                        # we are done here, goto the next node
+                        break
             
         self.progress.end()
+        
+        # reset temporary stuff
+        self.datasets = []
+        self.datasets_dict = {}
+        self.unit_counts = {}
+        self.unit_percents = {}
 
-    def remove_outliers(self):
+    def _remove_outliers(self):
         # there are potential issues with the raw topology generated. 
         #
         # when one organism dominates a given node (when there are a lot of reads in the node from one template),
@@ -576,11 +773,11 @@ class Decomposer:
         self.maximum_variation_allowed = int(round(self.average_read_length * 1.0 / 100)) or 1
 
         self.progress.new('Refined Topology: Removing Outliers')
-        for i in range(0, len(self.final_nodes)):
-            node = self.topology[self.final_nodes[i]]
+        for i in range(0, len(self.topology.final_nodes)):
+            node = self.topology.nodes[self.topology.final_nodes[i]]
             outlier_seqs = []
 
-            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.final_nodes)))
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
 
             unique_alignment = u.SequenceSource(node.unique_alignment)
             
@@ -633,8 +830,8 @@ class Decomposer:
             counter += 1
             self.progress.update('Processing %d of %d / relocated: %d' % (counter, len(self.outliers), relocated))
             scores = []
-            for node_id in self.final_nodes:
-                node = self.topology[node_id]
+            for node_id in self.topology.final_nodes:
+                node = self.topology.nodes[node_id]
                 scores.append((len(quick_entropy([seq, node.representative_seq])),
                                node.size, node_id))
             
@@ -655,25 +852,25 @@ class Decomposer:
         """Refresh nodes using the alignment files"""
         self.progress.new('Refreshing Nodes')
         
-        for i in range(0, len(self.final_nodes)):
-            node = self.topology[self.final_nodes[i]]
-            self.progress.update('Processing %d of %d (current size: %d)' % (i + 1, len(self.final_nodes), node.size))
+        for i in range(0, len(self.topology.final_nodes)):
+            node = self.topology.nodes[self.topology.final_nodes[i]]
+            self.progress.update('Processing %d of %d (current size: %d)' % (i + 1, len(self.topology.final_nodes), node.size))
             node.refresh()
             
         self.progress.end()
         
-        num_sequences_after_qc = sum([self.topology[node_id].size for node_id in self.final_nodes])
+        num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
         
     def _generate_frequency_curves(self):
         self.progress.new('Generating mini entropy figures')
-        for i in range(0, len(self.alive_nodes)):
-            node = self.topology[self.alive_nodes[i]]
+        for i in range(0, len(self.topology.alive_nodes)):
+            node = self.topology.nodes[self.topology.alive_nodes[i]]
             
             if node.killed:
                 continue
             
-            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.alive_nodes)))
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.alive_nodes)))
                                  
             node.freq_curve_img_path = node.unique_alignment + '.png'
             vis_freq_curve(node.unique_alignment, output_file = node.freq_curve_img_path, mini = True,\
@@ -691,7 +888,7 @@ class Decomposer:
     def _store_topology_dict(self):
         self.progress.new('Generating topology dict (full)')
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')
-        cPickle.dump(self.topology, open(topology_dict_file_path, 'w'))
+        cPickle.dump(self.topology.nodes, open(topology_dict_file_path, 'w'))
         self.run.info('topology_dict', topology_dict_file_path)
         self.progress.end()
 
@@ -699,8 +896,8 @@ class Decomposer:
     def _store_light_topology_dict(self):
         self.progress.new('Generating topology dict (lightweight)')
         lightweight_topology_dict = {}
-        for node_id in self.topology:
-            node = self.topology[node_id]
+        for node_id in self.topology.nodes:
+            node = self.topology.nodes[node_id]
             if node.killed:
                 continue
             new_node = copy.deepcopy(node)
@@ -718,8 +915,8 @@ class Decomposer:
     def _store_topology_text(self):
         topology_text_file_path = self.generate_output_destination('TOPOLOGY.txt')
         topology_text_file_obj = open(topology_text_file_path, 'w')
-        for node_id in self.alive_nodes:
-            node = self.topology[node_id]
+        for node_id in self.topology.alive_nodes:
+            node = self.topology.nodes[node_id]
             topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' \
                                                % (node.node_id,
                                                   node.size,
