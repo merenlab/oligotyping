@@ -51,6 +51,10 @@ def decomposer():
     parser.add_argument('--skip-agglomerating-nodes', action = 'store_true', default = False,
                         help = 'When set, agglomeration of nodes step will be skipped. See documentation for\
                                 details.')
+    parser.add_argument('--merge-homopolymer-splits', action = 'store_true', default = False,
+                        help = 'When set, nodes that differ from each other by only one nucleotide that happens\
+                                to be observed as an insertion at the upstream or downstream of a homopolymer\
+                                region will be merged.')
     parser.add_argument('-R', '--relocate-outliers', action = 'store_true', default = False,
                         help = 'Outliers are identified in two places: (1) during the raw topology computation\
                                 and (2) during the refinement step where distant reads are removed from nodes.\
