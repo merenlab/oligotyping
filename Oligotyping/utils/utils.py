@@ -151,7 +151,52 @@ def generate_MATRIX_files_for_units_across_datasets(units, datasets, MN_fp, SN_f
         across_datasets_MN_file.close()
         across_datasets_SN_file.close()
 
- 
+def homopolymer_indel_exists(seq1, seq2):
+    seq1, seq2 = trim_uninformative_gaps_from_sequences(seq1, seq2)
+
+    gap_index = seq1.find('-')
+    if gap_index == -1:
+        gap_index = seq2.find('-')
+        
+    if gap_index == -1:
+        return False
+
+    isHP = lambda x: len(set(x)) == 1
+    isHPindel = lambda (s, e): seq1[s:e] == seq2[s:e] and isHP(seq1[s:e]) == 1
+    
+    def DownStream(sequence):
+        i = 3
+        while isHP(sequence[gap_index - i - 1:gap_index]):
+            i += 1
+        return (gap_index - i, gap_index)
+
+    def UpStream(sequence):
+        i = 4
+        while isHP(sequence[gap_index + 1:gap_index + i + 1]):
+            i += 1
+        return (gap_index + 1, gap_index + 1)
+
+    # check downstream of the gap
+    if gap_index >= 3:
+        return isHPindel(DownStream(seq1))
+        
+    # check upstream of the gap
+    if len(seq1) - gap_index < 3:
+        return isHPindel(UpStream(seq1))
+        
+    return None
+
+
+def append_file(source_path, target_path):
+    source = open(source_path)
+    target = open(target_path, 'a')
+    
+    for line in source.readlines():
+        target.write(line)
+        
+    source.close()
+    target.close()
+
 def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
     alignment = u.SequenceSource(alignment_path, unique = True)
@@ -396,6 +441,22 @@ def pretty_print(n):
     ret.reverse()
     return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
 
+def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
+    if len(sequence1) != len(sequence2):
+        raise ValueError, "Alignments have different lengths"
+    
+    columns_to_discard = []
+    
+    for i in range(0, len(sequence1)):
+        if set([sequence1[i], sequence2[i]]) == set(['-']):
+            columns_to_discard.append(i)
+        else:
+            continue
+            
+    s1 = ''.join([sequence1[i] for i in range(0, len(sequence1)) if i not in columns_to_discard])
+    s2 = ''.join([sequence2[i] for i in range(0, len(sequence1)) if i not in columns_to_discard])
+    
+    return (s1, s2)
 
 def trim_uninformative_columns_from_alignment(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
