@@ -28,6 +28,7 @@ from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import append_file
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import same_but_gaps
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import homopolymer_indel_exists
@@ -80,6 +81,16 @@ class Topology:
         
         return [s[1] for s in siblings]
 
+    def remove_node(self, node_id):
+        node = self.nodes[node_id]
+        parent = self.nodes[node.parent]
+        parent.children.remove(node_id)
+        self.nodes.pop(node_id)
+        
+        # this recursion right here scares the shit out of me:
+        if parent.node_id != 'root' and not parent.children:
+            self.remove_node(parent.node_id)
+
     def absorb_sibling(self, absorber_node_id, absorbed_node_id):
         # absorbed node gets merged into the absorber node
         absorber = self.get_node(absorber_node_id)
@@ -99,6 +110,13 @@ class Topology:
         if absorber_parent.node_id != absorbed_parent.node_id and absorbed_parent.node_id != 'root':
             absorbed_parent.size -= absorbed.size
         
+        # did the absorbed node's parent just become a final node?
+        # if that's the case we gotta remove this from the topology, because reads in this intermediate
+        # node was previously split between its child nodes. if all children were absorbed by other nodes
+        # this node has no place in the topology anymore.
+        if not absorbed_parent.children:
+            self.remove_node(absorbed_parent.node_id)
+
         self.final_nodes.remove(absorbed.node_id)
         self.alive_nodes.remove(absorbed.node_id)
         
@@ -359,25 +377,24 @@ class Decomposer:
         
         if not self.skip_agglomerating_nodes:
             self._agglomerate_nodes()
-            self._refresh_topology()
             
         if self.merge_homopolymer_splits:
             self._merge_homopolymer_splits()
-            self._refresh_topology()
         
         if not self.skip_removing_outliers:
             self._remove_outliers()
-            self._refresh_topology()
             
         if self.relocate_outliers:
             self._relocate_outliers()
-            self._refresh_topology()
         
         if self.store_full_topology:
             self._store_topology_dict()
 
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
+
+
+        # ready for final numbers.
 
         self._store_light_topology_dict()
         self._store_topology_text()
@@ -660,6 +677,7 @@ class Decomposer:
     def _refresh_topology(self):
         self.progress.new('Refreshing the topology')
         self.progress.update('Updating final nodes...')
+
         self.topology.update_final_nodes()
 
         dirty_nodes = []
@@ -687,19 +705,14 @@ class Decomposer:
             siblings = self.topology.get_siblings(node.node_id)
             
             while len(siblings):
-                sibling = self.topology.nodes[siblings.pop()]
+                sibling = self.topology.nodes[siblings.pop(0)]
                 
-                e = quick_entropy([node.representative_seq, sibling.representative_seq])
-                
-                if len(e) == 1 and homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
-                    print ''
-                    print 'HP INDEL for %s and %s' % (node.node_id, sibling.node_id)
-                    self.topology.absorb_sibling(node.node_id, sibling.node_id)
-                        
-                    final_nodes.remove(sibling.node_id)
-                        
-                    # we are done here, goto the next node
-                    break
+                if same_but_gaps(node.representative_seq, sibling.representative_seq):
+                    if homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
+                        self.topology.absorb_sibling(node.node_id, sibling.node_id)
+                    
+                        if sibling.node_id in final_nodes:
+                            final_nodes.remove(sibling.node_id)
             
         self.progress.end()
         
@@ -708,6 +721,9 @@ class Decomposer:
         self.datasets_dict = {}
         self.unit_counts = {}
         self.unit_percents = {}
+        
+        self._refresh_topology()
+ 
 
     def _agglomerate_nodes(self):
         # since we generate nodes based on selected components immediately, some of the nodes will obviously
@@ -739,12 +755,12 @@ class Decomposer:
             node = self.topology.nodes[final_nodes.pop(0)]
             
             self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(final_nodes)))
-            
+
             siblings = self.topology.get_siblings(node.node_id)
 
             while len(siblings):
                 sibling = self.topology.nodes[siblings.pop(0)]
-                
+
                 e = quick_entropy([node.representative_seq, sibling.representative_seq])
                 
                 if len(e) == 1:
@@ -752,10 +768,8 @@ class Decomposer:
                     if d < 0.1:
                         self.topology.absorb_sibling(node.node_id, sibling.node_id)
 
-                        final_nodes.remove(sibling.node_id)
-                        
-                        # we are done here, goto the next node
-                        break
+                        if sibling.node_id in final_nodes:
+                            final_nodes.remove(sibling.node_id)
             
         self.progress.end()
         
@@ -764,6 +778,9 @@ class Decomposer:
         self.datasets_dict = {}
         self.unit_counts = {}
         self.unit_percents = {}
+
+        self._refresh_topology()
+
 
     def _remove_outliers(self):
         # there are potential issues with the raw topology generated. 
@@ -836,6 +853,8 @@ class Decomposer:
         num_outliers_after_refine_nodes = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if self.outliers[seq]['from']])
         self.run.info('num_outliers_after_refine_nodes', pretty_print(num_outliers_after_refine_nodes))
         
+        self._refresh_topology()
+        
     
     def _relocate_outliers(self):
         self.progress.new('Refined Topology: Processing Outliers')
@@ -862,6 +881,8 @@ class Decomposer:
                 pass
             
         self.progress.end()
+
+        self._refresh_topology()
 
 
     def _refresh_final_nodes(self):
@@ -903,29 +924,37 @@ class Decomposer:
 
     def _store_topology_dict(self):
         self.progress.new('Generating topology dict (full)')
+        self.progress.update('Processing %d nodes' % len(self.topology.nodes))
+        
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')
         cPickle.dump(self.topology.nodes, open(topology_dict_file_path, 'w'))
-        self.run.info('topology_dict', topology_dict_file_path)
+        
         self.progress.end()
+        
+        self.run.info('topology_dict', topology_dict_file_path)
 
 
     def _store_light_topology_dict(self):
         self.progress.new('Generating topology dict (lightweight)')
         lightweight_topology_dict = {}
+        
+        self.progress.update('Processing %d nodes' % len(self.topology.nodes))
         for node_id in self.topology.nodes:
             node = self.topology.nodes[node_id]
             if node.killed:
                 continue
+
             new_node = copy.deepcopy(node)
             new_node.read_ids = None
             new_node.entropy_tpls = None
             
             lightweight_topology_dict[node_id] = new_node
 
+        self.progress.end()
+        
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY-LIGHT.cPickle')
         cPickle.dump(lightweight_topology_dict, open(topology_dict_file_path, 'w'))
         self.run.info('topology_light_dict', topology_dict_file_path)
-        self.progress.end()
 
 
     def _store_topology_text(self):
