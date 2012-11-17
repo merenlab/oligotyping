@@ -518,9 +518,18 @@ class Decomposer:
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node
                 # and store read information into self.outliers
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
+                    if node.node_id == 'root':
+                        self.progress.end()
+                        raise ConfigError, "Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
+                                                % (node.unique_read_counts[0],
+                                                   self.min_substantive_abundance)
+ 
                     unique_alignment = u.SequenceSource(node.alignment, unique = True)
                     while unique_alignment.next():
-                        self.outliers[unique_alignment.seq] = {'from': None, 'to': None, 'ids': unique_alignment.ids}
+                        self.outliers[unique_alignment.seq] = {'reason': 'min_substantive_abundance',
+                                                               'from': None,
+                                                               'to': None,
+                                                               'ids': unique_alignment.ids}
                     unique_alignment.close()
                     os.remove(node.alignment)
                     os.remove(node.unique_alignment)
