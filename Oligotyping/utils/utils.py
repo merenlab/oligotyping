@@ -441,6 +441,18 @@ def pretty_print(n):
     ret.reverse()
     return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
 
+def same_but_gaps(sequence1, sequence2):
+    if len(sequence1) != len(sequence2):
+        raise ValueError, "Alignments have different lengths"
+    
+    for i in range(0, len(sequence1)):
+        if sequence1[i] == '-' or sequence2[i] == '-':
+            continue
+        if sequence1[i] != sequence2[i]:
+            return False
+    
+    return True
+
 def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
     if len(sequence1) != len(sequence2):
         raise ValueError, "Alignments have different lengths"
