@@ -21,6 +21,8 @@ import cPickle
 import tempfile
 import numpy as np
 
+from cogent.align.algorithm import nw_align
+
 from Oligotyping.lib import fastalib as u
 from Oligotyping.utils.constants import pretty_names
 
@@ -153,6 +155,21 @@ def generate_MATRIX_files_for_units_across_datasets(units, datasets, MN_fp, SN_f
 
 def homopolymer_indel_exists(seq1, seq2):
     seq1, seq2 = trim_uninformative_gaps_from_sequences(seq1, seq2)
+    
+    # sometimes alignments look like this:
+    #
+    #    CCCGAAAAAA--TAT
+    #    CCCGAAA---AATAT
+    #
+    # where the correct alignment should look like this:
+    #
+    #    CCCGAAAAAATAT
+    #    CCCGAAAAA-TAT
+    # 
+    # causes this function to return false. in order to fix that problem
+    # we perform needleman-wunch alignment here:
+    if sum([seq1.count('-'), seq2.count('-')]) > 1:
+        seq1, seq2 = nw_align(seq1.replace('-', ''), seq2.replace('-', ''))
 
     gap_index = seq1.find('-')
     if gap_index == -1:
@@ -174,15 +191,17 @@ def homopolymer_indel_exists(seq1, seq2):
         i = 4
         while isHP(sequence[gap_index + 1:gap_index + i + 1]):
             i += 1
-        return (gap_index + 1, gap_index + 1)
+        return (gap_index + 1, gap_index + i)
 
     # check downstream of the gap
     if gap_index >= 3:
-        return isHPindel(DownStream(seq1))
+        if isHPindel(DownStream(seq1)):
+            return True
         
     # check upstream of the gap
-    if len(seq1) - gap_index < 3:
-        return isHPindel(UpStream(seq1))
+    if len(seq1) - gap_index > 3:
+        if isHPindel(UpStream(seq1)):
+            return True
         
     return None
 
