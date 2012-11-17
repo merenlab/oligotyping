@@ -44,6 +44,9 @@ class Topology:
         self.nodes = {}
         self.alive_nodes = None
         self.final_nodes = None
+        
+        self.outliers = {}
+        self.outlier_reasons = []
 
     def get_node(self, node_id):
         return self.nodes[node_id]
@@ -53,14 +56,19 @@ class Topology:
         print
         print 'Node "%s"' % node
         print '---------------------------------'
-        print 'Killed    : %s' % node.killed
+        print 'Alive     : %s' % (not node.killed)
         print 'Dirty     : %s' % node.dirty
         print 'Size      : %d' % node.size
         print 'Parent    : %s' % node.parent
         print 'Children  : ', node.children
         print 'Alignment : %s' % node.alignment
         print
-    
+
+
+    def get_final_count(self):
+        return sum([self.nodes[node_id].size for node_id in self.final_nodes])
+            
+
     def get_siblings(self, node_id):
         node = self.nodes[node_id]
         siblings = []
@@ -81,15 +89,48 @@ class Topology:
         
         return [s[1] for s in siblings]
 
-    def remove_node(self, node_id):
+
+    def remove_node(self, node_id, store_content_in_outliers_dict = False, reason = None):
         node = self.nodes[node_id]
         parent = self.nodes[node.parent]
-        parent.children.remove(node_id)
-        self.nodes.pop(node_id)
         
-        # this recursion right here scares the shit out of me:
+        parent.children.remove(node_id)
+
+        if store_content_in_outliers_dict:
+            alignment = u.SequenceSource(node.alignment)
+
+            while alignment.next():
+                self.store_outlier(alignment.id, alignment.seq, reason)
+            alignment.close()
+
+        # get rid of node files.
+        self.remove_node_files(node_id)
+ 
+        # it is always sad to pop things
+        self.nodes.pop(node_id)
+
+        # and this recursion right here scares the shit out of me:
         if parent.node_id != 'root' and not parent.children:
             self.remove_node(parent.node_id)
+
+    def store_outlier(self, _id, seq, reason = 'unknown_reason'):
+        if reason not in self.outlier_reasons:
+            self.outlier_reasons.append(reason)
+            self.outliers[reason] = []
+            
+        self.outliers[reason].append((_id, seq),)
+
+
+    def remove_node_files(self, node_id):
+        node = self.nodes[node_id]
+
+        try:
+            os.remove(node.alignment)
+            os.remove(node.entropy_file)
+            os.remove(node.unique_alignment)
+        except:
+            pass
+
 
     def absorb_sibling(self, absorber_node_id, absorbed_node_id):
         # absorbed node gets merged into the absorber node
@@ -122,14 +163,7 @@ class Topology:
         
         # kill the absorbed
         absorbed.killed = True
-
-        # clean after yourself, but don't get obsessed
-        try:
-            os.remove(absorbed.alignment)
-            os.remove(absorbed.entropy_file)
-            os.remove(absorbed.unique_alignment)
-        except:
-            pass
+        self.remove_node_files(absorbed.node_id)
         
         # refresh the absorbing node
         absorber.refresh()
@@ -278,7 +312,6 @@ class Decomposer:
         self.unit_percents = None
         self.across_datasets_sum_normalized = {}
         self.across_datasets_max_normalized = {}
-        self.outliers = {}
 
 
     def sanity_check(self):
@@ -395,6 +428,11 @@ class Decomposer:
 
 
         # ready for final numbers.
+        for reason in self.topology.outlier_reasons:
+            self.run.info(reason, pretty_print(len(self.topology.outliers[reason])))
+
+        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
+        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
 
         self._store_light_topology_dict()
         self._store_topology_text()
@@ -516,31 +554,18 @@ class Decomposer:
                 node.do_unique()
                                 
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node
-                # and store read information into self.outliers
+                # and store read information into self.topology.outliers
                 if node.unique_read_counts[0] < self.min_substantive_abundance:
                     if node.node_id == 'root':
                         self.progress.end()
                         raise ConfigError, "Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
                                                 % (node.unique_read_counts[0],
                                                    self.min_substantive_abundance)
- 
-                    unique_alignment = u.SequenceSource(node.alignment, unique = True)
-                    while unique_alignment.next():
-                        self.outliers[unique_alignment.seq] = {'reason': 'min_substantive_abundance',
-                                                               'from': None,
-                                                               'to': None,
-                                                               'ids': unique_alignment.ids}
-                    unique_alignment.close()
-                    os.remove(node.alignment)
-                    os.remove(node.unique_alignment)
-                    
-                    # remove its entry from the parents children
-                    parent = self.topology.nodes[node.parent]
-                    if node_id in parent.children:
-                        parent.children.remove(node_id)
-                    
-                    node.killed = True
-                    continue
+
+                    else:
+                        # remove the node and store its content.
+                        self.topology.remove_node(node.node_id, True, 'min_substantive_abundance_reason')
+                        continue
 
                 if node.size <= self.min_actual_abundance:
                     # FIXME: Finalize this node.
@@ -674,11 +699,7 @@ class Decomposer:
             for node_id in self.topology.final_nodes:
                 vis_freq_curve(self.node.unique_alignment, output_file = self.node.unique_alignment + '.png') 
 
-        num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
-        num_outliers_after_raw_topology = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if not self.outliers[seq]['from']])
-        self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
-        self.run.info('num_outliers_after_raw_topology', pretty_print(num_outliers_after_raw_topology))
-        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
+        self.run.info('num_raw_nodes', pretty_print(len(self.topology.final_nodes)))
 
         # fin.
 
@@ -822,6 +843,7 @@ class Decomposer:
 
             while unique_alignment.next():
                 e = quick_entropy([node.representative_seq, unique_alignment.seq])
+
                 if len(e) > self.maximum_variation_allowed:
                     # this read does not belong in this node.
                     outlier_seqs.append(unique_alignment.seq)
@@ -835,20 +857,18 @@ class Decomposer:
                 node.dirty = True
             
             # we have all the ids for this node to be removed. these reads should be remove from the actual alignment.
-            alignment = u.SequenceSource(node.alignment, unique=True)
+            alignment = u.SequenceSource(node.alignment)
             alignment_temp = u.FastaOutput(node.alignment + '.temp')
             
-            self.progress.append(' / screening node for %d sequences' % len(outlier_seqs))
+            self.progress.append(' / screening node to remove %d outliers' % len(outlier_seqs))
             outlier_seqs = set(outlier_seqs)
             
             while alignment.next():
                 if alignment.seq in outlier_seqs:
-                    self.outliers[alignment.seq] = {'from': node.node_id, 'to': None, 'ids': alignment.ids}
+                    self.topology.store_outlier(alignment.id, alignment.seq, 'maximum_variation_allowed_reason')
                     outlier_seqs.remove(alignment.seq)
                 else:
-                    for read_id in alignment.ids:
-                        alignment_temp.write_id(read_id)
-                        alignment_temp.write_seq(alignment.seq, split=False)
+                    alignment_temp.store(alignment, split=False)
 
             alignment.close()
             alignment_temp.close()
@@ -859,14 +879,13 @@ class Decomposer:
             
         self.progress.end()
         
-        num_outliers_after_refine_nodes = sum([len(self.outliers[seq]['ids']) for seq in self.outliers if self.outliers[seq]['from']])
-        self.run.info('num_outliers_after_refine_nodes', pretty_print(num_outliers_after_refine_nodes))
-        
         self._refresh_topology()
         
     
     def _relocate_outliers(self):
         self.progress.new('Refined Topology: Processing Outliers')
+        
+        # FIXME: this needs to be re-implemented.
         
         counter = 0
         relocated = 0
