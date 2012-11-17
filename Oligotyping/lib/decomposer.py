@@ -568,9 +568,9 @@ class Decomposer:
                         continue
 
                 if node.size <= self.min_actual_abundance:
-                    # FIXME: Finalize this node.
+                    # remove the node and store its content.
+                    self.topology.remove_node(node.node_id, True, 'min_actual_abundance_reason')                    
                     continue
-
                 
                 # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
                 # read count and the second most abundant unique read count in a node. smaller the number,
