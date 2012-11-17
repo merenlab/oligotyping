@@ -75,34 +75,41 @@ class Topology:
                 else:
                     siblings.append((candidate.size, candidate.node_id))
 
-        # sort siblings most abundant to least
-        siblings.sort(reverse = True)
+        # sort siblings least abundant to most
+        siblings.sort()
         
         return [s[1] for s in siblings]
 
-    def merge_sibling(self, source_node_id, target_node_id):
-        source = self.get_node(source_node_id)
-        target = self.get_node(target_node_id)
+    def absorb_sibling(self, absorber_node_id, absorbed_node_id):
+        # absorbed node gets merged into the absorber node
+        absorber = self.get_node(absorber_node_id)
+        absorbed = self.get_node(absorbed_node_id)
         
-        parent = self.get_node(source.parent)
+        absorber_parent = self.get_node(absorber.parent)
+        absorbed_parent = self.get_node(absorbed.parent)
         
-        # append source stuff to target node:
-        target.read_ids += source.read_ids
-        append_file(source.alignment, target.alignment)
-        target.dirty = True
+        # append absorbed stuff to the absorber node:
+        absorber.read_ids += absorbed.read_ids
+        append_file(absorber.alignment, absorbed.alignment)
+        absorber.dirty = True
         
-        # remove source from the topology
-        parent.children.remove(source.node_id)
-        self.final_nodes.remove(source.node_id)
-        self.alive_nodes.remove(source.node_id)
+        # remove absorbed from the topology
+        absorbed_parent.children.remove(absorbed.node_id)
         
-        # kill the source
-        source.killed = True
-        os.remove(source.alignment)
-        os.remove(source.unique_alignment)
+        if absorber_parent.node_id != absorbed_parent.node_id and absorbed_parent.node_id != 'root':
+            absorbed_parent.size -= absorbed.size
         
-        # refresh target node
-        target.refresh()
+        self.final_nodes.remove(absorbed.node_id)
+        self.alive_nodes.remove(absorbed.node_id)
+        
+        # kill the absorbed
+        absorbed.killed = True
+        os.remove(absorbed.alignment)
+        os.remove(absorbed.entropy_file)
+        os.remove(absorbed.unique_alignment)
+        
+        # refresh the absorbing node
+        absorber.refresh()
 
         
     def get_parent_node(self, node_id):
@@ -110,7 +117,11 @@ class Topology:
 
     def update_final_nodes(self):
         self.alive_nodes = [n for n in sorted(self.nodes.keys()) if not self.nodes[n].killed]
-        self.final_nodes = [n for n in self.alive_nodes if not self.nodes[n].children]
+
+        # get final nodes sorted by abundance        
+        final_nodes_tpls = [(self.nodes[n].size, n) for n in self.alive_nodes if not self.nodes[n].children]
+        final_nodes_tpls.sort(reverse = True)
+        self.final_nodes = [n[1] for n in final_nodes_tpls]
 
     def recompute_nodes(self):
         for node_id in self.final_nodes:
@@ -127,6 +138,7 @@ class Node:
         self.killed             = False
         self.dirty              = False
         self.entropy            = None
+        self.entropy_file       = None
         self.entropy_tpls       = None
         self.parent             = None
         self.children           = []
@@ -155,8 +167,8 @@ class Node:
         self.size = sum(self.unique_read_counts)
 
     def do_entropy(self):
-        node_entropy_output_path = self.file_path_prefix + '.entropy'
-        self.entropy = entropy_analysis(self.unique_alignment, verbose = False, uniqued = True, output_file = node_entropy_output_path)
+        self.entropy_file = self.file_path_prefix + '.entropy'
+        self.entropy = entropy_analysis(self.unique_alignment, verbose = False, uniqued = True, output_file = self.entropy_file)
         self.entropy_tpls = [(self.entropy[i], i) for i in range(0, len(self.entropy))]
         self.average_entropy = numpy.mean([e for e in self.entropy if e > 0.05] or [0])
 
@@ -346,14 +358,14 @@ class Decomposer:
             
         if self.merge_homopolymer_splits:
             self._merge_homopolymer_splits()
+            self._refresh_topology()
         
         if not self.skip_removing_outliers:
             self._remove_outliers()
+            self._refresh_topology()
             
         if self.relocate_outliers:
             self._relocate_outliers()
-        
-        if (not self.skip_removing_outliers) or (not self.skip_agglomerating_nodes) or self.relocate_outliers:
             self._refresh_topology()
         
         if self.store_full_topology:
@@ -664,7 +676,7 @@ class Decomposer:
         final_nodes = copy.deepcopy(self.topology.final_nodes)
         
         while final_nodes:
-            node = self.topology.nodes[final_nodes.pop()]
+            node = self.topology.nodes[final_nodes.pop(0)]
             self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(final_nodes)))
 
             siblings = self.topology.get_siblings(node.node_id)
@@ -677,13 +689,9 @@ class Decomposer:
                 if len(e) == 1 and homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
                     print ''
                     print 'HP INDEL for %s and %s' % (node.node_id, sibling.node_id)
-                    self.topology.merge_sibling(node.node_id, sibling.node_id)
+                    self.topology.absorb_sibling(node.node_id, sibling.node_id)
                         
-                    try:
-                        final_nodes.remove(node.node_id)
-                        siblings.remove(node.node_id)
-                    except:
-                        pass
+                    final_nodes.remove(sibling.node_id)
                         
                     # we are done here, goto the next node
                     break
@@ -723,26 +731,23 @@ class Decomposer:
         final_nodes = copy.deepcopy(self.topology.final_nodes)
         
         while final_nodes:
-            node = self.topology.nodes[final_nodes.pop()]
+            node = self.topology.nodes[final_nodes.pop(0)]
             
             self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(final_nodes)))
             
             siblings = self.topology.get_siblings(node.node_id)
-            
+
             while len(siblings):
-                sibling = self.topology.nodes[siblings.pop()]
+                sibling = self.topology.nodes[siblings.pop(0)]
                 
                 e = quick_entropy([node.representative_seq, sibling.representative_seq])
                 
                 if len(e) == 1:
                     d = cosine_distance(self.across_datasets_max_normalized[node.node_id], self.across_datasets_max_normalized[sibling.node_id])
                     if d < 0.1:
-                        self.topology.merge_sibling(node.node_id, sibling.node_id)
-                        try:
-                            final_nodes.remove(node.node_id)
-                            siblings.remove(node.node_id)
-                        except:
-                            pass
+                        self.topology.absorb_sibling(node.node_id, sibling.node_id)
+
+                        final_nodes.remove(sibling.node_id)
                         
                         # we are done here, goto the next node
                         break
@@ -791,6 +796,12 @@ class Decomposer:
                     outlier_seqs.append(unique_alignment.seq)
 
             unique_alignment.close()
+
+            if not len(outlier_seqs):
+                # no outlier whatsoever. move on to the next.
+                continue
+            else:
+                node.dirty = True
             
             # we have all the ids for this node to be removed. these reads should be remove from the actual alignment.
             alignment = u.SequenceSource(node.alignment, unique=True)
