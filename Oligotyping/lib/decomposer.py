@@ -104,9 +104,14 @@ class Topology:
         
         # kill the absorbed
         absorbed.killed = True
-        os.remove(absorbed.alignment)
-        os.remove(absorbed.entropy_file)
-        os.remove(absorbed.unique_alignment)
+
+        # clean after yourself, but don't get obsessed
+        try:
+            os.remove(absorbed.alignment)
+            os.remove(absorbed.entropy_file)
+            os.remove(absorbed.unique_alignment)
+        except:
+            pass
         
         # refresh the absorbing node
         absorber.refresh()
