@@ -128,7 +128,10 @@ class Decomposer:
         self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
 
 
-    def init_topology(self):
+    def _init_topology(self):
+        self.progress.new('Initializing topology')
+        self.progress.update('May take a while depending on the number of reads...')
+
         self.topology.nodes_output_directory = self.nodes_directory
         self.root = self.topology.add_new_node('root', self.alignment, root = True)
         
@@ -138,6 +141,8 @@ class Decomposer:
 
         self.node_ids_to_analyze = ['root']
 
+        self.progress.end()
+        
             
     def get_prefix(self):
         prefix = 'm%.2f-A%d-M%d-d%d' % (self.min_entropy,
@@ -161,26 +166,32 @@ class Decomposer:
 
     def decompose(self):
         self.sanity_check()
-        self.init_topology()
 
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
-
+        
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
         self.run.info('version', __version__)
+        self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
+        self.run.info('info_file_path', self.info_file_path)
         self.run.info('root_alignment', self.alignment)
+        self.run.info('output_directory', self.output_directory)
+        self.run.info('nodes_directory', self.topology.nodes_output_directory)
         self.run.info('skip_agglomerating_nodes', self.skip_agglomerating_nodes)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('store_full_topology', self.store_full_topology)
-        self.run.info('total_seq', pretty_print(self.topology.nodes['root'].size))
+        self.run.info('m', self.min_entropy)
+        self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
-        self.run.info('output_directory', self.output_directory)
-        self.run.info('nodes_directory', self.nodes_directory)
-        self.run.info('info_file_path', self.info_file_path)
-        self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
+
+        self._init_topology()
+
+        self.run.info('total_seq', pretty_print(self.topology.nodes['root'].size))
+        self.run.info('average_read_length', self.topology.average_read_length)
+        self.run.info('alignment_length', self.topology.alignment_length)
 
         # business time.
         self._generate_raw_topology()
