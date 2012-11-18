@@ -422,12 +422,6 @@ class Decomposer:
         if self.relocate_outliers:
             self._relocate_outliers()
         
-        if self.store_full_topology:
-            self._store_topology_dict()
-
-        if self.generate_frequency_curves:
-            self._generate_frequency_curves()
-
         # ready for final numbers.
         for reason in self.topology.outlier_reasons:
             self.run.info(reason, pretty_print(len(self.topology.outliers[reason])))
@@ -435,15 +429,22 @@ class Decomposer:
         self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
         self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
 
-        self._store_light_topology_dict()
-        self._store_topology_text()
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
-        self._store_outliers()
         
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
  
+        self._store_light_topology_dict()
+        self._store_topology_text()
+        self._store_outliers()
+        
+        if self.generate_frequency_curves:
+            self._generate_frequency_curves()
+
+        if self.store_full_topology:
+            self._store_topology_dict()
+
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
         self.run.info('end_of_run', get_date())
