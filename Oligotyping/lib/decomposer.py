@@ -364,9 +364,10 @@ class Decomposer:
             
             
     def get_prefix(self):
-        prefix = 'm%.2f-A%d-d%d' % (self.min_entropy,
-                                    self.min_actual_abundance,
-                                    self.number_of_discriminants)
+        prefix = 'm%.2f-A%d-M%d-d%d' % (self.min_entropy,
+                                        self.min_actual_abundance,
+                                        self.min_substantive_abundance,
+                                        self.number_of_discriminants)
 
         return prefix
 
@@ -567,7 +568,7 @@ class Decomposer:
                         self.topology.remove_node(node.node_id, True, 'min_substantive_abundance_reason')
                         continue
 
-                if node.size <= self.min_actual_abundance:
+                if node.size < self.min_actual_abundance:
                     # remove the node and store its content.
                     self.topology.remove_node(node.node_id, True, 'min_actual_abundance_reason')                    
                     continue
