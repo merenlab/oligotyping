@@ -206,15 +206,15 @@ def homopolymer_indel_exists(seq1, seq2):
     return None
 
 
-def append_file(source_path, target_path):
-    source = open(source_path)
-    target = open(target_path, 'a')
+def append_file(append_to_path, append_from_path):
+    append_to = open(append_to_path, 'a')
+    append_from = open(append_from_path)
     
-    for line in source.readlines():
-        target.write(line)
+    for line in append_from.readlines():
+        append_to.write(line)
         
-    source.close()
-    target.close()
+    append_from.close()
+    append_to.close()
 
 def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
