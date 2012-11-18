@@ -445,6 +445,7 @@ class Decomposer:
  
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
+        self.run.info('end_of_run', get_date())
         self.run.quit()
         
 
@@ -757,8 +758,8 @@ class Decomposer:
         # be error driven, since systematic errors can inflate entropy to a point where a column can create
         # its own entropy peak to be selected among all other things. most of the time sequencing errors are
         # random (except some platform-dependent systematic errors, such as homopolymer region indels). so,
-        # the errors should not change beta diversity, and frequency distributin patterns of error driven nodes
-        # should follow their parent node very tightly (because if a node is very abundant in a dataset, the erronous
+        # the errors should not change beta diversity, and frequency distribution patterns of error driven nodes
+        # should follow their parent node very tightly (because if a node is very abundant in a dataset, the erroneous
         # node stemmed from the same parent will also be relatively abundant in the same dataset). a metric that
         # has the ability to describe similar patterns of frequency distribution, such as cosine similarity, can 
         # be used to agglomerate nodes that diverge from each other by one base and has almost the exact frequency
