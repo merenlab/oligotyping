@@ -332,6 +332,7 @@ class Decomposer:
             raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
 
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
+        self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
 
 
     def init_topology(self):
@@ -427,7 +428,6 @@ class Decomposer:
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
 
-
         # ready for final numbers.
         for reason in self.topology.outlier_reasons:
             self.run.info(reason, pretty_print(len(self.topology.outliers[reason])))
@@ -439,6 +439,7 @@ class Decomposer:
         self._store_topology_text()
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
+        self._store_outliers()
         
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
@@ -448,6 +449,23 @@ class Decomposer:
         self.run.info('end_of_run', get_date())
         self.run.quit()
         
+
+    def _store_outliers(self):
+        self.progress.new('Storing outliers')
+        
+        for reason in self.topology.outlier_reasons:
+            self.progress.update('Reads removed due to "%s" (size: %d)'\
+                                            % (reason, len(self.topology.outliers[reason])))
+            output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
+            output = u.FastaOutput(output_file_path)
+            
+            for _id, seq in self.topology.outliers[reason]:
+                output.write_id(_id)
+                output.write_seq(seq, split = False)
+            
+            output.close()
+
+        self.progress.end()
 
     def _generate_datasets_dict(self):
         self.progress.new('Computing Samples Dict')
