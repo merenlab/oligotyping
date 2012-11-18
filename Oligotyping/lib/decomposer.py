@@ -445,7 +445,7 @@ class Decomposer:
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
         self.run.quit()
-
+        
 
     def _generate_datasets_dict(self):
         self.progress.new('Computing Samples Dict')
@@ -602,10 +602,6 @@ class Decomposer:
                     # we are done with this node.
                     continue
 
-                if self.debug:
-                    print
-                    print node.unique_read_counts[0:10], node.competing_unique_sequences_ratio, node.density
-                
                 # discriminants for this node are being selected from the list of entropy tuples:
                 # entropy_tpls look like this:
                 #
