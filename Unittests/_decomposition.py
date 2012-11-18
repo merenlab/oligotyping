@@ -34,6 +34,7 @@ class Tests(unittest.TestCase):
         self.decomposer.progress.verbose = False
         self.decomposer.run.verbose = False
         self.decomposer.skip_removing_outliers = True
+        self.decomposer.skip_agglomerating_nodes = True
         self.decomposer.output_directory = self.output_directory_path 
 
 
@@ -42,13 +43,14 @@ class Tests(unittest.TestCase):
 
     def test_01_PrefixGenerator(self):
         prefix = self.decomposer.get_prefix()
-        self.assertTrue(prefix == 'm0.20-A1-d3')
+        self.assertTrue(prefix == 'm0.20-A1-M0-d3')
 
     def test_02_Decompose(self):
         self.decomposer.decompose()
-        self.assertTrue(self.decomposer.topology['root'].discriminants == [292, 296, 293])
-        self.assertTrue(self.decomposer.topology['root'].entropy_tpls[0:5] == [(0.44648134689680297, 0), (0.80133016042101157, 1), (0.44648134689680297, 2), (0.44648134689680297, 3), (1.1533335249059034, 4)])
-        self.assertTrue(len(self.decomposer.topology) == 54)
+        self.assertTrue(self.decomposer.topology.nodes['root'].discriminants == [292, 296, 293])
+        self.assertTrue(self.decomposer.topology.nodes['root'].entropy_tpls[0:5] == [(0.44648134689680297, 0), (0.80133016042101157, 1), (0.44648134689680297, 2), (0.44648134689680297, 3), (1.1533335249059034, 4)])
+        self.assertTrue(len(self.decomposer.topology.nodes) == 54)
+        self.assertTrue(len(self.decomposer.topology.final_nodes) == 43)
 
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)
