@@ -493,7 +493,7 @@ class Decomposer:
                 dirty_nodes.append(node)
                 
         for node in dirty_nodes:
-            self.progress.update('Synchronizing dirty node (%d of %d)' % (dirty_nodes.index(node) + 1, len(dirty_nodes)))
+            self.progress.update('Synchronizing dirty nodes (%d of %d)' % (dirty_nodes.index(node) + 1, len(dirty_nodes)))
             node.refresh()
 
         self.progress.end()
@@ -545,8 +545,6 @@ class Decomposer:
         # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
         # in diversity much, I am not sure whether this is a bad thing.
         
-        self.progress.new('Agglomerating nodes')
-        
         # generating a temporary datasets dict.
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
@@ -554,6 +552,8 @@ class Decomposer:
         self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
                 get_units_across_datasets_dicts(self.topology.final_nodes, self.datasets, self.unit_percents) 
 
+        self.progress.new('Agglomerating nodes')
+        
         # compare final nodes with their parent nodes.
         final_nodes = copy.deepcopy(self.topology.final_nodes)
         

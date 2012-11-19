@@ -72,7 +72,7 @@ class Topology:
             read_lengths = []
             while alignment.next():
                 read_lengths.append(len(alignment.seq.replace('-', '')))
-            self.average_read_length = numpy.mean(read_lengths)
+            self.average_read_length = int(round(numpy.mean(read_lengths)))
 
         alignment.close()
 
