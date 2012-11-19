@@ -220,14 +220,14 @@ class Decomposer:
         
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
+
+        if self.generate_frequency_curves:
+            self._generate_frequency_curves()
  
         self._store_light_topology_dict()
         self._store_topology_text()
         self._store_outliers()
         
-        if self.generate_frequency_curves:
-            self._generate_frequency_curves()
-
         if self.store_full_topology:
             self._store_topology_dict()
 
