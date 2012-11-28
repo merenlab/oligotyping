@@ -55,28 +55,30 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
-@register.filter(name='get_p_hits')
-def get_p_hits(d, max_num = 8):
+@register.filter(name='get_blast_hits')
+def get_blast_hits(d, max_num = 8):
     '''gets a dictionary of BLAST results, returns
        the target_labels where 100% identity is
        achieved'''
 
-    p_hits = {}
-    for i in range(0, len(d)):
-        if d[i]['identity'] == 100.0:
-            p_hits[i] = d[i]
-
-    num_show = len(p_hits) if len(p_hits) < max_num else max_num
+    num_show = len(d) if len(d) < max_num else max_num
 
     if num_show == 0:
         return ''
         
-    ret_line = '<p><b>BLAST search results at a glance</b> (%d of %d total 100%% identity hits are shown):' %\
-                                            (num_show, len(p_hits))
-    for i in p_hits.keys()[0:num_show]:
-        if p_hits[i]['identity'] == 100.0:
-            ret_line += '<p>* %s (<i>query coverage: %.2f%%</i>)' % (p_hits[i]['hit_def'].replace("'", '"'),
-                                                                     p_hits[i]['coverage'])
+    ret_line = '<p><b>BLAST search results at a glance</b> (%d of %d total hits are shown):' %\
+                                            (num_show, len(d))
+    for i in d.keys()[0:num_show]:
+        if d[i]['identity'] == 100.0:
+            ret_line += '<p>* %s (<b><i>identity: %.2f%%, query coverage: %.2f%%</i></b>)' \
+                                    % (d[i]['hit_def'].replace("'", '"'),
+                                       d[i]['identity'],
+                                       d[i]['coverage'])
+        else:
+            ret_line += '<p>* %s (<i>identity: %.2f%%, query coverage: %.2f%%</i>)' \
+                                    % (d[i]['hit_def'].replace("'", '"'),
+                                       d[i]['identity'],
+                                       d[i]['coverage'])
     return ret_line
 
 @register.filter(name='percentify') 

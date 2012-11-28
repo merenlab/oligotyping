@@ -186,7 +186,7 @@
                         </span>
                         <span class="frequency">{{ frequency|lookup:oligo }}</span>
                         <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span>
-                        <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
+                        <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_blast_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
                 {% endfor %}
             </div>
         </div>
@@ -231,7 +231,7 @@
                 {% for oligo in set %}
                     {% if output_directory_for_reps %}
                         {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
-                        <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_p_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a> 
+                        <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_blast_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a> 
                     {% else %}
                         {% if not forloop.first and forloop.counter0|mod:5 == 0 %}<br />{% endif %}
                         <span style="padding: 20px;"><span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span> <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong>{{oligo}}</strong></span></span>
