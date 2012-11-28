@@ -2,6 +2,7 @@
 
 X11(width=12, height=10)
 library("vegan")
+library(ctc)
 library(tcltk)
 library(gtools)
 
@@ -21,8 +22,9 @@ csv <- read.csv(csv_path, header=TRUE, sep="\t")
 rownames(csv) <- csv[,1]
 
 
-d <- vegdist(csv[,-1], method="horn") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
+d <- vegdist(csv[,-1], method="canberra") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
 fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
+write(hc2Newick(fit),file=paste(output_file_prefix,".newick",sep=""))
 
 P <- function(){
     plot(fit, labels=rownames(csv), cex = 0.7) # display dendogram
