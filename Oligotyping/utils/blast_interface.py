@@ -117,10 +117,12 @@ def local_blast_search(sequence, reference_db, output_file = None):
             r.query_aligned, r.target_aligned = nw_align(query[int(r.start_in_query) - 1:int(r.end_in_query)],\
                                                          target[int(r.start_in_target) - 1:int(r.end_in_target)]) 
 
+            r.query_aligned, r.target_aligned = r.query_aligned.upper(), r.target_aligned.upper()
+
             r.query_length = len(sequence)
             r.coverage = len(r.query_aligned.replace('-', '')) * 100.0 / r.query_length
             r.hsp_match = ''.join(['|' if r.query_aligned[i] == r.target_aligned[i] else ' ' for i in range(0, len(r.query_aligned))])
-           
+            
             updated_results.append(r.get_enhanced_results_line()) 
              
         if output_file:
