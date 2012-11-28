@@ -17,6 +17,9 @@ import matplotlib.image as mpimg
 
 from Oligotyping.utils.utils import pretty_print
 
+final_nodes = []
+parent_nodes = []
+
 def topology_graph(topology_dict_path, match_levels = False):
     G = nx.MultiDiGraph()
     
@@ -30,7 +33,12 @@ def topology_graph(topology_dict_path, match_levels = False):
         
         if node.killed:
             continue
-        print node_id 
+
+        if not node.children:
+            final_nodes.append(node_id)
+        else:
+            parent_nodes.append(node_id)
+
         nodes[node_id] = {'size': node.size, 'parent': node.parent, 'level': node.level,
                           'children': [child_node_id for child_node_id in node.children if topology.has_key(child_node_id) and not topology[child_node_id].killed], 'type': 'node'}
         if node.freq_curve_img_path:
@@ -68,15 +76,18 @@ def topology_graph(topology_dict_path, match_levels = False):
                     else:
                         break
                 G.add_edge(node_id, node['parent'], size = int(node['size']), label = label,\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           final_node = True if not node['children'] else False)
             else:
                 G.add_edge(node_id, node['parent'], size = int(node['size']), label = '',\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           final_node = True if not node['children'] else False)
    
     for node_id in nodes['root']['children']:
         node = nodes['root']
         G.add_edge('root', node_id, size = int(nodes['root']['size']), label = 'root',\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None)
+                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           final_node = False)
    
     return (G, nodes)
 
@@ -114,9 +125,10 @@ def topology(topology_dict_path, output_file = None, title = None):
     for (u, v, d) in G.edges(data = True):
         edgewidth.append(2) #len(G.get_edge_data(u,v)))
 
-
-    network_nodes = nx.draw_networkx_nodes(G, pos, node_shape = 'o', node_size = [sizes[i] for i in G], node_color=['#FFFFFF' for (u, v, d) in G.edges(data=True)])
-    network_nodes.set_edgecolor('#FFFFFF')
+    parent_nodes_network = nx.draw_networkx_nodes(G, pos, nodelist = parent_nodes, node_shape = 'o', node_size = [sizes[i] for i in parent_nodes], node_color = '#EFEFEF')
+    final_nodes_network = nx.draw_networkx_nodes(G, pos, nodelist = final_nodes, node_shape = 'o', node_size = [sizes[i] for i in final_nodes], node_color = '#FAFFFA')
+    parent_nodes_network.set_edgecolor('#888888')
+    final_nodes_network.set_edgecolor('#88BB00')
     nx.draw_networkx_edges(G, pos, alpha=0.4, node_size=10, width = 1, edge_color='#808080')
     nx.draw_networkx_labels(G, pos, font_size=8, font_weight = 'bold', labels = dict([(u, '%s\n(%s)' % (d['label'], pretty_print(d['size']))) for u, v, d in G.edges(data=True)]))
     
