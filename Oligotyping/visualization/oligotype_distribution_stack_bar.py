@@ -19,6 +19,7 @@ import cPickle
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.utils import HTMLColorToRGB
 from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
+from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
 
 
 def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
@@ -128,17 +129,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    datasets_dict = {}
-    for oligotype, dataset, count in [line.strip().split('\t') for line in open(args.environment_file).readlines()]:
-        if datasets_dict.has_key(dataset):
-            if datasets_dict[dataset].has_key(oligotype):
-                datasets_dict[dataset][oligotype] += int(count)
-            else:
-                datasets_dict[dataset][oligotype] = int(count)
-        else:
-            datasets_dict[dataset] = {}
-            datasets_dict[dataset][oligotype] = int(count)
-
+    datasets_dict = get_datasets_dict_from_environment_file(args.environment_file)
 
     if args.colors_file:
         colors_dict = {}
