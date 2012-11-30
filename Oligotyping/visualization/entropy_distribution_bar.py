@@ -43,9 +43,16 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     y_maximum = 1 if y_maximum < 1 else y_maximum
 
     number_of_uniques_to_show = int(y_maximum * 100)
-    unique_sequences = get_unique_sequences_from_FASTA(alignment, limit = number_of_uniques_to_show)
 
-    fig = plt.figure(figsize = (len(unique_sequences[0][0]) / 20, 10))
+    if alignment == None:
+        quick = True
+
+    if not quick:
+        unique_sequences = get_unique_sequences_from_FASTA(alignment, limit = number_of_uniques_to_show)
+    else:
+        unique_sequences = None
+
+    fig = plt.figure(figsize = (len(entropy_values) / 20, 10))
 
     plt.rcParams.update({'axes.linewidth' : 0.1})
     plt.rc('grid', color='0.70', linestyle='-', linewidth=0.1)
@@ -91,7 +98,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
 
     ind = np.arange(len(entropy_values))
     ax.bar(ind, entropy_values, color = 'black', lw = 0.5)
-    ax.set_xlim([0, len(unique_sequences[0][0])])
+    ax.set_xlim([0, len(entropy_values)])
     ax.set_ylim([0, y_maximum])
     plt.xlabel('Position in the Alignment')
     if weighted:
