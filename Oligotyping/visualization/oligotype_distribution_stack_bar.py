@@ -22,7 +22,8 @@ from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
 
 
-def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
+def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False,\
+                                     colors_export = None, project_title = None, display = True, oligos = None):
     datasets = datasets_dict.keys()
     datasets.sort()
    
@@ -66,19 +67,29 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
     width = 0.75
     
     bars = []
-    
-    f = []
+    colors_list = []
+
     for i in range(0, len(oligos)):
         values = [datasets_oligo_vectors_percent_normalized[dataset][i] for dataset in datasets]
         bottom = [sum(datasets_oligo_vectors_percent_normalized[dataset][0:i]) for dataset in datasets]
         try:
             color = HTMLColorToRGB(colors_dict[oligos[i]])
+            colors_list.append(colors_dict[oligos[i]])
         except:
             color = 'black'
+            colors_list.append('#000000')
+   
 
         p = plt.bar(ind, values, width, bottom=bottom, color=color)
         bars.append(p)
-    
+
+    if colors_export:
+        colors_list = reversed(colors_list)
+        colors_file = open(colors_export, 'w')
+        for c in colors_list:
+            colors_file.write('%s\n' % c)
+        colors_file.close()
+
     plt.ylabel('Oligotype Distribution', size='large')
     plt.title('Stacked Bar Charts of Oligotype Distribution %s' \
                  % (('for "%s"' % project_title) if project_title else ''))
@@ -123,6 +134,8 @@ if __name__ == '__main__':
                                 must end with "png", "jpg", or "tiff".')
     parser.add_argument('--legend', action = 'store_true', default = False,
                         help = 'Turn on legend')
+    parser.add_argument('--colors-export', metavar = 'COLORS_LIST_FILE',
+                        help = 'Store the color list into a file')
     parser.add_argument('--project-title', default = None, metavar = 'PROJECT_TITLE',\
                         help = 'Project name for the datasets.')
 
@@ -148,7 +161,12 @@ if __name__ == '__main__':
     else:
         colors_dict = None
 
-    oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title)
+    oligotype_distribution_stack_bar(datasets_dict,
+                                     colors_dict,
+                                     output_file = args.output_file,
+                                     legend = args.legend,
+                                     colors_export = args.colors_export,
+                                     project_title = args.project_title)
 
 
 
