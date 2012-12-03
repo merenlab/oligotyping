@@ -17,6 +17,7 @@ from Oligotyping.lib.entropy import entropy_analysis
 
 from Oligotyping.utils.utils import append_file
 from Oligotyping.utils.utils import ConfigError
+from Oligotyping.utils.utils import append_reads_to_FASTA
 from Oligotyping.utils.utils import unique_and_store_alignment
 
 class Topology:
@@ -235,6 +236,49 @@ class Topology:
             if node.dirty:
                 node.refresh()
 
+
+    def get_candidate_nodes_based_on_distance(self, sequence, max_levenshtein_ratio):
+        # here we have a sequence, which is probably an outlier from the raw decomposition
+        # and we want to find candidate nodes for this sequence with respect to the
+        # maximum Levenshtein ratio. So, this function will find any node that has a rep
+        # seq within the given radius of distance, and return them.
+        import Levenshtein
+        
+        distance_node_tuples = []
+        
+        for node in [self.nodes[node_id] for node_id in self.final_nodes]:
+            r = 1 - Levenshtein.ratio(node.representative_seq, sequence)
+            if r < max_levenshtein_ratio:
+                distance_node_tuples.append((r, node.node_id))
+                
+        return distance_node_tuples
+
+
+    def get_best_matching_node(self, sequence, distance_node_tuples):
+        # here we have a sequence, and a number of nodes that was previously decided to be OK
+        # candidates for this read. this function will do the trick to find really the best one
+        # among all, even if it contradicts with the distance (rep seq of one node can be more
+        # distant from the read than another one, but the distant one may be a better node to put
+        # the outlier read because it may be more appropriate for biological reasons, so it is a
+        # good idea to align them, see whether differences coincide with discriminant locations
+        # that were originally used for decomposition, etc)
+        
+        # FIXME: now we return the smallest distance, but it should get smarter at some point:
+        distance_node_tuples.sort()
+        return distance_node_tuples[0]
+    
+    def relocate_outlier(self, outlier_id, outlier_sequence, target_node_id, original_removal_reason):
+        # add an outlier sequence to an existing node (target_node_id).
+        
+        node = self.nodes[target_node_id]
+        
+        # update node alignment file with the outlier
+        append_reads_to_FASTA([(outlier_id, outlier_sequence)], node.alignment)
+        node.dirty = True
+        
+        # remove outlier from outliers object
+        self.outliers[original_removal_reason].remove((outlier_id, outlier_sequence))
+        
 
 class Node:
     def __init__(self, node_id, output_directory):
