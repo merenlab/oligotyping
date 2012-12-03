@@ -216,6 +216,17 @@ def append_file(append_to_path, append_from_path):
     append_from.close()
     append_to.close()
 
+
+def append_reads_to_FASTA(read_id_sequence_tuples_list, fasta_file_path):
+    fasta_file = open(fasta_file_path, 'a')
+    
+    for read_id, sequence in read_id_sequence_tuples_list:
+        fasta_file.write('>%s\n' % read_id)
+        fasta_file.write('%s\n' % sequence)
+    
+    fasta_file.close()
+
+
 def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
     alignment = u.SequenceSource(alignment_path, unique = True)
