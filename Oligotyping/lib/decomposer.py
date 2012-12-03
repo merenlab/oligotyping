@@ -181,6 +181,7 @@ class Decomposer:
         self.run.info('skip_agglomerating_nodes', self.skip_agglomerating_nodes)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
+        self.run.info('relocate_outliers', self.relocate_outliers)
         self.run.info('store_full_topology', self.store_full_topology)
         self.run.info('m', self.min_entropy)
         self.run.info('d', self.number_of_discriminants)
@@ -659,34 +660,39 @@ class Decomposer:
         
     
     def _relocate_outliers(self):
+        # this function will go through the outlier bin, and try to relocate each read that was identified as an
+        # outlier due to 'max variation allowed' reason.
         self.progress.new('Refined Topology: Processing Outliers')
         
         # FIXME: this needs to be re-implemented.
         
         counter = 0
+        total_number_of_outliers = len(self.topology.outliers['maximum_variation_allowed_reason'])
         relocated = 0
-        for seq in self.outliers:
-            counter += 1
-            self.progress.update('Processing %d of %d / relocated: %d' % (counter, len(self.outliers), relocated))
-            scores = []
-            for node_id in self.topology.final_nodes:
-                node = self.topology.nodes[node_id]
-                scores.append((len(quick_entropy([seq, node.representative_seq])),
-                               node.size, node_id))
-            
-            best_score = sorted(scores)[0]
-            
-            entropy_score = best_score[0]
-            suggested_node = best_score[2]
-            
-            if suggested_node != self.outliers[seq]['from'] and entropy_score <= self.maximum_variation_allowed:
-                # FIXME: put this guy in suggested_node..
-                relocated += 1
-                pass
-            
-        self.progress.end()
+        distances = []
 
-        self._refresh_topology()
+        # go through the outliers removed due to 'maximum_variation_allowed_reason'        
+        for read_id, sequence in self.topology.outliers['maximum_variation_allowed_reason']:
+            counter += 1
+            
+            max_levenshtien_ratio = (self.maximum_variation_allowed * 1.0 / len(sequence))
+            distance_node_tuples = self.topology.get_candidate_nodes_based_on_distance(sequence, max_levenshtien_ratio)
+            
+            if distance_node_tuples:
+                distance, node_id = self.topology.get_best_matching_node(sequence, distance_node_tuples) 
+                
+                self.topology.relocate_outlier(read_id, sequence, node_id, 'maximum_variation_allowed_reason')
+                relocated += 1
+                distances.append(distance)
+            
+            if counter % 100 == 0:
+                self.progress.update('Processing %d of %d / relocated: %d' % (counter, total_number_of_outliers, relocated))
+
+
+        self.progress.end()
+        self.run.info('relocated_outliers', relocated)
+
+        self._refresh_final_nodes()
 
 
     def _refresh_final_nodes(self):
@@ -702,7 +708,8 @@ class Decomposer:
         
         num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
-        
+
+
     def _generate_frequency_curves(self):
         self.progress.new('Generating mini entropy figures')
         for i in range(0, len(self.topology.alive_nodes)):
