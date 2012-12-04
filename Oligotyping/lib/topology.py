@@ -265,7 +265,7 @@ class Topology:
         
         # FIXME: now we return the smallest distance, but it should get smarter at some point:
         distance_node_tuples.sort()
-        return distance_node_tuples[0]
+        return distance_node_tuples[0][1]
     
     def relocate_outlier(self, outlier_id, outlier_sequence, target_node_id, original_removal_reason):
         # add an outlier sequence to an existing node (target_node_id).

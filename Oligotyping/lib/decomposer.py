@@ -15,12 +15,14 @@ __version__ = '0.1'
 import os
 import sys
 import copy
+import time
 import shutil
 import cPickle
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
 from Oligotyping.lib.entropy import quick_entropy
+from Oligotyping.utils.utils import Multiprocessing
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
@@ -35,7 +37,6 @@ from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
 from Oligotyping.utils.cosine_similarity import cosine_distance
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
-
 
 
 class Decomposer:
@@ -57,6 +58,7 @@ class Decomposer:
         self.maximum_variation_allowed = sys.maxint
         self.store_full_topology = False
         self.merge_homopolymer_splits = False
+        self.threading = False
          
         if args:
             self.alignment = args.alignment
@@ -73,6 +75,7 @@ class Decomposer:
             self.relocate_outliers = args.relocate_outliers
             self.store_full_topology = args.store_full_topology
             self.merge_homopolymer_splits = args.merge_homopolymer_splits
+            self.threading = args.threading
             self.debug = args.debug
         
         self.decomposition_depth = -1
@@ -664,33 +667,77 @@ class Decomposer:
         # outlier due to 'max variation allowed' reason.
         self.progress.new('Refined Topology: Processing Outliers')
         
-        # FIXME: this needs to be re-implemented.
-        
-        counter = 0
         total_number_of_outliers = len(self.topology.outliers['maximum_variation_allowed_reason'])
-        relocated = 0
-        distances = []
 
-        # go through the outliers removed due to 'maximum_variation_allowed_reason'        
-        for read_id, sequence in self.topology.outliers['maximum_variation_allowed_reason']:
-            counter += 1
+        distance_node_tuples_dict = {}
+
+        if self.threading:
+ 
+            def worker(data_chunk, shared_distance_node_tuples_dict, shared_counter):
+                for read_id, sequence in data_chunk:
+                    shared_counter.set(shared_counter.value + 1)
+                    max_levenshtien_ratio = (self.maximum_variation_allowed * 1.0 / len(sequence))
+                    distance_node_tuples = self.topology.get_candidate_nodes_based_on_distance(sequence, max_levenshtien_ratio)
+
+                    if distance_node_tuples:
+                        shared_distance_node_tuples_dict[read_id] = {'sequence': sequence, 'tuples': distance_node_tuples}
+
+
+            mp = Multiprocessing(worker)
+            data_chunks = mp.get_data_chunks(self.topology.outliers['maximum_variation_allowed_reason'])
+            shared_distance_node_tuples_dict = mp.get_empty_shared_dict()
+            shared_counter = mp.get_shared_integer()
             
-            max_levenshtien_ratio = (self.maximum_variation_allowed * 1.0 / len(sequence))
-            distance_node_tuples = self.topology.get_candidate_nodes_based_on_distance(sequence, max_levenshtien_ratio)
-            
-            if distance_node_tuples:
-                distance, node_id = self.topology.get_best_matching_node(sequence, distance_node_tuples) 
+            for chunk in data_chunks:
+                args = (chunk, shared_distance_node_tuples_dict, shared_counter)
+                mp.run(args)
+        
+            while 1:
+                num_processes = len([p for p in mp.processes if p.is_alive()])
                 
-                self.topology.relocate_outlier(read_id, sequence, node_id, 'maximum_variation_allowed_reason')
-                relocated += 1
-                distances.append(distance)
-            
-            if counter % 100 == 0:
-                self.progress.update('Processing %d of %d / relocated: %d' % (counter, total_number_of_outliers, relocated))
+                if not num_processes:
+                    # all threads are done
+                    break
+        
+                self.progress.update('Processing in %d threads. Analyzed %d of %d' % (num_processes,
+                                                                                      shared_counter.value,
+                                                                                      total_number_of_outliers))
+                time.sleep(1)
 
+            distance_node_tuples_dict = dict(shared_distance_node_tuples_dict.items())
+
+        else: 
+            counter = 0
+    
+            # go through the outliers removed due to 'maximum_variation_allowed_reason'        
+            for read_id, sequence in self.topology.outliers['maximum_variation_allowed_reason']:
+                counter += 1
+                
+                max_levenshtien_ratio = (self.maximum_variation_allowed * 1.0 / len(sequence))
+                distance_node_tuples = self.topology.get_candidate_nodes_based_on_distance(sequence, max_levenshtien_ratio)
+                
+                if distance_node_tuples:
+                    distance_node_tuples_dict[read_id] = {}
+                    distance_node_tuples_dict[read_id]['sequence'] = sequence
+                    distance_node_tuples_dict[read_id]['tuples'] = distance_node_tuples
+ 
+                if counter % 100 == 0:
+                    self.progress.update('Processing %d of %d' % (counter, total_number_of_outliers))
+        
+        
+        # distance_node_tuples_dict is ready. time to relocate these guys.
+        for read_id in distance_node_tuples_dict:       
+            node_id = self.topology.get_best_matching_node(distance_node_tuples_dict[read_id]['sequence'],
+                                                           distance_node_tuples_dict[read_id]['tuples']) 
+                    
+            self.topology.relocate_outlier(read_id,
+                                           distance_node_tuples_dict[read_id]['sequence'],
+                                           node_id,
+                                           'maximum_variation_allowed_reason')
+                
 
         self.progress.end()
-        self.run.info('relocated_outliers', relocated)
+        self.run.info('relocated_outliers', len(distance_node_tuples_dict))
 
         self._refresh_final_nodes()
 
