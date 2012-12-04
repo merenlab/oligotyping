@@ -20,6 +20,7 @@ import termios
 import cPickle
 import tempfile
 import numpy as np
+import multiprocessing
 
 from cogent.align.algorithm import nw_align
 
@@ -653,4 +654,38 @@ class Run:
         if self.info_file_obj:
             self.info_file_obj.close()
 
+class Multiprocessing:
+    def __init__(self, target_function, num_thread = None):
+        self.cpu_count = multiprocessing.cpu_count()
+        self.num_thread = num_thread or self.cpu_count
+        self.target_function = target_function
+        self.processes = []
+        self.manager = multiprocessing.Manager()
 
+    def get_data_chunks(self, data_array):
+        data_chunk_size = (len(data_array) / self.num_thread) or 1
+        data_chunks = []
+
+        for i in range(0, self.num_thread):
+            if i == self.num_thread - 1:
+                data_chunks.append(data_array[i * data_chunk_size:])
+            else:
+                data_chunks.append(data_array[i * data_chunk_size:i * data_chunk_size + data_chunk_size])
+
+        return data_chunks
+                
+    def run(self, args, name = None):
+        t = multiprocessing.Process(name = name,
+                                    target = self.target_function,
+                                    args = args)
+        self.processes.append(t)
+        t.start()
+
+    def get_empty_shared_array(self):
+        return self.manager.list()
+
+    def get_empty_shared_dict(self):
+        return self.manager.dict()
+    
+    def get_shared_integer(self):
+        return self.manager.Value('i', 0)
