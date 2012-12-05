@@ -505,7 +505,7 @@ class Decomposer:
                     shared_counter.set(shared_counter.value + 1)
 
             mp = Multiprocessing(worker)
-            data_chunks = mp.get_data_chunks(dirty_nodes)
+            data_chunks = mp.get_data_chunks(dirty_nodes, spiral = True)
             shared_counter = mp.get_shared_integer()
             results_array = mp.get_empty_shared_array()
             
@@ -716,7 +716,7 @@ class Decomposer:
 
 
             mp = Multiprocessing(worker)
-            data_chunks = mp.get_data_chunks(self.topology.outliers['maximum_variation_allowed_reason'])
+            data_chunks = mp.get_data_chunks(self.topology.outliers['maximum_variation_allowed_reason'], spiral = True)
             shared_distance_node_tuples_dict = mp.get_empty_shared_dict()
             shared_counter = mp.get_shared_integer()
             
