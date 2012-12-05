@@ -662,18 +662,24 @@ class Multiprocessing:
         self.processes = []
         self.manager = multiprocessing.Manager()
 
-    def get_data_chunks(self, data_array):
+    def get_data_chunks(self, data_array, spiral = False):
         data_chunk_size = (len(data_array) / self.num_thread) or 1
         data_chunks = []
         
         if len(data_array) <= self.num_thread:
             return [[chunk] for chunk in data_array]
 
-        for i in range(0, self.num_thread):
-            if i == self.num_thread - 1:
-                data_chunks.append(data_array[i * data_chunk_size:])
-            else:
-                data_chunks.append(data_array[i * data_chunk_size:i * data_chunk_size + data_chunk_size])
+        if spiral:
+            for i in range(0, self.num_thread):
+                data_chunks.append([data_array[j] for j in range(i, len(data_array), self.num_thread)])
+            
+            return data_chunks
+        else:
+            for i in range(0, self.num_thread):
+                if i == self.num_thread - 1:
+                    data_chunks.append(data_array[i * data_chunk_size:])
+                else:
+                    data_chunks.append(data_array[i * data_chunk_size:i * data_chunk_size + data_chunk_size])
 
         return data_chunks
                 
