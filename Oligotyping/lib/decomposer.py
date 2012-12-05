@@ -495,10 +495,42 @@ class Decomposer:
             node = self.topology.get_node(node_id)
             if node.dirty:
                 dirty_nodes.append(node)
+
+        if self.threading:
+            # worker function..
+            def worker(data_chunk, shared_counter, results_array):
+                for node in data_chunk:
+                    node.refresh()
+                    results_array.append(node)
+                    shared_counter.set(shared_counter.value + 1)
+
+            mp = Multiprocessing(worker)
+            data_chunks = mp.get_data_chunks(dirty_nodes)
+            shared_counter = mp.get_shared_integer()
+            results_array = mp.get_empty_shared_array()
+            
+            for chunk in data_chunks:
+                args = (chunk, shared_counter, results_array)
+                mp.run(args)
+        
+            while 1:
+                num_processes = len([p for p in mp.processes if p.is_alive()])
                 
-        for node in dirty_nodes:
-            self.progress.update('Synchronizing dirty nodes (%d of %d)' % (dirty_nodes.index(node) + 1, len(dirty_nodes)))
-            node.refresh()
+                if not num_processes:
+                    # all threads are done. replace nodes with resulting nodes.
+                    for node in results_array:
+                        self.topology.nodes[node.node_id] = node
+                    break
+        
+                self.progress.update('Processing in %d threads. Analyzed %d of %d' % (num_processes,
+                                                                                      shared_counter.value,
+                                                                                      len(dirty_nodes)))
+                time.sleep(1)
+
+        else:
+            for node in dirty_nodes:
+                self.progress.update('Synchronizing dirty nodes (%d of %d)' % (dirty_nodes.index(node) + 1, len(dirty_nodes)))
+                node.refresh()
 
         self.progress.end()
 
