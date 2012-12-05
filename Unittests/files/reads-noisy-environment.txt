@@ -1,0 +1,10 @@
+000000010	reads-noisy	8
+000000005	reads-noisy	10
+000000009	reads-noisy	9
+000000013	reads-noisy	9
+000000003	reads-noisy	9
+000000011	reads-noisy	9
+000000016	reads-noisy	8
+000000017	reads-noisy	10
+000000014	reads-noisy	8
+000000015	reads-noisy	9

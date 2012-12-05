@@ -8,6 +8,7 @@ import _entropy
 import _weightedEntropy
 import _oligotyping
 import _decomposition
+import _decomposition_threaded
 
 def __suite():
     suite = unittest.TestSuite()
@@ -15,6 +16,7 @@ def __suite():
     suite.addTest(unittest.makeSuite(_weightedEntropy.Tests))
     suite.addTest(unittest.makeSuite(_oligotyping.Tests))
     suite.addTest(unittest.makeSuite(_decomposition.Tests))
+    suite.addTest(unittest.makeSuite(_decomposition_threaded.Tests))
 
     return suite
 
