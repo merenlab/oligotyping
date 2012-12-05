@@ -665,6 +665,9 @@ class Multiprocessing:
     def get_data_chunks(self, data_array):
         data_chunk_size = (len(data_array) / self.num_thread) or 1
         data_chunks = []
+        
+        if len(data_array) <= self.num_thread:
+            return [[chunk] for chunk in data_array]
 
         for i in range(0, self.num_thread):
             if i == self.num_thread - 1:
