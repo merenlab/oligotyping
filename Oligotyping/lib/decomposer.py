@@ -59,6 +59,7 @@ class Decomposer:
         self.store_full_topology = False
         self.merge_homopolymer_splits = False
         self.threading = False
+        self.number_of_threads = None
          
         if args:
             self.alignment = args.alignment
@@ -76,8 +77,9 @@ class Decomposer:
             self.store_full_topology = args.store_full_topology
             self.merge_homopolymer_splits = args.merge_homopolymer_splits
             self.threading = args.threading
+            self.number_of_threads = args.number_of_threads
             self.debug = args.debug
-        
+
         self.decomposition_depth = -1
 
         # there is a difference between 'average read length' and 'alignment length',
@@ -108,6 +110,10 @@ class Decomposer:
         self.unit_percents = None
         self.across_datasets_sum_normalized = {}
         self.across_datasets_max_normalized = {}
+
+        # if number_of_threads is defined, then turn the threading on.
+        if self.number_of_threads:
+            self.threading = True
 
 
     def sanity_check(self):
@@ -504,7 +510,7 @@ class Decomposer:
                     results_array.append(node)
                     shared_counter.set(shared_counter.value + 1)
 
-            mp = Multiprocessing(worker)
+            mp = Multiprocessing(worker, self.number_of_threads)
             data_chunks = mp.get_data_chunks(dirty_nodes, spiral = True)
             shared_counter = mp.get_shared_integer()
             results_array = mp.get_empty_shared_array()
@@ -715,7 +721,7 @@ class Decomposer:
                         shared_distance_node_tuples_dict[read_id] = {'sequence': sequence, 'tuples': distance_node_tuples}
 
 
-            mp = Multiprocessing(worker)
+            mp = Multiprocessing(worker, self.number_of_threads)
             data_chunks = mp.get_data_chunks(self.topology.outliers['maximum_variation_allowed_reason'], spiral = True)
             shared_distance_node_tuples_dict = mp.get_empty_shared_dict()
             shared_counter = mp.get_shared_integer()

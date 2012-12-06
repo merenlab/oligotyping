@@ -67,7 +67,9 @@ def decomposer():
     parser.add_argument('--threading', action = 'store_true', default = False,
                         help = 'When set, decomposer start multiple threads to reduce computation time whenever it is\
                                 possible.')
-    
+    parser.add_argument('-T', '--number-of-threads', type=int, default = None,
+                        help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
+                                of CPU cores available.')    
 
 
     return parser

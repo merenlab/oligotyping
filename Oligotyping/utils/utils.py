@@ -657,7 +657,7 @@ class Run:
 class Multiprocessing:
     def __init__(self, target_function, num_thread = None):
         self.cpu_count = multiprocessing.cpu_count()
-        self.num_thread = num_thread or self.cpu_count
+        self.num_thread = num_thread or (self.cpu_count - (int(round(self.cpu_count / 10.0)) or 1))
         self.target_function = target_function
         self.processes = []
         self.manager = multiprocessing.Manager()
