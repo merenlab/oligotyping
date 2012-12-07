@@ -354,11 +354,11 @@ class Decomposer:
                 node = self.topology.nodes[node_id]
                 
                 
-                p = 'LEVEL: %d: Number of nodes to analyze: %d, Analyzing node id: %s (#%d, size: %d)'\
+                p = '[LVL %d] Analyzing %d of %d / ID: %s / SIZE: %d'\
                                                          % (self.decomposition_depth,
+                                                            self.node_ids_to_analyze.index(node_id) + 1,
                                                             len(self.node_ids_to_analyze),
-                                                            node_id,
-                                                            self.node_ids_to_analyze.index(node_id),
+                                                            node.pretty_id,
                                                             node.size)
                 self.progress.update(p)
 
@@ -410,7 +410,7 @@ class Decomposer:
                 # find out about the entropy distribution in the given node:
                 node.do_entropy()
 
-                p += ' / ME: %.2f / AE: %.2f' % (max(node.entropy), node.average_entropy)
+                p += ' / MAXE: %.2f / AVGE: %.2f' % (max(node.entropy), node.average_entropy)
                 self.progress.update(p)
                 
                 # IF all the unique reads in the node are smaller than the self.min_substantive_abundance,
@@ -460,8 +460,9 @@ class Decomposer:
                 
                 # all reads in the parent alignment are analyzed. time to add spawned nodes into the topology.
                 oligos = new_node_alignments_dict.keys()
-                for i in range(0, len(oligos)):
-                    self.progress.update(p + ' / new nodes are being stored in the topology: %d of %d ' % (i + 1, len(oligos)))
+                len_oligos = len(oligos)
+                for i in range(0, len_oligos):
+                    self.progress.update(p + ' / storing %d new nodes: %d ' % (len_oligos, i + 1))
                     new_node_alignments_dict[oligos[i]]['alignment_obj'].close()
 
                     new_node = self.topology.add_new_node(new_node_alignments_dict[oligos[i]]['node_id'],
