@@ -654,6 +654,16 @@ class Run:
         if self.info_file_obj:
             self.info_file_obj.close()
 
+def get_read_objects_from_file(input_file_path):
+    input_fasta = u.SequenceSource(input_file_path, unique = True)
+    read_objects = []
+    
+    while input_fasta.next():
+        read_objects.append(UniqueFASTAEntry(input_fasta.seq, input_fasta.ids))
+
+    input_fasta.close()
+    return read_objects
+
 class Multiprocessing:
     def __init__(self, target_function, num_thread = None):
         self.cpu_count = multiprocessing.cpu_count()
@@ -698,3 +708,10 @@ class Multiprocessing:
     
     def get_shared_integer(self):
         return self.manager.Value('i', 0)
+
+
+class UniqueFASTAEntry:
+    def __init__(self, seq, ids):
+        self.seq = seq
+        self.ids = ids
+        self.frequency = len(ids)

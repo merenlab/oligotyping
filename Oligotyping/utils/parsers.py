@@ -33,6 +33,11 @@ def decomposer():
                                 unique sequence in a node is smaller than the number given with this parameter\
                                 the node will be eliminated and not included in downstream analyses. Default\
                                 is %(default)d.')
+    parser.add_argument('-V', '--maximum-variation-allowed', type=int, default=None, metavar = 'NUMBER_OF_NTs',
+                        help = 'This parameter is being used to remove "outliers" from nodes. The similarity of a\
+                                read in a node is less than --maximum-variation-allowed than the representative\
+                                sequence of the node, it is identified as an outlier. If not set, this value is \
+                                being computed depenging on the average read length.')
     parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
