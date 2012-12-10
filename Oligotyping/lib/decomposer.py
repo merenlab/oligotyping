@@ -573,22 +573,23 @@ class Decomposer:
                 break
 
             if not self.skip_agglomerating_nodes:
+                nz = pretty_print(len(self.topology.zombie_nodes))
+                self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
+                                                                        ' #Z: %s' % (nz if nz else '')))
                 if it_is_OK_to_pass_this():
                     pass
                 else:
-                    nz = pretty_print(len(self.topology.zombie_nodes))
-                    self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
-                                                                            ' #Z: %s' % (nz if nz else '')))
                     self._agglomerate_nodes()
-                    self.progress.end()
+
+                self.progress.end()
 
             if self.merge_homopolymer_splits:
+                nz = pretty_print(len(self.topology.zombie_nodes))
+                self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
+                                                                      ' #Z: %s' % (nz if nz else '')))
                 if it_is_OK_to_pass_this():
                     pass
                 else:
-                    nz = pretty_print(len(self.topology.zombie_nodes))
-                    self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
-                                                                            ' #Z: %s' % (nz if nz else '')))
                     self._merge_homopolymer_splits()
                     self.progress.end()
 
@@ -602,15 +603,23 @@ class Decomposer:
                 self.progress.new('Removing Outliers :: ITER %d%s' % (iteration,
                                                                             ' #SB: %s' % (sb if sb else '')))
                 self._remove_outliers(standby_bin_only = iteration > 0)
-        
-                # we removed all the outliers that violate the maximum variation and made sure our final nodes are 'pure'. nice.
-                # but now there is another problem to fix: the frequency of some of the outlier read_objects, especially the ones
-                # that are coming from very very large nodes may actually be larger than the minimum_subtantive_abundance value.
-                # so, they are the reads that were supposed to be a node, but were betrayed by the algorithm because either the
-                # noise they had, or they were identical to the representative of the node they were trapped in based on the
-                # discriminant that happened to be chosen to decompose that branch of the topology. so. the question is, should they
-                # be individual nodes? if we add these read objects to the topology all agglomeration steps previously done on
-                # the topology are going to be re-done.
+
+                # if iteration == 0, read this first:
+                # we removed all the outliers that violate the maximum variation and made sure our final nodes are
+                # 'pure'. nice. but now there is another problem to fix: the frequency of some of the outlier
+                # read_objects, especially the ones that are coming from very large nodes may actually be larger
+                # than the minimum_subtantive_abundance criteria. so, they are the reads that were supposed to be
+                # a node, but were betrayed by the nature of the dataset or the sequencing platform. either due to
+                # noise, or the identity to the representative of the node they were trapped in based on the
+                # discriminant that happened to be chosen to decompose that branch of the topology. now we are going
+                # to identify them, and move them out of the outliers bin just to attach them to the topologyas a node
+                # but since they haven't gone through previous steps of refinements, we can't treat them as a regular
+                # node. so they will be marked as 'zombie' nodes. we are actually in a 'while True' loop and the only
+                # condition to break is to make sure the zombie_nodes bin is empty. in an ideal world it shouldn't take
+                # more than two cycles (zombie bins are introduced, loop goes back to the beginning, they are taken care
+                # of, and when we are here the second time no more zombie bins are found, we're golden). but for the sake
+                # of robustness, I didn't want to rely on this and implement this part of the algorithm as a complete
+                # state machine.
                     
                 abundant_reads_in_outlier_bin = [read_object for read_object in \
                                                     self.topology.outliers['maximum_variation_allowed_reason'] \
