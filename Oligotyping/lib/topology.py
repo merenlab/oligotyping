@@ -303,7 +303,6 @@ class Node:
         self.discriminants      = None
         self.max_entropy        = None
         self.average_entropy    = None
-        self.read_ids           = []
         self.size               = 0
         self.level              = None
         self.density            = None

@@ -936,7 +936,6 @@ class Decomposer:
                 continue
 
             new_node = copy.deepcopy(node)
-            new_node.read_ids = None
             new_node.entropy_tpls = None
             
             lightweight_topology_dict[node_id] = new_node
