@@ -16,10 +16,10 @@ def decomposer():
     parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
     parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
                         help = 'Alignment file that contains all datasets and sequences in FASTA format')
-    parser.add_argument('-m', '--min-entropy', type=float, default=0.2,
+    parser.add_argument('-m', '--min-entropy', type=float, default=0.3,
                         help = 'Minimum entropy for a component to have in order to be picked as a\
                                 discriminant. Defeault: %(default)f')
-    parser.add_argument('-d', '--number-of-discriminants', type=int, default=3,
+    parser.add_argument('-d', '--number-of-discriminants', type=int, default=4,
                         help = 'Number of discriminant locations to be used for entropy decomposition\
                                 discriminant. Defeault: %(default)d')
     parser.add_argument('-A', '--min-actual-abundance', type=int, default=0,
@@ -27,7 +27,7 @@ def decomposer():
                                 will continue for any node that has more reads than this number as far as they\
                                 present an entropy that is larger than --min-entropy. This number should be\
                                 chosen carefully depending on the size of the dataset')
-    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=0,
+    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=4,
                         help = 'Unlike "actual" abundance, "substantive" abundance is interested in the abundance\
                                 of the most abundant read in a node. If the abundance of the most abundant\
                                 unique sequence in a node is smaller than the number given with this parameter\
