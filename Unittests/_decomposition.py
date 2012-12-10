@@ -48,9 +48,17 @@ class Tests(unittest.TestCase):
     def test_02_Decompose(self):
         self.decomposer.decompose()
         self.assertTrue(self.decomposer.topology.nodes['root'].discriminants == [292, 296, 293])
-        self.assertTrue(self.decomposer.topology.nodes['root'].entropy_tpls[0:5] == [(0.44648134689680297, 0), (0.80133016042101157, 1), (0.44648134689680297, 2), (0.44648134689680297, 3), (1.1533335249059034, 4)])
+        self.assertTrue(self.decomposer.topology.nodes['root'].entropy_tpls[0:5] == [(292, 2.2031591775819033), (296, 2.1539606786564707), (293, 2.1279277605456857), (298, 2.1170394670626229), (300, 2.107517097722345)])
         self.assertTrue(len(self.decomposer.topology.nodes) == 54)
         self.assertTrue(len(self.decomposer.topology.final_nodes) == 43)
+
+    def test_03_Environment(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/clone43-v6v4-environment.txt'),
+                                           os.path.join(self.output_directory_path, 'ENVIRONMENT.txt')))
+
+    def test_04_MatrixPercent(self):
+        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/clone43-v6v4-matrix-percent.txt'),
+                                           os.path.join(self.output_directory_path, 'MATRIX-PERCENT.txt')))
 
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)
