@@ -591,7 +591,8 @@ class Decomposer:
                     pass
                 else:
                     self._merge_homopolymer_splits()
-                    self.progress.end()
+
+                self.progress.end()
 
             # if iteration != 0: all zombie nodes that were resulted from the iteration-- considered by functions that refines
             # the topology. whatever is left here as zombie, must actually not be a zombie, but a respectable member of the
@@ -712,7 +713,6 @@ class Decomposer:
         
         while nodes:
             node = self.topology.nodes[nodes.pop(0)]
-            
             self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(nodes)))
 
             siblings = self.topology.get_siblings(node.node_id)
