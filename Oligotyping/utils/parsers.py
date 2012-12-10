@@ -14,49 +14,49 @@ import argparse
 
 def decomposer():
     parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
-    parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
+    parser.add_argument('alignment', metavar = 'FILEPATH',
                         help = 'Alignment file that contains all datasets and sequences in FASTA format')
-    parser.add_argument('-m', '--min-entropy', type=float, default=0.3,
+    parser.add_argument('-m', '--min-entropy', type=float, default=0.3, metavar="FLOAT",
                         help = 'Minimum entropy for a component to have in order to be picked as a\
                                 discriminant. Defeault: %(default)f')
-    parser.add_argument('-d', '--number-of-discriminants', type=int, default=4,
+    parser.add_argument('-d', '--number-of-discriminants', type=int, default=4, metavar="INTEGER",
                         help = 'Number of discriminant locations to be used for entropy decomposition\
                                 discriminant. Defeault: %(default)d')
-    parser.add_argument('-A', '--min-actual-abundance', type=int, default=0,
+    parser.add_argument('-A', '--min-actual-abundance', type=int, default=0, metavar="INTEGER",
                         help = 'Minimum number of reads in a node for decomposition to continue. Decomposition\
                                 will continue for any node that has more reads than this number as far as they\
                                 present an entropy that is larger than --min-entropy. This number should be\
                                 chosen carefully depending on the size of the dataset')
-    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=4,
+    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=4, metavar = "INTEGER",
                         help = 'Unlike "actual" abundance, "substantive" abundance is interested in the abundance\
                                 of the most abundant read in a node. If the abundance of the most abundant\
                                 unique sequence in a node is smaller than the number given with this parameter\
                                 the node will be eliminated and not included in downstream analyses. Default\
                                 is %(default)d.')
-    parser.add_argument('-V', '--maximum-variation-allowed', type=int, default=None, metavar = 'NUMBER_OF_NTs',
+    parser.add_argument('-V', '--maximum-variation-allowed', type=int, default=None, metavar = 'INTEGER',
                         help = 'This parameter is being used to remove "outliers" from nodes. The similarity of a\
                                 read in a node is less than --maximum-variation-allowed than the representative\
                                 sequence of the node, it is identified as an outlier. If not set, this value is \
                                 being computed depenging on the average read length.')
-    parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
+    parser.add_argument('-t', '--dataset-name-separator', type=str, default='_', metavar = "CHAR",
                         help = 'Character that separates dataset name from unique info in the defline. For insatnce\
                                 if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
                                 (which is the default character).')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
-    parser.add_argument('--project', default = None, type=str,
+    parser.add_argument('-p', '--project', default = None, type=str, metavar = "STR",
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
-    parser.add_argument('-F', '--generate-frequency-curves', action = 'store_true', default = False,
+    parser.add_argument('-g', '--generate-frequency-curves', action = 'store_true', default = False,
                         help = 'When set, figure with frequency curve for unique reads and entropy distribution\
                                 will be generated for each node. Depending on the number of nodes, this might\
                                 be a time consuming step.')
-    parser.add_argument('--debug', action = 'store_true', default = False,
+    parser.add_argument('-D', '--debug', action = 'store_true', default = False,
                         help = 'When set, debug messages will be shown.')
     parser.add_argument('-S', '--skip-removing-outliers', action = 'store_true', default = False,
                         help = 'When set, outliers will not be removed from nodes.')
-    parser.add_argument('--skip-agglomerating-nodes', action = 'store_true', default = False,
+    parser.add_argument('-G', '--skip-agglomerating-nodes', action = 'store_true', default = False,
                         help = 'When set, agglomeration of nodes step will be skipped. See documentation for\
                                 details.')
-    parser.add_argument('--merge-homopolymer-splits', action = 'store_true', default = False,
+    parser.add_argument('-H', '--merge-homopolymer-splits', action = 'store_true', default = False,
                         help = 'When set, nodes that differ from each other by only one nucleotide that happens\
                                 to be observed as an insertion at the upstream or downstream of a homopolymer\
                                 region will be merged.')
@@ -66,15 +66,16 @@ def decomposer():
                                 This parameter, when set, makes the pipeline go through each read identified as\
                                 an outlier and try to find the best nodes for them. Please read the documentation\
                                 for details. This step might take a long time. Default: %(default)s')
-    parser.add_argument('--store-full-topology', action = 'store_true', default = False,
+    parser.add_argument('-F', '--store-full-topology', action = 'store_true', default = False,
                         help = 'When set, topology dict with read ids will be generated. This may take a very large\
                                 disk space and computation time for big datasets.')
-    parser.add_argument('--threading', action = 'store_true', default = False,
+    parser.add_argument('-T', '--threading', action = 'store_true', default = False,
                         help = 'When set, decomposer start multiple threads to reduce computation time whenever it is\
                                 possible.')
-    parser.add_argument('-T', '--number-of-threads', type=int, default = None,
+    parser.add_argument('-N', '--number-of-threads', type=int, default = None, metavar = "INTEGER",
                         help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
-                                of CPU cores available.')    
+                                of CPU cores available. If not set, this number will be set to 90%% of available cores,\
+                                or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
 
 
     return parser
