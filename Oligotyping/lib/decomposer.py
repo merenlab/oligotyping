@@ -613,11 +613,16 @@ class Decomposer:
                                                     self.topology.outliers['maximum_variation_allowed_reason'] \
                                                                 if read_object.frequency > self.min_substantive_abundance]
                 
-                for read_object in abundant_reads_in_outlier_bin:
+                self.progress.new('Abundant Outliers Bin; ITER %d' % (iteration))
+                number_of_abundant_reads_in_outlier_bin = len(abundant_reads_in_outlier_bin)
+                for i in range(0, number_of_abundant_reads_in_outlier_bin):
+                    self.progress.update('Processing %d of %d' % (i + 1, number_of_abundant_reads_in_outlier_bin))
+                    read_object = abundant_reads_in_outlier_bin[i]
                     new_node_id = self.topology.get_new_node_id()
                     self.topology.add_new_node(new_node_id, [read_object], parent_id = 'root')
                     self.topology.zombie_nodes.append(new_node_id)
                     self.topology.outliers['maximum_variation_allowed_reason'].remove(read_object)
+                self.progress.end()
                 
             iteration += 1
 
