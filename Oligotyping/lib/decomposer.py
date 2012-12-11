@@ -573,26 +573,16 @@ class Decomposer:
                 break
 
             if not self.skip_agglomerating_nodes:
-                nz = pretty_print(len(self.topology.zombie_nodes))
-                self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
-                                                                        ' #Z: %s' % (nz if nz else '')))
                 if it_is_OK_to_pass_this():
                     pass
                 else:
-                    self._agglomerate_nodes()
-
-                self.progress.end()
+                    self._agglomerate_nodes(iteration)
 
             if self.merge_homopolymer_splits:
-                nz = pretty_print(len(self.topology.zombie_nodes))
-                self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
-                                                                      ' #Z: %s' % (nz if nz else '')))
                 if it_is_OK_to_pass_this():
                     pass
                 else:
-                    self._merge_homopolymer_splits()
-
-                self.progress.end()
+                    self._merge_homopolymer_splits(iteration)
 
             # if iteration != 0: all zombie nodes that were resulted from the iteration-- considered by functions that refines
             # the topology. whatever is left here as zombie, must actually not be a zombie, but a respectable member of the
@@ -600,10 +590,7 @@ class Decomposer:
             self.topology.zombie_nodes = []
             
             if not self.skip_removing_outliers:
-                sb = pretty_print(len(self.topology.standby_bin))
-                self.progress.new('Removing Outliers :: ITER %d%s' % (iteration,
-                                                                            ' #SB: %s' % (sb if sb else '')))
-                self._remove_outliers(standby_bin_only = iteration > 0)
+                self._remove_outliers(iteration, standby_bin_only = iteration > 0)
 
                 # if iteration == 0, read this first:
                 # we removed all the outliers that violate the maximum variation and made sure our final nodes are
@@ -632,18 +619,20 @@ class Decomposer:
                     self.topology.zombie_nodes.append(new_node_id)
                     self.topology.outliers['maximum_variation_allowed_reason'].remove(read_object)
                 
-                self.progress.end()
-
             iteration += 1
 
 
-    def _merge_homopolymer_splits(self):
+    def _merge_homopolymer_splits(self, iteration):
         # FIXME: this actually traverses the sibling nodes in the topology to merge homopoymer splits, but
         # it doesn't make any sense? who says homopolymer splits are going to be in the same branch of the
         # topology? they might have been split way before and ended up extremely distant places in the topology
         # and this has to be fixed at some point (which unfortunately will fuck up the performance drastically
         # once it is fixed, but whatever. science > my pride).
         
+        nz = pretty_print(len(self.topology.zombie_nodes))
+        self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
+                                                              ' #Z: %s' % (nz if nz else '')))
+
         dealing_with_zombie_nodes = False
 
         if self.topology.zombie_nodes:
@@ -679,10 +668,11 @@ class Decomposer:
         self.unit_counts = {}
         self.unit_percents = {}
         
+        self.progress.end()
         self._refresh_topology()
  
 
-    def _agglomerate_nodes(self):
+    def _agglomerate_nodes(self, iteration):
         # since we generate nodes based on selected components immediately, some of the nodes will obviously
         # be error driven, since systematic errors can inflate entropy to a point where a column can create
         # its own entropy peak to be selected among all other things. most of the time sequencing errors are
@@ -696,6 +686,10 @@ class Decomposer:
         # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
         # in diversity much, I am not sure whether this is a bad thing.
         
+        nz = pretty_print(len(self.topology.zombie_nodes))
+        self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
+                                                                ' #Z: %s' % (nz if nz else '')))
+
         # generating a temporary datasets dict.
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
@@ -742,10 +736,11 @@ class Decomposer:
         self.unit_counts = {}
         self.unit_percents = {}
 
+        self.progress.end()
         self._refresh_topology()
 
 
-    def _remove_outliers(self, standby_bin_only = False):
+    def _remove_outliers(self, iteration, standby_bin_only = False):
         # there are potential issues with the raw topology generated. 
         #
         # when one organism dominates a given node (when there are a lot of reads in the node from one template),
@@ -756,7 +751,12 @@ class Decomposer:
         # one solution might be (1) going through every read and compare these reads with the representative read of
         # the node, (2) binning reads that are distant from the representative read, and (3) re-assigning them by
         # comparing each read to previously found final nodes.
-        
+
+
+        sb = pretty_print(len(self.topology.standby_bin))
+        self.progress.new('Removing Outliers :: ITER %d%s' % (iteration,
+                                                              ' #SB: %s' % (sb if sb else '')))
+
         if standby_bin_only:
             node_list = copy.deepcopy(self.topology.standby_bin)
             self.topology.standby_bin = []
@@ -789,7 +789,8 @@ class Decomposer:
             for outlier_read_object in outlier_seqs:            
                 self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
                 node.reads.remove(outlier_read_object)
-            
+
+        self.progress.end()
         self._refresh_topology()
         
     
