@@ -500,8 +500,8 @@ class Decomposer:
 
         
         #finally:
-        self.topology.update_final_nodes()
         self.progress.end()
+        self.topology.update_final_nodes()
 
         self.run.info('num_raw_nodes', pretty_print(len(self.topology.final_nodes)))
 
@@ -628,7 +628,7 @@ class Decomposer:
         # topology? they might have been split way before and ended up extremely distant places in the topology
         # and this has to be fixed at some point (which unfortunately will fuck up the performance drastically
         # once it is fixed, but whatever. science > my pride).
-        
+       
         nz = pretty_print(len(self.topology.zombie_nodes))
         self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
                                                               ' #Z: %s' % (nz if nz else '')))
@@ -685,10 +685,7 @@ class Decomposer:
         # distribution pattern across datasets. this type of process would agglomerate operons, and sometimes very
         # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
         # in diversity much, I am not sure whether this is a bad thing.
-        
-        nz = pretty_print(len(self.topology.zombie_nodes))
-        self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
-                                                                ' #Z: %s' % (nz if nz else '')))
+
 
         # generating a temporary datasets dict.
         self._generate_datasets_dict()
@@ -697,6 +694,10 @@ class Decomposer:
         self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
                 get_units_across_datasets_dicts(self.topology.final_nodes, self.datasets, self.unit_percents) 
         
+        nz = pretty_print(len(self.topology.zombie_nodes))
+        self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
+                                                                ' #Z: %s' % (nz if nz else '')))
+ 
         dealing_with_zombie_nodes = False
         
         if self.topology.zombie_nodes:
