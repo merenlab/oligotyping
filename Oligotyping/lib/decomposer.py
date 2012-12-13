@@ -622,6 +622,7 @@ class Decomposer:
                     self.topology.add_new_node(new_node_id, [read_object], parent_id = 'root')
                     self.topology.zombie_nodes.append(new_node_id)
                     self.topology.outliers['maximum_variation_allowed_reason'].remove(read_object)
+                    self.topology.final_nodes.append(new_node_id)
                 self.progress.end()
                 
             iteration += 1
