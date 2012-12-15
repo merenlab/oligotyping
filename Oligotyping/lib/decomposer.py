@@ -286,12 +286,42 @@ class Decomposer:
         self.progress.new('Storing final nodes')
 
         total_final_nodes = len(self.topology.final_nodes)
-        for i in range(0, total_final_nodes):
-            self.progress.update('%s of %s' % (pretty_print(i + 1),
-                                               pretty_print(total_final_nodes)))
-            node_id = self.topology.final_nodes[i]
-            node = self.topology.get_node(node_id)
-            node.store()
+        
+        if self.threading:
+            
+            def worker(data_chunk, shared_counter):
+                for node_id in data_chunk:
+                    node = self.topology.get_node(node_id)
+                    node.store()
+                    shared_counter.set(shared_counter.value + 1)
+
+            mp = Multiprocessing(worker, self.number_of_threads)
+            data_chunks = mp.get_data_chunks(self.topology.final_nodes, spiral = True)
+            shared_counter = mp.get_shared_integer()
+            
+            for chunk in data_chunks:
+                args = (chunk, shared_counter)
+                mp.run(args)
+        
+            while 1:
+                num_processes = len([p for p in mp.processes if p.is_alive()])
+                
+                if not num_processes:
+                    # all threads are done.
+                    break
+        
+                self.progress.update('Storing final nodes in %d threads: %d of %d' % (num_processes,
+                                                                                      shared_counter.value,
+                                                                                      total_final_nodes))
+                time.sleep(1)
+
+        else:
+            for i in range(0, total_final_nodes):
+                self.progress.update('%s of %s' % (pretty_print(i + 1),
+                                                   pretty_print(total_final_nodes)))
+                node_id = self.topology.final_nodes[i]
+                node = self.topology.get_node(node_id)
+                node.store()
 
         self.progress.end()
         
@@ -553,7 +583,7 @@ class Decomposer:
         self.progress.update('Updating final nodes...')
 
         self.topology.update_final_nodes()
-
+       
         dirty_nodes = []
         for node_id in self.topology.final_nodes:
             node = self.topology.get_node(node_id)
@@ -641,7 +671,7 @@ class Decomposer:
                 # a node, but were betrayed by the nature of the dataset or the sequencing platform. either due to
                 # noise, or the identity to the representative of the node they were trapped in based on the
                 # discriminant that happened to be chosen to decompose that branch of the topology. now we are going
-                # to identify them, and move them out of the outliers bin just to attach them to the topologyas a node
+                # to identify them, and move them out of the outliers bin just to attach them to the topology as a new node.
                 # but since they haven't gone through previous steps of refinements, we can't treat them as a regular
                 # node. so they will be marked as 'zombie' nodes. we are actually in a 'while True' loop and the only
                 # condition to break is to make sure the zombie_nodes bin is empty. in an ideal world it shouldn't take
@@ -818,34 +848,91 @@ class Decomposer:
         else:
             node_list = copy.deepcopy(self.topology.final_nodes)
 
-        for i in range(0, len(node_list)):
-            node_id = node_list[i]
-            node = self.topology.nodes[node_id]
-            outlier_seqs = []
 
-            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
-            for read in node.reads[1:]:
-                e = quick_entropy([node.representative_seq, read.seq])
+        if self.threading:
 
-                if len(e) > self.maximum_variation_allowed:
-                    # this read does not belong in this node.
-                    outlier_seqs.append(read)
+            total_number_of_nodes_to_analyze = len(node_list)
 
-            if not len(outlier_seqs):
-                # no outlier whatsoever. move on to the next.
-                continue
-            else:
-                node.dirty = True
+            def worker(data_chunk, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter):
+                for node_id in data_chunk:
+                    outlier_seqs = []
+                    node = self.topology.nodes[node_id]
+                    shared_counter.set(shared_counter.value + 1)
+
+                    for read in node.reads[1:]:
+                        e = quick_entropy([node.representative_seq, read.seq])
+
+                        if len(e) > self.maximum_variation_allowed:
+                            # this read does not belong in this node.
+                            outlier_seqs.append(read)
+                            
+                    for outlier_read_object in outlier_seqs:            
+                        node.reads.remove(outlier_read_object)
+                        shared_outlier_seqs_list.append(outlier_read_object)
+
+                    if len(outlier_seqs):
+                        node.dirty = True
+                        shared_dirty_nodes_list.append(node)
+
+            mp = Multiprocessing(worker, self.number_of_threads)
+            data_chunks = mp.get_data_chunks(node_list, spiral = True)
+            shared_dirty_nodes_list = mp.get_empty_shared_array()
+            shared_outlier_seqs_list = mp.get_empty_shared_array()
+            shared_counter = mp.get_shared_integer()
+
+            for chunk in data_chunks:
+                args = (chunk, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter)
+                mp.run(args)
+        
+            while 1:
+                num_processes = len([p for p in mp.processes if p.is_alive()])
+                
+                if not num_processes:
+                    # all threads are done
+                    break
+        
+                self.progress.update('Analyzed %d of %d in %d threads' % (shared_counter.value,
+                                                                          total_number_of_nodes_to_analyze,
+                                                                          num_processes,))
+                time.sleep(1)
+
+
+            for node in shared_dirty_nodes_list:
+                self.topology.nodes[node.node_id] = node
             
-            self.progress.append(' / screening node to remove %d outliers' % len(outlier_seqs))
-
-            for outlier_read_object in outlier_seqs:            
+            for outlier_read_object in shared_outlier_seqs_list:
                 self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
-                node.reads.remove(outlier_read_object)
-            
-            self.logger.info('%d outliers removed from node: %s'\
-                        % (sum([r.frequency for r in outlier_seqs]),
-                           node_id))
+
+        else:
+            # no threading
+            for i in range(0, len(node_list)):
+                node_id = node_list[i]
+                node = self.topology.nodes[node_id]
+                outlier_seqs = []
+    
+                self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
+                for read in node.reads[1:]:
+                    e = quick_entropy([node.representative_seq, read.seq])
+    
+                    if len(e) > self.maximum_variation_allowed:
+                        # this read does not belong in this node.
+                        outlier_seqs.append(read)
+    
+                if not len(outlier_seqs):
+                    # no outlier whatsoever. move on to the next.
+                    continue
+                else:
+                    node.dirty = True
+                
+                self.progress.append(' / screening node to remove %d outliers' % len(outlier_seqs))
+    
+                for outlier_read_object in outlier_seqs:            
+                    self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
+                    node.reads.remove(outlier_read_object)
+                
+                self.logger.info('%d outliers removed from node: %s'\
+                            % (sum([r.frequency for r in outlier_seqs]),
+                               node_id))
 
         self.progress.end()
         self._refresh_topology()
@@ -940,7 +1027,6 @@ class Decomposer:
 
 
     def _refresh_final_nodes(self):
-        """Refresh nodes using the alignment files"""
         self.progress.new('Refreshing Nodes')
         
         for i in range(0, len(self.topology.final_nodes)):
