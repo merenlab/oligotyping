@@ -837,8 +837,6 @@ class Decomposer:
             else:
                 node.dirty = True
             
-            # we have all the ids for this node to be removed. these reads should be remove from the actual alignment.
-            
             self.progress.append(' / screening node to remove %d outliers' % len(outlier_seqs))
 
             for outlier_read_object in outlier_seqs:            
