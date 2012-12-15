@@ -18,6 +18,7 @@ import copy
 import time
 import shutil
 import cPickle
+import logging
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
@@ -62,6 +63,7 @@ class Decomposer:
         self.merge_homopolymer_splits = False
         self.threading = False
         self.number_of_threads = None
+        self.log_file_path = None
          
         if args:
             self.alignment = args.alignment
@@ -95,6 +97,7 @@ class Decomposer:
 
         self.run = Run()
         self.progress = Progress()
+        self.logger = None
 
         self.root = None
         self.topology = Topology()
@@ -140,6 +143,20 @@ class Decomposer:
         self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
 
 
+    def _init_logger(self):
+        self.logger = logging.getLogger('decomposer')
+        self.log_file_path = self.generate_output_destination('RUNINFO.log')
+        
+        if os.path.exists(self.log_file_path):
+            os.remove(self.log_file_path)
+        
+        hdlr = logging.FileHandler(self.log_file_path)
+        formatter = logging.Formatter('%(asctime)s\t%(levelname)s\t%(message)s')
+        hdlr.setFormatter(formatter)
+        self.logger.addHandler(hdlr) 
+        self.logger.setLevel(logging.DEBUG)
+
+
     def _init_topology(self):
         self.progress.new('Initializing topology')
         self.progress.update('May take a while depending on the number of reads...')
@@ -181,6 +198,8 @@ class Decomposer:
 
     def decompose(self):
         self.sanity_check()
+        
+        self._init_logger()
 
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
@@ -190,6 +209,7 @@ class Decomposer:
         self.run.info('version', __version__)
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
         self.run.info('info_file_path', self.info_file_path)
+        self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
         self.run.info('output_directory', self.output_directory)
         self.run.info('nodes_directory', self.topology.nodes_output_directory)
@@ -250,9 +270,16 @@ class Decomposer:
         if self.store_full_topology:
             self._store_topology_dict()
 
+        for node_id in self.topology.final_nodes:
+            self.logger.info('final node: %s (%d)' % (node_id,
+                                                      self.topology.nodes[node_id].size))
+
+        self.run.info('end_of_run', get_date())
+        
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
-        self.run.info('end_of_run', get_date())
+        
+        self.logger.info('fin.')
         self.run.quit()
         
     def _store_final_nodes(self):
@@ -384,6 +411,8 @@ class Decomposer:
                                                             len(self.node_ids_to_analyze),
                                                             node.pretty_id,
                                                             node.size)
+                                                         
+                self.logger.info('analyzing node id: %s (%d)' % (node_id, node.size))
                 self.progress.update(p)
 
                 # if the most abundant unique read in a node is smaller than self.min_actual_abundance kill the node
@@ -397,12 +426,14 @@ class Decomposer:
 
                     else:
                         # remove the node and store its content.
+                        self.logger.info('remove node (MSA): %s' % node_id)
                         self.topology.remove_node(node.node_id, True, 'min_substantive_abundance_reason')
                         continue
 
                 if node.size < self.min_actual_abundance:
                     # remove the node and store its content.
                     self.topology.remove_node(node.node_id, True, 'min_actual_abundance_reason')                    
+                    self.logger.info('remove node (MAA): %s' % node_id)
                     continue
                 
                 # competing_unique_sequences_ratio refers to the ratio between the most abundant unique
@@ -421,6 +452,7 @@ class Decomposer:
 
                 if node.competing_unique_sequences_ratio < 0.025 or node.density > 0.85:
                     # Finalize this node.
+                    self.logger.info('finalize node (CUSR/ND): %s' % node_id)
                     continue
 
                 # find out about the entropy distribution in the given node:
@@ -437,6 +469,7 @@ class Decomposer:
                 # because 'max_allowed_variation' outliers will be removed from this node later on.  
                 if node.reads[1].frequency < self.min_substantive_abundance:
                     # we are done with this node.
+                    self.logger.info('finalize node (SMA < MSA): %s' % node_id)
                     continue
 
                 # discriminants for this node are being selected from the list of entropy tuples:
@@ -453,7 +486,13 @@ class Decomposer:
 
                 if not len(node.discriminants):
                     # FIXME: Finalize this node.
+                    self.logger.info('finalize node (ND): %s' % node_id)
                     continue
+                else:
+                    self.logger.info('using %d D (%s) to decompose: %s'\
+                                     % (len(node.discriminants),
+                                        ','.join([str(d) for d in node.discriminants]),
+                                        node_id))
                 
                 # before we go through the parent reads to find new set of nodes, we need a variable to keep
                 # track of them:
@@ -494,6 +533,7 @@ class Decomposer:
                                                           parent_id = node.node_id)
 
                     new_node_ids_to_analyze.append(new_node.node_id)
+                    self.logger.info('new node: %s' % new_node.node_id)
 
             # this is time to set new nodes for the analysis.
             self.node_ids_to_analyze = [n for n in new_node_ids_to_analyze]
@@ -568,8 +608,9 @@ class Decomposer:
         it_is_OK_to_pass_this = lambda: iteration > 0 and (not len(self.topology.zombie_nodes))
         
         while 1:
-            
+            self.logger.info('refine topology iteration: %d' % iteration)
             if it_is_OK_to_pass_this():
+                self.logger.info('refine topology end')
                 break
 
             if not self.skip_agglomerating_nodes:
@@ -623,6 +664,7 @@ class Decomposer:
                     self.topology.zombie_nodes.append(new_node_id)
                     self.topology.outliers['maximum_variation_allowed_reason'].remove(read_object)
                     self.topology.final_nodes.append(new_node_id)
+                    self.logger.info('new zombie: %s' % new_node_id)
                 self.progress.end()
                 
             iteration += 1
@@ -661,8 +703,11 @@ class Decomposer:
                         if dealing_with_zombie_nodes:
                             self.topology.merge_nodes(sibling.node_id, node.node_id)
                             self.topology.standby_bin.append(sibling.node_id)
+                            self.topology.zombie_nodes.remove(node.node_id)
+                            self.logger.info('zombie node merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
                             break
                         else:
+                            self.logger.info('nodes merged (HPS): %s -> %s' % (sibling.node_id, node.node_id))
                             self.topology.merge_nodes(node.node_id, sibling.node_id)
                     
                         if sibling.node_id in nodes:
@@ -705,7 +750,7 @@ class Decomposer:
                                                                 ' #Z: %s' % (nz if nz else '')))
  
         dealing_with_zombie_nodes = False
-        
+
         if self.topology.zombie_nodes:
             nodes = copy.deepcopy(self.topology.zombie_nodes)
             dealing_with_zombie_nodes = True
@@ -729,14 +774,17 @@ class Decomposer:
                         if dealing_with_zombie_nodes:
                             self.topology.merge_nodes(sibling.node_id, node.node_id)
                             self.topology.standby_bin.append(sibling.node_id)
+                            self.topology.zombie_nodes.remove(node.node_id)
+                            self.logger.info('zombie node merged (AN): %s -> %s' % (node.node_id, sibling.node_id))
                             break
                         else:
                             self.topology.merge_nodes(node.node_id, sibling.node_id)
+                            self.logger.info('nodes merged (AN): %s -> %s' % (node.node_id, sibling.node_id))
 
                             if sibling.node_id in nodes:
                                 nodes.remove(sibling.node_id)
                             
-        
+
         # reset temporary stuff
         self.datasets = []
         self.datasets_dict = {}
@@ -796,6 +844,10 @@ class Decomposer:
             for outlier_read_object in outlier_seqs:            
                 self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
                 node.reads.remove(outlier_read_object)
+            
+            self.logger.info('%d outliers removed from node: %s'\
+                        % (sum([r.frequency for r in outlier_seqs]),
+                           node_id))
 
         self.progress.end()
         self._refresh_topology()
