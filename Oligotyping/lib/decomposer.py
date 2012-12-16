@@ -809,7 +809,6 @@ class Decomposer:
                         if dealing_with_zombie_nodes:
                             self.topology.merge_nodes(sibling.node_id, node.node_id)
                             self.topology.standby_bin.append(sibling.node_id)
-                            self.topology.zombie_nodes.remove(node.node_id)
                             self.logger.info('zombie node merged (AN): %s -> %s' % (node.node_id, sibling.node_id))
                             break
                         else:
@@ -913,7 +912,7 @@ class Decomposer:
             for i in range(0, len(node_list)):
                 node_id = node_list[i]
                 node = self.topology.nodes[node_id]
-                outlier_seqs = []
+                outlier_seqs = set([])
     
                 self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
                 for read in node.reads[1:]:
@@ -921,7 +920,7 @@ class Decomposer:
     
                     if len(e) > self.maximum_variation_allowed:
                         # this read does not belong in this node.
-                        outlier_seqs.append(read)
+                        outlier_seqs.add(read)
     
                 if not len(outlier_seqs):
                     # no outlier whatsoever. move on to the next.
