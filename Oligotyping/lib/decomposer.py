@@ -688,12 +688,17 @@ class Decomposer:
                 number_of_abundant_reads_in_outlier_bin = len(abundant_reads_in_outlier_bin)
                 for i in range(0, number_of_abundant_reads_in_outlier_bin):
                     self.progress.update('Processing %d of %d' % (i + 1, number_of_abundant_reads_in_outlier_bin))
+
                     read_object = abundant_reads_in_outlier_bin[i]
+
                     new_node_id = self.topology.get_new_node_id()
                     self.topology.add_new_node(new_node_id, [read_object], parent_id = 'root')
                     self.topology.zombie_nodes.append(new_node_id)
                     self.topology.outliers['maximum_variation_allowed_reason'].remove(read_object)
+
                     self.topology.final_nodes.append(new_node_id)
+                    self.topology.alive_nodes.append(new_node_id)
+
                     self.logger.info('new zombie: %s' % new_node_id)
                 self.progress.end()
                 
