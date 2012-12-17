@@ -79,6 +79,9 @@ except:
     sys.exit()
 
 
+# FIXME: RE-IMPLEMENT THIS. I don't want to use USEARCH anymore. I am working on a search module
+# for decomposition part of the codebase that depends on NCBI's BLAST tools. this is being used
+# by oligotyping. once the module is ready, this file should go away. 
 def local_blast_search(sequence, reference_db, output_file = None):
 
     # FIXME: carry this function into utils..
