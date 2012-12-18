@@ -19,6 +19,7 @@ import struct
 import termios 
 import cPickle
 import tempfile
+import subprocess
 import numpy as np
 import multiprocessing
 
@@ -501,6 +502,23 @@ def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
     
     return (s1, s2)
 
+def is_program_exist(program):
+    IsExe = lambda p: os.path.isfile(p) and os.access(p, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+
+    if fpath:
+        if IsExe(program):
+            return True
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if IsExe(exe_file):
+                return True
+
+    return None
+
 def trim_uninformative_columns_from_alignment(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
     input_fasta.next()
@@ -533,6 +551,12 @@ def trim_uninformative_columns_from_alignment(input_file_path):
 
     # overwrite the original file with trimmed content
     shutil.move(temp_file_path, input_file_path)
+
+def get_temporary_file_name(prefix = '', suffix = '', directory = '/tmp'):
+    temp_file_obj = tempfile.NamedTemporaryFile(prefix=prefix, suffix=suffix, dir=directory, delete=False)
+    temp_file_path = temp_file_obj.name
+    temp_file_obj.close()
+    return temp_file_path
 
 def get_date():
     return time.strftime("%d %b %y %H:%M:%S", time.localtime())
@@ -585,6 +609,18 @@ def HTMLColorToRGB(colorstring):
 
 def colorize(txt):
     return '\033[0;30m\033[46m%s\033[0m' % txt
+
+
+def run_command(cmdline):
+    try:
+        if subprocess.call(cmdline, shell = True) < 0:
+            raise ConfigError, "command was terminated: '%s'" % (cmdline)
+    except OSError, e:
+        raise ConfigError, "command was failed for the following reason: '%s' ('%s')" % (e, cmdline) 
+
+
+def check_command_output(cmdline):
+    return subprocess.check_output(cmdline.split())
 
 
 class Progress:
