@@ -502,6 +502,23 @@ def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
     
     return (s1, s2)
 
+
+def get_temporary_file_names_for_BLAST_search(prefix, directory):
+    query  = get_temporary_file_name(prefix='%s' % prefix, suffix='.fa', directory=directory)
+    target = get_temporary_file_name(prefix='%s' % prefix, suffix='.db', directory=directory)
+    output = get_temporary_file_name(prefix='%s' % prefix, suffix='.b6', directory=directory)
+        
+    return (query, target, output)
+
+
+def get_percent_identity_for_one_base_difference(average_read_length):
+    percent_identity = (average_read_length - 1) * 100.0 / average_read_length
+    if float('%.2f' % percent_identity) == 1.00:
+        percent_identity = 0.99
+        
+    return percent_identity
+
+
 def is_program_exist(program):
     IsExe = lambda p: os.path.isfile(p) and os.access(p, os.X_OK)
 
