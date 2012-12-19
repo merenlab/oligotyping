@@ -511,8 +511,8 @@ def get_temporary_file_names_for_BLAST_search(prefix, directory):
     return (query, target, output)
 
 
-def get_percent_identity_for_one_base_difference(average_read_length):
-    percent_identity = (average_read_length - 1) * 100.0 / average_read_length
+def get_percent_identity_for_N_base_difference(average_read_length, N = 1):
+    percent_identity = (average_read_length - N) * 100.0 / average_read_length
     if float('%.2f' % percent_identity) == 1.00:
         percent_identity = 0.99
         
