@@ -122,7 +122,7 @@ class LocalBLAST:
         run_command(self.makeblastdb_cmd)
 
 
-    def get_results_dict(self, mismatches = 1, gaps = 0):
+    def get_results_dict(self, mismatches = 1, gaps = 0, return_all = False):
         results_dict = {}
         
         b6 = b6lib.B6Source(self.output)
@@ -131,11 +131,18 @@ class LocalBLAST:
         while b6.next():
             if b6.query_id == b6.subject_id:
                 continue
-            if b6.mismatches == mismatches and b6.gaps == gaps:
+            
+            if return_all:
                 if b6.query_id not in ids_with_hits:
                     results_dict[b6.query_id] = set()
                     ids_with_hits.add(b6.query_id)
                 results_dict[b6.query_id].add(b6.subject_id)
+            elif b6.mismatches == mismatches and b6.gaps == gaps:
+                if b6.query_id not in ids_with_hits:
+                    results_dict[b6.query_id] = set()
+                    ids_with_hits.add(b6.query_id)
+                results_dict[b6.query_id].add(b6.subject_id)
+                
         b6.close()
         
         return results_dict
