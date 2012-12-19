@@ -13,6 +13,7 @@ import os
 import numpy
 import operator
 
+from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.entropy import entropy
 from Oligotyping.utils.utils import ConfigError
 
@@ -161,9 +162,9 @@ class Topology:
     def store_outlier(self, unique_read_object, reason = 'unknown_reason'):
         if reason not in self.outlier_reasons:
             self.outlier_reasons.append(reason)
-            self.outliers[reason] = set([])
+            self.outliers[reason] = []
             
-        self.outliers[reason].add(unique_read_object)
+        self.outliers[reason].append(unique_read_object)
 
 
     def remove_node_files(self, node_id):
@@ -228,6 +229,17 @@ class Topology:
         final_nodes_tpls = [(self.nodes[n].size, n) for n in self.alive_nodes if not self.nodes[n].children]
         final_nodes_tpls.sort(reverse = True)
         self.final_nodes = [n[1] for n in final_nodes_tpls]
+
+
+    def store_node_representatives(self, node_ids, output_file_path, store_gaps = False):
+        output = u.FastaOutput(output_file_path)
+        for node_id in node_ids:
+            output.write_id(node_id)
+            if store_gaps:
+                output.write_seq(self.nodes[node_id].representative_seq, split = False)
+            else:
+                output.write_seq(self.nodes[node_id].representative_seq.replace('-', ''), split = False)
+        output.close()
 
 
     def store_final_nodes(self):
