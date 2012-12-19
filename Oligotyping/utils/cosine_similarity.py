@@ -34,7 +34,12 @@ from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 
 def cosine_distance(v1, v2):
-    return spatial.distance.cosine(v1, v2)
+    v1_abs, v2_abs = [], []
+    for i in range(0, len(v1)):
+        v1_abs.append(v1[i] * 100.0 / ((v1[i] + v2[i]) or 1))
+        v2_abs.append(v2[i] * 100.0 / ((v1[i] + v2[i]) or 1))
+
+    return spatial.distance.cosine(v1_abs, v2_abs)
 
 def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file = None):
     oligotype_sets = []
