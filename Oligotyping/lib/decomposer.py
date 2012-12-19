@@ -21,6 +21,7 @@ import cPickle
 import logging
 
 from Oligotyping.lib import fastalib as u
+from Oligotyping.utils import blast
 from Oligotyping.lib.topology import Topology
 from Oligotyping.lib.entropy import quick_entropy
 from Oligotyping.utils.utils import Multiprocessing
@@ -29,7 +30,6 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import same_but_gaps
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import homopolymer_indel_exists
@@ -37,6 +37,8 @@ from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
+from Oligotyping.utils.utils import get_percent_identity_for_N_base_difference
 from Oligotyping.utils.cosine_similarity import cosine_distance
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
@@ -117,7 +119,7 @@ class Decomposer:
         self.across_datasets_sum_normalized = {}
         self.across_datasets_max_normalized = {}
 
-        # if number_of_threads is defined, then turn the threading on.
+        # be smart, turn the threading on if necessary.
         if self.number_of_threads:
             self.threading = True
 
@@ -139,9 +141,19 @@ class Decomposer:
         if not os.access(self.output_directory, os.W_OK):
             raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
 
+        self.tmp_directory = self.generate_output_destination('TMP', directory = True)
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
         self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
+        
+        if not self.number_of_threads:
+            self.number_of_threads = Multiprocessing(None).num_thread
 
+        try:
+            blast.LocalBLAST(None, None, None, None)
+        except blast.ModuleVersionError:
+            raise ConfigError, blast.version_error_text
+        except blast.ModuleBinaryError:
+            raise ConfigError, blast.missing_binary_error_text
 
     def _init_logger(self):
         self.logger = logging.getLogger('decomposer')
@@ -174,7 +186,6 @@ class Decomposer:
         self.node_ids_to_analyze = ['root']
 
         self.progress.end()
-        
             
     def get_prefix(self):
         prefix = 'm%.2f-A%d-M%d-d%d' % (self.min_entropy,
@@ -265,7 +276,7 @@ class Decomposer:
         self._store_light_topology_dict()
         self._store_topology_text()
         self._store_final_nodes()
-        self._store_outliers()
+        self._store_outliers_wrapper()
         
         if self.store_full_topology:
             self._store_topology_dict()
@@ -326,23 +337,27 @@ class Decomposer:
         self.progress.end()
         
 
-    def _store_outliers(self):
+    def _store_outliers(self, reason, output_file_path):
         self.progress.new('Storing outliers')
-        
-        for reason in self.topology.outlier_reasons:
-            self.progress.update('Reads removed due to "%s" (size: %d)'\
+        output = u.FastaOutput(output_file_path)
+            
+        self.progress.update('Storing reads removed due to "%s" (size: %d)'\
                                             % (reason, len(self.topology.outliers[reason])))
-            output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
-            output = u.FastaOutput(output_file_path)
+ 
+        for read_object in self.topology.outliers[reason]:
+            for read_id in read_object.ids:
+                output.write_id(read_id)
+                output.write_seq(read_object.seq, split = False)
             
-            for read_object in self.topology.outliers[reason]:
-                for read_id in read_object.ids:
-                    output.write_id(read_id)
-                    output.write_seq(read_object.seq, split = False)
-            
-            output.close()
-
+        output.close()
         self.progress.end()
+
+
+    def _store_outliers_wrapper(self):
+        for reason in self.topology.outlier_reasons:
+            output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
+            self._store_outliers(reason, output_file_path)
+
 
     def _generate_datasets_dict(self):
         self.progress.new('Computing Samples Dict')
@@ -724,30 +739,64 @@ class Decomposer:
         else:
             nodes = copy.deepcopy(self.topology.final_nodes)
 
-        while nodes:
-            node = self.topology.nodes[nodes.pop(0)]
-            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(nodes)))
+        # ---
+        # use blastn to get the similarity dict for gaps.
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "HPS_%d_" % iteration,\
+                                                                          directory = self.tmp_directory)
 
-            siblings = self.topology.get_siblings(node.node_id)
-            
-            while len(siblings):
-                sibling = self.topology.nodes[siblings.pop(0)]
-                
-                if same_but_gaps(node.representative_seq, sibling.representative_seq):
-                    if homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
-                        if dealing_with_zombie_nodes:
-                            self.topology.merge_nodes(sibling.node_id, node.node_id)
-                            self.topology.standby_bin.append(sibling.node_id)
-                            self.topology.zombie_nodes.remove(node.node_id)
-                            self.logger.info('zombie node merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
-                            break
-                        else:
-                            self.logger.info('nodes merged (HPS): %s -> %s' % (sibling.node_id, node.node_id))
-                            self.topology.merge_nodes(node.node_id, sibling.node_id)
-                    
-                        if sibling.node_id in nodes:
-                            nodes.remove(sibling.node_id)
+        self.topology.store_node_representatives(nodes, query)
+        self.topology.store_node_representatives(self.topology.final_nodes, target)
+
+        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
+        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, percent_identity)
+
+        s = blast.LocalBLAST(query, target, params, output)
         
+        self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
+        s.make_blast_db()
+        self.logger.info('makeblastdb for HPS: %s' % (s.makeblastdb_cmd))
+        
+        self.progress.update('Running blastn for %d sequences' % (len(nodes)))
+        s.search()
+        self.logger.info('blastn for HPS: %s' % (s.search_cmd))
+        
+        self.progress.update('Generating similarity dict from blastn results')
+        similarity_dict = s.get_results_dict(mismatches = 0, gaps = 1)
+
+        node_ids = set(similarity_dict.keys())
+        nodes_to_skip = set()
+
+        while node_ids:
+            node = self.topology.nodes[node_ids.pop()]
+
+            if node.node_id in nodes_to_skip:
+                continue
+
+            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(node_ids)))
+            
+            for sibling_id in similarity_dict[node.node_id]:
+                if sibling_id in nodes_to_skip:
+                    continue
+                
+                sibling = self.topology.nodes[sibling_id]
+
+
+                if homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
+                    if dealing_with_zombie_nodes:
+                        self.topology.merge_nodes(sibling.node_id, node.node_id)
+                        self.topology.standby_bin.append(sibling.node_id)
+                        nodes_to_skip.add(node.node_id)
+                        self.logger.info('zombie node merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
+                        break
+                    else:
+                        self.topology.merge_nodes(node.node_id, sibling.node_id)
+                        nodes_to_skip.add(sibling.node_id)
+                        self.logger.info('nodes merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
+
+                        # this shouldn't be necessary, but just in case:
+                        if sibling.node_id in node_ids:
+                            node_ids.remove(sibling.node_id)
+
         # reset temporary stuff
         self.datasets = []
         self.datasets_dict = {}
@@ -756,7 +805,7 @@ class Decomposer:
         
         self.progress.end()
         self._refresh_topology()
- 
+
 
     def _agglomerate_nodes(self, iteration):
         # since we generate nodes based on selected components immediately, some of the nodes will obviously
@@ -791,33 +840,65 @@ class Decomposer:
             dealing_with_zombie_nodes = True
         else:
             nodes = copy.deepcopy(self.topology.final_nodes)
+
+        # ---
+        # use blastn to get the similarity dict. I don't like it here, but I'll take care of it later.        
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "AN_%d_" % iteration,\
+                                                                          directory = self.tmp_directory)
+        self.topology.store_node_representatives(nodes, query)
+        self.topology.store_node_representatives(self.topology.final_nodes, target)
+
+        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
+        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, percent_identity)
+
+        s = blast.LocalBLAST(query, target, params, output)
         
-        while nodes:
-            node = self.topology.nodes[nodes.pop(0)]
-            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(nodes)))
+        self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
+        s.make_blast_db()
+        self.logger.info('makeblastdb for AN: %s' % (s.makeblastdb_cmd))
+        
+        self.progress.update('Running blastn for %d sequences' % (len(nodes)))
+        s.search()
+        self.logger.info('blastn for AN: %s' % (s.search_cmd))
+        
+        self.progress.update('Generating similarity dict from blastn results')
+        similarity_dict = s.get_results_dict(mismatches = 1, gaps = 0)
 
-            siblings = self.topology.get_siblings(node.node_id)
+        node_ids = set(similarity_dict.keys())
+        nodes_to_skip = set()
 
-            while len(siblings):
-                sibling = self.topology.nodes[siblings.pop(0)]
+        while node_ids:
+            node = self.topology.nodes[node_ids.pop()]
 
-                e = quick_entropy([node.representative_seq, sibling.representative_seq])
+            if node.node_id in nodes_to_skip:
+                continue
+
+            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(node_ids)))
+            
+            for sibling_id in similarity_dict[node.node_id]:
+                if sibling_id in nodes_to_skip:
+                    continue
                 
-                if len(e) == 1:
-                    d = cosine_distance(self.across_datasets_max_normalized[node.node_id], self.across_datasets_max_normalized[sibling.node_id])
-                    if d < 0.1:
-                        if dealing_with_zombie_nodes:
-                            self.topology.merge_nodes(sibling.node_id, node.node_id)
-                            self.topology.standby_bin.append(sibling.node_id)
-                            self.logger.info('zombie node merged (AN): %s -> %s' % (node.node_id, sibling.node_id))
-                            break
-                        else:
-                            self.topology.merge_nodes(node.node_id, sibling.node_id)
-                            self.logger.info('nodes merged (AN): %s -> %s' % (node.node_id, sibling.node_id))
+                sibling = self.topology.nodes[sibling_id]
 
-                            if sibling.node_id in nodes:
-                                nodes.remove(sibling.node_id)
-                            
+                d = cosine_distance(self.across_datasets_max_normalized[node.node_id], self.across_datasets_max_normalized[sibling.node_id])
+
+                if d < 0.1:
+                    if dealing_with_zombie_nodes:
+                        self.topology.merge_nodes(sibling.node_id, node.node_id)
+                        self.topology.standby_bin.append(sibling.node_id)
+                        nodes_to_skip.add(node.node_id)
+                        self.logger.info('zombie node merged (AN, d: %.2f): %s -> %s' % (d, node.node_id, sibling.node_id))
+                        break
+                    else:
+                        self.topology.merge_nodes(node.node_id, sibling.node_id)
+                        nodes_to_skip.add(sibling.node_id)
+                        self.logger.info('nodes merged (AN, d: %.2f): %s -> %s' % (d, node.node_id, sibling.node_id))
+
+                        # this shouldn't be necessary, but just in case:
+                        if sibling.node_id in node_ids:
+                            node_ids.remove(sibling.node_id)
+
 
         # reset temporary stuff
         self.datasets = []
@@ -952,14 +1033,49 @@ class Decomposer:
             self.run.info('relocate_outliers', 0)
             return
 
-        distance_node_tuples = self.read_node_distance_tuples(self.topology.outliers['maximum_variation_allowed_reason'])
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_",
+                                                                          directory = self.tmp_directory)
+
+        outliers = self.topology.outliers['maximum_variation_allowed_reason']
+
+        id_to_read_object_dict = {}
+        for i in range(0, len(outliers)):
+            id_to_read_object_dict[i] = outliers[i]
+
+        query_obj = u.FastaOutput(query)
+        for _id in id_to_read_object_dict:
+            query_obj.write_id(_id)
+            query_obj.write_seq(id_to_read_object_dict[_id].seq.replace('-', ''), split = False)
+        query_obj.close()
+
+        self.topology.store_node_representatives(self.topology.final_nodes, target)
+
+        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+                                                                      N = self.maximum_variation_allowed)
+
+        params = "-num_threads %d -perc_identity %.2f -max_target_seqs 1"\
+                                     % (self.number_of_threads, percent_identity)
+
+        s = blast.LocalBLAST(query, target, params, output)
         
-        for read_object, distance_node_tuple in distance_node_tuples: 
-            node_id = self.topology.get_best_matching_node(read_object.seq, distance_node_tuple) 
-            self.topology.relocate_outlier(read_object, node_id, 'maximum_variation_allowed_reason')
+        self.progress.update('Running makeblastdb for %d sequences' % (len(self.topology.final_nodes)))
+        s.make_blast_db()
+        self.logger.info('makeblastdb for RO: %s' % (s.makeblastdb_cmd))
+        
+        self.progress.update('Running blastn for %d sequences' % (len(outliers)))
+        s.search()
+        self.logger.info('blastn for RO: %s' % (s.search_cmd))
+        
+        self.progress.update('Generating similarity dict from blastn results')
+        similarity_dict = s.get_results_dict(return_all = True)
+
+        for _id in similarity_dict:
+            self.topology.relocate_outlier(id_to_read_object_dict[int(_id)],
+                                           similarity_dict[_id].pop(),
+                                           'maximum_variation_allowed_reason')
 
         self.progress.end()
-        self.run.info('relocated_outliers', len(distance_node_tuples))
+        self.run.info('relocated_outliers', len(similarity_dict))
 
         self._refresh_final_nodes()
 
