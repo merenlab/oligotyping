@@ -255,23 +255,6 @@ class Topology:
                 node.refresh()
 
 
-    def get_candidate_nodes_based_on_distance(self, sequence, max_levenshtein_ratio):
-        # here we have a sequence, which is probably an outlier from the raw decomposition
-        # and we want to find candidate nodes for this sequence with respect to the
-        # maximum Levenshtein ratio. So, this function will find any node that has a rep
-        # seq within the given radius of distance, and return them.
-        import Levenshtein
-        
-        distance_node_tuples = []
-        
-        for node in [self.nodes[node_id] for node_id in self.final_nodes]:
-            r = 1 - Levenshtein.ratio(node.representative_seq, sequence)
-            if r < max_levenshtein_ratio:
-                distance_node_tuples.append((r, node.node_id))
-                
-        return distance_node_tuples
-
-
     def get_best_matching_node(self, sequence, distance_node_tuples):
         # here we have a sequence, and a number of nodes that was previously decided to be OK
         # candidates for this read. this function will do the trick to find really the best one
