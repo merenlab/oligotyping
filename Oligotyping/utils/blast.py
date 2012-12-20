@@ -71,12 +71,14 @@ class LocalBLAST:
         self.output = output
         self.makeblastdb = makeblastdb
         self.log = log
+        self.outfmt = "-outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'"
 
         self.cmd_line_params_dict = {'binary': self.binary,
                                      'input' : self.input,
                                      'output': self.output,
                                      'target': self.target,
                                      'params': self.params,
+                                     'outfmt': self.outfmt,
                                      'makeblastdb': self.makeblastdb,
                                      'log': self.log}
 
@@ -88,7 +90,7 @@ class LocalBLAST:
         else:
             self.output = output
         
-        self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt 6 %(params)s &> %(log)s"
+        self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s &> %(log)s"
         self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl &> %(log)s"
         
         self.results_dict = {}
@@ -137,11 +139,35 @@ class LocalBLAST:
                     results_dict[b6.query_id] = set()
                     ids_with_hits.add(b6.query_id)
                 results_dict[b6.query_id].add(b6.subject_id)
-            elif b6.mismatches == mismatches and b6.gaps == gaps:
-                if b6.query_id not in ids_with_hits:
-                    results_dict[b6.query_id] = set()
-                    ids_with_hits.add(b6.query_id)
-                results_dict[b6.query_id].add(b6.subject_id)
+            else:
+                # following correction is to take secret gaps into consideration.
+                # because we are working with reads that are supposed to be almost the
+                # same length, we want query and target to be aligned 100%. sometimes it
+                # is not the case, and mismatches are being calculated by the aligned
+                # part of query or target. for instance if query is this:
+                #
+                #    ATCGATCG
+                #
+                # and target is this:
+                #
+                #   TATCGATCG
+                #
+                # the alignment discards the T at the beginning and gives 0 mismatches.
+                # here we introduce those gaps back:
+                if b6.q_start != 1:
+                    b6.gaps += b6.q_start - 1
+                if b6.s_start != 1:
+                    b6.gaps += b6.s_start - 1
+                if b6.q_end != b6.q_len:
+                    b6.gaps += b6.q_len - b6.q_end
+                if b6.s_end != b6.s_len:
+                    b6.gaps += b6.s_len - b6.s_end
+
+                if b6.mismatches == mismatches and b6.gaps == gaps:
+                    if b6.query_id not in ids_with_hits:
+                        results_dict[b6.query_id] = set()
+                        ids_with_hits.add(b6.query_id)
+                    results_dict[b6.query_id].add(b6.subject_id)
                 
         b6.close()
         

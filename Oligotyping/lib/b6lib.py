@@ -10,6 +10,13 @@
 #
 # Please read the docs/COPYING file.
 
+# README: This library parses tabular output of BLAST search results. It requires two
+#         extra columns to be present in the tabular output file. Which are query length
+#         and subject length. Here is the exact -outfmt parameter:
+#
+#         -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'
+#
+
 import os
 import sys
 import numpy
@@ -18,7 +25,7 @@ from Oligotyping.utils.utils import pretty_print
 
 QUERY_ID, SUBJECT_ID, IDENTITY, ALIGNMENT_LENGTH,\
 MISMATCHES, GAPS, Q_START, Q_END, S_START, S_END,\
-E_VALUE, BIT_SCORE = range(0, 12)
+E_VALUE, BIT_SCORE, Q_LEN, S_LEN = range(0, 14)
 
 
 class B6Source:
@@ -29,7 +36,7 @@ class B6Source:
         self.file_pointer = open(self.b6_source)
         self.file_pointer.seek(0)
         
-        self.conversion = [str, str, float, int, int, int, int, int, int, int, float, float]
+        self.conversion = [str, str, float, int, int, int, int, int, int, int, float, float, int, int]
         
         if lazy_init:
             self.total_seq = None
@@ -54,6 +61,8 @@ class B6Source:
         self.s_end = None
         self.e_value = None
         self.bit_score = None
+        self.q_len = None
+        self.s_len = None
 
     def show_progress(self, end = False):
         sys.stderr.write('\r[b6lib] Reading: %s' % (pretty_print(self.pos)))
@@ -87,12 +96,14 @@ class B6Source:
         try:
             self.query_id, self.subject_id, self.identity, self.alignment_length,\
             self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
-            self.s_end, self.e_value, self.bit_score =\
-                [self.conversion[x](F(x)) if F(x) != '*' else None for x in range(0, 12)]
+            self.s_end, self.e_value, self.bit_score, self.q_len, self.s_len =\
+                [self.conversion[x](F(x)) if F(x) != '*' else None for x in range(0, 14)]
         except:
-            print
-            print 'Error: There is something wrong with this entry in the B6 file'
-            print self.entry
+            sys.stderr.write('\n\nError: This library requires 14 column non-standard tabular output.\n')
+            sys.stderr.write('       See source code for details.\n')
+            sys.stderr.write('\n       This was the illegal entry:\n\n')
+            sys.stderr.write('       ' + self.entry)
+            sys.stderr.write('\n\n')
             sys.exit()
 
         self.entry += '\n'
