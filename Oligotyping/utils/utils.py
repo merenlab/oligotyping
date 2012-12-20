@@ -16,6 +16,7 @@ import math
 import fcntl
 import shutil
 import struct
+import hashlib
 import termios 
 import cPickle
 import tempfile
@@ -767,4 +768,5 @@ class UniqueFASTAEntry:
     def __init__(self, seq, ids):
         self.seq = seq
         self.ids = ids
+        self.md5id = hashlib.md5(self.seq).hexdigest()
         self.frequency = len(ids)

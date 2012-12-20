@@ -162,9 +162,9 @@ class Topology:
     def store_outlier(self, unique_read_object, reason = 'unknown_reason'):
         if reason not in self.outlier_reasons:
             self.outlier_reasons.append(reason)
-            self.outliers[reason] = []
+            self.outliers[reason] = set([])
             
-        self.outliers[reason].append(unique_read_object)
+        self.outliers[reason].add(unique_read_object)
 
 
     def remove_node_files(self, node_id):

@@ -1039,8 +1039,8 @@ class Decomposer:
         outliers = self.topology.outliers['maximum_variation_allowed_reason']
 
         id_to_read_object_dict = {}
-        for i in range(0, len(outliers)):
-            id_to_read_object_dict[i] = outliers[i]
+        for read_obj in outliers:
+            id_to_read_object_dict[read_obj.md5id] = read_obj
 
         query_obj = u.FastaOutput(query)
         for _id in id_to_read_object_dict:
@@ -1075,7 +1075,7 @@ class Decomposer:
             counter += 1
             self.progress.update('Relocating outliers: %d of %d' % (counter,
                                                                     total_number_of_outliers_to_relocate))
-            self.topology.relocate_outlier(id_to_read_object_dict[int(_id)],
+            self.topology.relocate_outlier(id_to_read_object_dict[_id],
                                            similarity_dict[_id].pop(),
                                            'maximum_variation_allowed_reason')
 
