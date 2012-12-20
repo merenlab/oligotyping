@@ -1136,7 +1136,6 @@ class Decomposer:
                 counter += 1
                 self.progress.update('Processing %d of %d' % (counter, total_number_of_outliers))
                 
-                self.maximum_variation_allowed = 2
                 max_levenshtien_ratio = (self.maximum_variation_allowed * 1.0 / len(read_object.seq))
                 distance_node_tuples = self.topology.get_candidate_nodes_based_on_distance(read_object.seq, max_levenshtien_ratio)
                 
