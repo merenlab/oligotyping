@@ -571,7 +571,7 @@ class Decomposer:
                 oligos = new_nodes_dict.keys()
                 len_oligos = len(oligos)
                 for i in range(0, len_oligos):
-                    self.progress.update(p + ' / storing %d new nodes: %d ' % (len_oligos, i + 1))
+                    self.progress.update(p + ' / new nodes %d of %d ' % (i + 1, len_oligos))
 
                     new_node = self.topology.add_new_node(new_nodes_dict[oligos[i]]['node_id'],
                                                           new_nodes_dict[oligos[i]]['reads'],
@@ -631,9 +631,9 @@ class Decomposer:
                         self.topology.nodes[node.node_id] = node
                     break
         
-                self.progress.update('Processing in %d threads. Analyzed %d of %d' % (num_processes,
-                                                                                      shared_counter.value,
-                                                                                      len(dirty_nodes)))
+                self.progress.update('Processing in %d threads: %d of %d' % (num_processes,
+                                                                             shared_counter.value,
+                                                                             len(dirty_nodes)))
                 time.sleep(1)
 
         else:
@@ -702,7 +702,7 @@ class Decomposer:
                 self.progress.new('Abundant Outliers Bin; ITER %d' % (iteration))
                 number_of_abundant_reads_in_outlier_bin = len(abundant_reads_in_outlier_bin)
                 for i in range(0, number_of_abundant_reads_in_outlier_bin):
-                    self.progress.update('Processing %d of %d' % (i + 1, number_of_abundant_reads_in_outlier_bin))
+                    self.progress.update('%d of %d' % (i + 1, number_of_abundant_reads_in_outlier_bin))
 
                     read_object = abundant_reads_in_outlier_bin[i]
 
