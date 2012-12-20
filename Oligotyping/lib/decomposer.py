@@ -747,8 +747,8 @@ class Decomposer:
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
-        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, percent_identity)
+        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
+        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, min_percent_identity)
 
         s = blast.LocalBLAST(query, target, params, output)
         
@@ -848,8 +848,8 @@ class Decomposer:
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
-        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, percent_identity)
+        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
+        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, min_percent_identity)
 
         s = blast.LocalBLAST(query, target, params, output)
         
@@ -1050,11 +1050,11 @@ class Decomposer:
 
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                       N = self.maximum_variation_allowed)
 
         params = "-num_threads %d -perc_identity %.2f -max_target_seqs 1"\
-                                     % (self.number_of_threads, percent_identity)
+                                     % (self.number_of_threads, min_percent_identity)
 
         s = blast.LocalBLAST(query, target, params, output)
         
@@ -1067,9 +1067,14 @@ class Decomposer:
         self.logger.info('blastn for RO: %s' % (s.search_cmd))
         
         self.progress.update('Generating similarity dict from blastn results')
-        similarity_dict = s.get_results_dict(return_all = True)
+        similarity_dict = s.get_results_dict(min_identity = min_percent_identity)
 
+        total_number_of_outliers_to_relocate = len(similarity_dict)
+        counter = 0
         for _id in similarity_dict:
+            counter += 1
+            self.progress.update('Relocating outliers: %d of %d' % (counter,
+                                                                    total_number_of_outliers_to_relocate))
             self.topology.relocate_outlier(id_to_read_object_dict[int(_id)],
                                            similarity_dict[_id].pop(),
                                            'maximum_variation_allowed_reason')

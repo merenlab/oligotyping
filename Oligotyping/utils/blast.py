@@ -124,7 +124,7 @@ class LocalBLAST:
         run_command(self.makeblastdb_cmd)
 
 
-    def get_results_dict(self, mismatches = 1, gaps = 0, return_all = False):
+    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None):
         results_dict = {}
         
         b6 = b6lib.B6Source(self.output)
@@ -133,41 +133,53 @@ class LocalBLAST:
         while b6.next():
             if b6.query_id == b6.subject_id:
                 continue
-            
-            if return_all:
-                if b6.query_id not in ids_with_hits:
-                    results_dict[b6.query_id] = set()
-                    ids_with_hits.add(b6.query_id)
-                results_dict[b6.query_id].add(b6.subject_id)
-            else:
-                # following correction is to take secret gaps into consideration.
-                # because we are working with reads that are supposed to be almost the
-                # same length, we want query and target to be aligned 100%. sometimes it
-                # is not the case, and mismatches are being calculated by the aligned
-                # part of query or target. for instance if query is this:
-                #
-                #    ATCGATCG
-                #
-                # and target is this:
-                #
-                #   TATCGATCG
-                #
-                # the alignment discards the T at the beginning and gives 0 mismatches.
-                # here we introduce those gaps back:
-                if b6.q_start != 1:
-                    b6.gaps += b6.q_start - 1
-                if b6.s_start != 1:
-                    b6.gaps += b6.s_start - 1
-                if b6.q_end != b6.q_len:
-                    b6.gaps += b6.q_len - b6.q_end
-                if b6.s_end != b6.s_len:
-                    b6.gaps += b6.s_len - b6.s_end
 
-                if b6.mismatches == mismatches and b6.gaps == gaps:
-                    if b6.query_id not in ids_with_hits:
-                        results_dict[b6.query_id] = set()
-                        ids_with_hits.add(b6.query_id)
-                    results_dict[b6.query_id].add(b6.subject_id)
+            # following correction is to take secret gaps into consideration.
+            # because we are working with reads that are supposed to be almost the
+            # same length, we want query and target to be aligned 100%. sometimes it
+            # is not the case, and mismatches are being calculated by the aligned
+            # part of query or target. for instance if query is this:
+            #
+            #    ATCGATCG
+            #
+            # and target is this:
+            #
+            #   TATCGATCG
+            #
+            # the alignment discards the T at the beginning and gives 0 mismatches.
+            # here we introduce those gaps back:
+            additional_gaps = 0
+            if b6.q_start != 1 or b6.s_start != 1:
+                additional_gaps += (b6.q_start - 1) if b6.q_start > b6.s_start else (b6.s_start - 1)
+            if additional_gaps != b6.q_len or b6.s_end != b6.s_len:
+                additional_gaps += (b6.q_len - b6.q_end) if (b6.q_len - b6.q_end) > (b6.s_len - b6.s_end) else (b6.s_len - b6.s_end)
+
+            identity_penalty = additional_gaps * 100.0 / (b6.q_len + additional_gaps)
+            
+            if identity_penalty:
+                b6.gaps += additional_gaps
+                b6.identity -= identity_penalty
+                
+            # done correcting the hit. carry on.
+
+            if min_identity is not None:
+                if b6.identity < min_identity:
+                    continue
+            
+            if mismatches is not None:
+                if b6.mismatches != mismatches:
+                    continue
+                
+            if gaps is not None:
+                if b6.gaps != gaps:
+                    continue
+            
+            # if it made here, we are interested in this one, after all.
+            if b6.query_id not in ids_with_hits:
+                results_dict[b6.query_id] = set()
+                ids_with_hits.add(b6.query_id)
+                
+            results_dict[b6.query_id].add(b6.subject_id)
                 
         b6.close()
         
