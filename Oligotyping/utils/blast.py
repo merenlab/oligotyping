@@ -71,7 +71,7 @@ class LocalBLAST:
         self.output = output
         self.makeblastdb = makeblastdb
         self.log = log
-        self.outfmt = "-outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'"
+        self.outfmt = "'6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'"
 
         self.cmd_line_params_dict = {'binary': self.binary,
                                      'input' : self.input,
