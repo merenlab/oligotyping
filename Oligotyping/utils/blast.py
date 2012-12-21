@@ -9,12 +9,21 @@
 #
 # Please read the COPYING file.
 
+import os
+import copy
+import time
+
+import Oligotyping.lib.fastalib as u
 import Oligotyping.lib.b6lib as b6lib
 
+from Oligotyping.utils.utils import append_file 
 from Oligotyping.utils.utils import run_command
+from Oligotyping.utils.utils import Multiprocessing
+from Oligotyping.utils.utils import split_fasta_file
 from Oligotyping.utils.utils import is_program_exist
 from Oligotyping.utils.utils import check_command_output
 from Oligotyping.utils.utils import get_temporary_file_name
+
 
 version_error_text = '''\n
             Certain steps of decomposition requires fast searching, and it seems NCBI's BLAST tools
@@ -114,7 +123,48 @@ class LocalBLAST:
             raise ModuleVersionError, version_error_text
 
 
-    def search(self):
+    def search_parallel(self, num_processes, num_reads_per_process = 2000):
+        def worker(search_cmd):
+            run_command(search_cmd)
+        
+        mp = Multiprocessing(worker)
+
+        input_file_parts = split_fasta_file(self.input,
+                                            os.path.dirname(self.input),
+                                            num_reads_per_file = num_reads_per_process)
+        processes_to_run = []
+        output_file_parts = []
+        
+        for input_file_part in input_file_parts:
+            cmd_line_params_dict = copy.deepcopy(self.cmd_line_params_dict)
+            cmd_line_params_dict['input'] = input_file_part
+            output_file_part = input_file_part + '.b6'
+            cmd_line_params_dict['output'] = output_file_part
+            output_file_parts.append(output_file_part)
+            processes_to_run.append(self.search_cmd_tmpl % cmd_line_params_dict)
+
+        while 1:
+            running_processes = len([p for p in mp.processes if p.is_alive()])
+            
+            if running_processes < num_processes and processes_to_run:
+                mp.run((processes_to_run.pop(),))
+
+            if not running_processes and not processes_to_run:
+                break
+
+            time.sleep(1)
+        
+        if os.path.exists(self.output):
+            os.remove(self.output)
+        
+        for output_file_part in output_file_parts:
+            append_file(self.output, output_file_part)
+
+        for input_file_part in input_file_parts:
+            os.remove(input_file_part)
+        
+
+    def search(self, num_processes = None):
         self.search_cmd = self.search_cmd_tmpl % self.cmd_line_params_dict
         run_command(self.search_cmd)
 
