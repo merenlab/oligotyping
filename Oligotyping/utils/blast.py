@@ -152,6 +152,8 @@ class LocalBLAST:
             output_file_parts.append(output_file_part)
             processes_to_run.append(self.search_cmd_tmpl % cmd_line_params_dict)
 
+        self.search_cmd = processes_to_run[0]
+
         while 1:
             running_processes = len([p for p in mp.processes if p.is_alive()])
             
@@ -159,6 +161,9 @@ class LocalBLAST:
                 mp.run((processes_to_run.pop(),))
 
             if not running_processes and not processes_to_run:
+                # let the blastn program finish writing all output files.
+                # FIXME: this is ridiculous. find a better solution.
+                time.sleep(5)
                 break
 
             time.sleep(1)
