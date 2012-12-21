@@ -149,7 +149,7 @@ class Decomposer:
             self.number_of_threads = Multiprocessing(None).num_thread
 
         try:
-            blast.LocalBLAST(None, None, None, None)
+            blast.LocalBLAST(None, None, None)
         except blast.ModuleVersionError:
             raise ConfigError, blast.version_error_text
         except blast.ModuleBinaryError:
@@ -747,17 +747,23 @@ class Decomposer:
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
+        s = blast.LocalBLAST(query, target, output)
+        
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
-        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, min_percent_identity)
-
-        s = blast.LocalBLAST(query, target, params, output)
         
         self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
         s.make_blast_db()
         self.logger.info('makeblastdb for HPS: %s' % (s.makeblastdb_cmd))
         
-        self.progress.update('Running blastn for %d sequences' % (len(nodes)))
-        s.search()
+        self.progress.update('Running%s blastn for %d sequences' %\
+                            (' parallel' if self.threading else '', len(nodes)))
+        if self.threading:
+            s.params = "-perc_identity %.2f" % (min_percent_identity)
+            s.search_parallel(self.number_of_threads, 2000)
+        else:
+            s.params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads,
+                                                                min_percent_identity)
+            s.search()
         self.logger.info('blastn for HPS: %s' % (s.search_cmd))
         
         self.progress.update('Generating similarity dict from blastn results')
@@ -849,16 +855,22 @@ class Decomposer:
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
-        params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads, min_percent_identity)
 
-        s = blast.LocalBLAST(query, target, params, output)
+        s = blast.LocalBLAST(query, target, output)
         
         self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
         s.make_blast_db()
         self.logger.info('makeblastdb for AN: %s' % (s.makeblastdb_cmd))
         
-        self.progress.update('Running blastn for %d sequences' % (len(nodes)))
-        s.search()
+        self.progress.update('Running%s blastn for %d sequences' %\
+                            (' parallel' if self.threading else '', len(nodes)))
+        if self.threading:
+            s.params = "-perc_identity %.2f" % (min_percent_identity)
+            s.search_parallel(self.number_of_threads, 2000)
+        else:
+            s.params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads,
+                                                                min_percent_identity)
+            s.search()
         self.logger.info('blastn for AN: %s' % (s.search_cmd))
         
         self.progress.update('Generating similarity dict from blastn results')
@@ -1053,17 +1065,22 @@ class Decomposer:
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                       N = self.maximum_variation_allowed)
 
-        params = "-num_threads %d -perc_identity %.2f -max_target_seqs 1"\
-                                     % (self.number_of_threads, min_percent_identity)
-
-        s = blast.LocalBLAST(query, target, params, output)
+        s = blast.LocalBLAST(query, target, output)
         
         self.progress.update('Running makeblastdb for %d sequences' % (len(self.topology.final_nodes)))
         s.make_blast_db()
         self.logger.info('makeblastdb for RO: %s' % (s.makeblastdb_cmd))
-        
-        self.progress.update('Running blastn for %d sequences' % (len(outliers)))
-        s.search()
+
+        self.progress.update('Running%s blastn for %d sequences' %\
+                            (' parallel' if self.threading else '', len(outliers)))
+        if self.threading:        
+            s.params = "-perc_identity %.2f -max_target_seqs 1" % (min_percent_identity)
+            s.search_parallel(self.number_of_threads, 2000)
+            self.logger.info('parallel blastn for RO: %s' % (s.search_cmd))
+        else:
+            s.params = "-num_threads %d -perc_identity %.2f -max_target_seqs 1"\
+                                     % (self.number_of_threads, min_percent_identity)
+            s.search()
         self.logger.info('blastn for RO: %s' % (s.search_cmd))
         
         self.progress.update('Generating similarity dict from blastn results')
