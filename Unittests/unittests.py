@@ -10,6 +10,7 @@ import _oligotyping
 import _decomposition
 import _decomposition_threaded
 import _utils
+import _blast
 
 def __suite():
     suite = unittest.TestSuite()
@@ -19,6 +20,7 @@ def __suite():
     suite.addTest(unittest.makeSuite(_decomposition.Tests))
     suite.addTest(unittest.makeSuite(_decomposition_threaded.Tests))
     suite.addTest(unittest.makeSuite(_utils.Tests))
+    suite.addTest(unittest.makeSuite(_blast.Tests))
 
     return suite
 
