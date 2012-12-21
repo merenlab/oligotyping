@@ -209,15 +209,18 @@ def homopolymer_indel_exists(seq1, seq2):
     return None
 
 
-def append_file(append_to_path, append_from_path):
-    append_to = open(append_to_path, 'a')
-    append_from = open(append_from_path)
+def append_file(target_path, source_path, remove_source = True):
+    target = open(target_path, 'a')
+    source = open(source_path, 'r')
     
-    for line in append_from.readlines():
-        append_to.write(line)
-        
-    append_from.close()
-    append_to.close()
+    for line in source.readlines():
+        target.write(line)
+    
+    target.close()
+    source.close()
+    
+    if remove_source:
+        os.remove(source_path)
 
 
 def append_reads_to_FASTA(read_id_sequence_tuples_list, fasta_file_path):
@@ -717,6 +720,32 @@ def get_read_objects_from_file(input_file_path):
 
     input_fasta.close()
     return read_objects
+
+
+def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_file = 5000):
+    input_fasta = u.SequenceSource(input_file_path)
+    
+    parts = []
+    next_part = 1
+    part_obj = None
+
+    while input_fasta.next():
+        if (input_fasta.pos - 1) % num_reads_per_file == 0:
+            if part_obj:
+                part_obj.close()
+
+            file_path = os.path.join(dest_dir, '%s-%d' % (prefix, next_part))
+            parts.append(file_path)
+            next_part += 1
+            part_obj = u.FastaOutput(file_path)
+
+        part_obj.store(input_fasta, split = False)
+  
+    if part_obj:
+        part_obj.close()
+
+    return parts
+
 
 class Multiprocessing:
     def __init__(self, target_function, num_thread = None):
