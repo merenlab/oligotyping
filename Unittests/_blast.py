@@ -36,9 +36,9 @@ class Tests(unittest.TestCase):
     def test_01_ParallelBlast(self):
         s = blast.LocalBLAST(self.query, 
                              self.target, 
-                             '-perc_identity %f' % self.min_percent_identity, 
                              self.output)
         s.make_blast_db()
+        s.params = '-perc_identity %f' % self.min_percent_identity 
         s.search_parallel(num_processes = 8, num_reads_per_process = 1000)
         similarity_dict = s.get_results_dict(min_identity = self.min_percent_identity)
 

@@ -72,24 +72,16 @@ class ModuleVersionError(Exception):
 
 
 class LocalBLAST:
-    def __init__(self, input_fasta, target, params, output = None, binary = "blastn", makeblastdb = "makeblastdb", log = "/dev/null"):
+    def __init__(self, input_fasta, target, output = None, binary = "blastn", makeblastdb = "makeblastdb", log = "/dev/null"):
         self.binary = binary
-        self.params = params
+        self.params = ''
         self.input = input_fasta
         self.target = target
         self.output = output
         self.makeblastdb = makeblastdb
         self.log = log
         self.outfmt = "'6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'"
-
-        self.cmd_line_params_dict = {'binary': self.binary,
-                                     'input' : self.input,
-                                     'output': self.output,
-                                     'target': self.target,
-                                     'params': self.params,
-                                     'outfmt': self.outfmt,
-                                     'makeblastdb': self.makeblastdb,
-                                     'log': self.log}
+        self.debug = False
 
         self.binary_check()        
         self.version_check()
@@ -99,10 +91,27 @@ class LocalBLAST:
         else:
             self.output = output
         
-        self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s &> %(log)s"
-        self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl &> %(log)s"
+        if self.debug:
+            self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s"
+            self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl"
+        else:
+            self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s &> %(log)s"
+            self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl &> %(log)s"
         
         self.results_dict = {}
+
+
+    def get_cmd_line_params_dict(self):
+        cmd_line_params_dict = {'binary': self.binary,
+                                'input' : self.input,
+                                'output': self.output,
+                                'target': self.target,
+                                'params': self.params,
+                                'outfmt': self.outfmt,
+                                'makeblastdb': self.makeblastdb,
+                                'log': self.log}
+
+        return cmd_line_params_dict
 
 
     def binary_check(self):
@@ -111,7 +120,7 @@ class LocalBLAST:
 
 
     def version_check(self):
-        version_text = check_command_output('%(binary)s -version' % self.cmd_line_params_dict)
+        version_text = check_command_output('%(binary)s -version' % self.get_cmd_line_params_dict())
         # we expect to see an output like this:
         #
         #    blastn: 2.2.26+
@@ -136,7 +145,7 @@ class LocalBLAST:
         output_file_parts = []
         
         for input_file_part in input_file_parts:
-            cmd_line_params_dict = copy.deepcopy(self.cmd_line_params_dict)
+            cmd_line_params_dict = self.get_cmd_line_params_dict()
             cmd_line_params_dict['input'] = input_file_part
             output_file_part = input_file_part + '.b6'
             cmd_line_params_dict['output'] = output_file_part
@@ -165,12 +174,12 @@ class LocalBLAST:
         
 
     def search(self, num_processes = None):
-        self.search_cmd = self.search_cmd_tmpl % self.cmd_line_params_dict
+        self.search_cmd = self.search_cmd_tmpl % self.get_cmd_line_params_dict()
         run_command(self.search_cmd)
 
 
     def make_blast_db(self):
-        self.makeblastdb_cmd = self.makeblastdb_cmd_tmpl % self.cmd_line_params_dict
+        self.makeblastdb_cmd = self.makeblastdb_cmd_tmpl % self.get_cmd_line_params_dict()
         run_command(self.makeblastdb_cmd)
 
 
