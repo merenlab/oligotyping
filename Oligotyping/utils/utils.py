@@ -274,7 +274,7 @@ def get_unique_sequences_from_FASTA(alignment, limit = 10):
     return unique_sequences
 
 
-def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
+def get_oligos_sorted_by_abundance(datasets_dict, oligos = None, min_abundance = 0):
     datasets = datasets_dict.keys()
     datasets.sort()
 
@@ -302,7 +302,7 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None):
             abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
             break
 
-    return [x[1] for x in sorted(abundant_oligos)]
+    return [x[1] for x in sorted(abundant_oligos) if x[0] > min_abundance]
 
 
 def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
@@ -449,6 +449,18 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
     else:
         return None
  
+
+def get_filtered_datasets_dict(units, datasets, datasets_dict):
+    filtered_datasets_dict = {}
+
+    for dataset in datasets:
+        filtered_datasets_dict[dataset] = {}
+        for unit in units:
+            if datasets_dict[dataset].has_key(unit):
+                filtered_datasets_dict[dataset][unit] = datasets_dict[dataset][unit]
+
+    return filtered_datasets_dict
+
 
 def get_datasets_dict_from_environment_file(environment_file_path):
     datasets_dict = {}
