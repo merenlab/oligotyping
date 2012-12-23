@@ -1213,7 +1213,7 @@ class Decomposer:
 
     def _store_node_representatives(self): 
         # store representative sequences per oligotype if they are computed
-        self.progress.new('Representative <equences FASTA File')
+        self.progress.new('Representative Sequences FASTA File')
         node_representatives_file_path = self.generate_output_destination("NODE-REPRESENTATIVES.fasta")
         f = open(node_representatives_file_path, 'w')
         self.progress.update('Being generated')
