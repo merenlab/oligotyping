@@ -1055,7 +1055,7 @@ class Decomposer:
         for reason in self.topology.outlier_reasons:
             total_relocated_outliers += self._relocate_outliers(reason, refresh_final_nodes = False)
         
-        self.run.info('relocated_outliers_total', total_relocated_outliers)
+        self.run.info('relocated_outliers_total', pretty_print(total_relocated_outliers))
         self._refresh_final_nodes()
 
 
@@ -1114,7 +1114,7 @@ class Decomposer:
                                            reason)
 
         self.progress.end()
-        self.run.info('relocated_%s' % reason, outliers_relocated)
+        self.run.info('relocated_%s' % reason, pretty_print(outliers_relocated))
 
         if refresh_final_nodes:
             self._refresh_final_nodes()
