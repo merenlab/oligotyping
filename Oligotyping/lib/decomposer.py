@@ -20,8 +20,8 @@ import shutil
 import cPickle
 import logging
 
-from Oligotyping.lib import fastalib as u
 from Oligotyping.utils import blast
+from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
 from Oligotyping.lib.entropy import quick_entropy
 from Oligotyping.utils.utils import Multiprocessing
@@ -30,6 +30,7 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import get_pretty_name
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
 from Oligotyping.utils.utils import homopolymer_indel_exists
@@ -254,16 +255,11 @@ class Decomposer:
             self._refine_topology()
            
         if self.relocate_outliers:
-            self._relocate_outliers()
-        
-        # ready for final numbers.
-        for reason in self.topology.outlier_reasons:
-            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
-            self.run.info(reason, pretty_print(count))
+            self._relocate_all_outliers()
 
-        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
-        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
-
+        # all done.        
+        self._report_final_numbers()
+ 
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
         
@@ -1032,23 +1028,38 @@ class Decomposer:
                                node_id))
 
         self.progress.end()
+
+        removed_outliers_total = 0
+        for reason in self.topology.outlier_reasons:
+            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
+            removed_outliers_total += count
+            self.run.info('removed_%s' % reason, pretty_print(count))
+        self.run.info('removed_outliers_total', pretty_print(removed_outliers_total))
+
         self._refresh_topology()
+
+
+    def _relocate_all_outliers(self):    
+        total_relocated_outliers = 0
         
-    
-    def _relocate_outliers(self):
-        # this function will go through the outlier bin, and try to relocate each read that was identified as an
-        # outlier due to 'max variation allowed' reason.
-        self.progress.new('Refined Topology: Processing Outliers')
-
-        if not self.topology.outliers.has_key('maximum_variation_allowed_reason'):
+        if not self.topology.outliers:
             self.progress.end()
-            self.run.info('relocate_outliers', 0)
+            self.run.info('relocated_outliers', total_relocated_outliers)
             return
+        
+        for reason in self.topology.outlier_reasons:
+            total_relocated_outliers += self._relocate_outliers(reason, refresh_final_nodes = False)
+        
+        self.run.info('relocated_outliers_total', total_relocated_outliers)
+        self._refresh_final_nodes()
 
-        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_",
+
+    def _relocate_outliers(self, reason, refresh_final_nodes = True):
+        self.progress.new('Processing %s' % get_pretty_name(reason))
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_%s" % reason,
                                                                           directory = self.tmp_directory)
 
-        outliers = self.topology.outliers['maximum_variation_allowed_reason']
+        outliers = self.topology.outliers[reason]
 
         id_to_read_object_dict = {}
         for read_obj in outliers:
@@ -1082,24 +1093,28 @@ class Decomposer:
                                      % (self.number_of_threads, min_percent_identity)
             s.search()
         self.logger.info('blastn for RO: %s' % (s.search_cmd))
-        
+
         self.progress.update('Generating similarity dict from blastn results')
         similarity_dict = s.get_results_dict(min_identity = min_percent_identity)
 
-        total_number_of_outliers_to_relocate = len(similarity_dict)
+
+        outliers_relocated = len(similarity_dict)
         counter = 0
         for _id in similarity_dict:
             counter += 1
             self.progress.update('Relocating outliers: %d of %d' % (counter,
-                                                                    total_number_of_outliers_to_relocate))
+                                                                    outliers_relocated))
             self.topology.relocate_outlier(id_to_read_object_dict[_id],
                                            similarity_dict[_id].pop(),
-                                           'maximum_variation_allowed_reason')
+                                           reason)
 
         self.progress.end()
-        self.run.info('relocated_outliers', len(similarity_dict))
+        self.run.info('relocated_%s' % reason, outliers_relocated)
 
-        self._refresh_final_nodes()
+        if refresh_final_nodes:
+            self._refresh_final_nodes()
+        
+        return outliers_relocated
 
 
     def _refresh_final_nodes(self):
@@ -1115,6 +1130,18 @@ class Decomposer:
         num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
         self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
 
+
+    def _report_final_numbers(self):
+        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
+        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
+
+        final_outliers_total = 0
+        for reason in self.topology.outlier_reasons:
+            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
+            final_outliers_total += count
+            self.run.info('final_%s' % reason, pretty_print(count))
+
+        self.run.info('final_outliers_total', pretty_print(final_outliers_total))
 
     def _generate_frequency_curves(self):
         self.progress.new('Generating mini entropy figures')
