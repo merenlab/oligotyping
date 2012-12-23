@@ -38,6 +38,7 @@ from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
 from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
 from Oligotyping.utils.utils import get_percent_identity_for_N_base_difference
 from Oligotyping.utils.cosine_similarity import cosine_distance
@@ -272,7 +273,8 @@ class Decomposer:
         self._store_light_topology_dict()
         self._store_topology_text()
         self._store_final_nodes()
-        self._store_outliers_wrapper()
+        self._store_all_outliers()
+        self._store_node_representatives()
         
         if self.store_full_topology:
             self._store_topology_dict()
@@ -349,7 +351,7 @@ class Decomposer:
         self.progress.end()
 
 
-    def _store_outliers_wrapper(self):
+    def _store_all_outliers(self):
         for reason in self.topology.outlier_reasons:
             output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
             self._store_outliers(reason, output_file_path)
@@ -1207,6 +1209,22 @@ class Decomposer:
                                                   ','.join(node.children) or ''))
         topology_text_file_obj.close()
         self.run.info('topology_text', topology_text_file_path)
+
+
+    def _store_node_representatives(self): 
+        # store representative sequences per oligotype if they are computed
+        self.progress.new('Representative <equences FASTA File')
+        node_representatives_file_path = self.generate_output_destination("NODE-REPRESENTATIVES.fasta")
+        f = open(node_representatives_file_path, 'w')
+        self.progress.update('Being generated')
+        for node_id in self.topology.final_nodes:
+            node = self.topology.get_node(node_id)
+            f.write('>%s|size:%d\n' % (node.node_id, node.size))
+            f.write(node.representative_seq + '\n')
+        f.close()
+        self.progress.end()
+        trim_uninformative_columns_from_alignment(node_representatives_file_path)
+        self.run.info('node_representatives_file_path', node_representatives_file_path)
 
 
 if __name__ == '__main__':
