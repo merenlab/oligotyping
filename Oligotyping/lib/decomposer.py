@@ -652,8 +652,18 @@ class Decomposer:
         
         while 1:
             self.logger.info('refine topology iteration: %d' % iteration)
+
             if it_is_OK_to_pass_this():
-                self.logger.info('refine topology end')
+                self.logger.info('end of refine topology')
+
+                # report the number of outliers removed during the refinement step
+                removed_outliers_total = 0
+                for reason in self.topology.outlier_reasons:
+                    count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
+                    removed_outliers_total += count
+                    self.run.info('removed_%s' % reason, pretty_print(count))
+                self.run.info('removed_outliers_total', pretty_print(removed_outliers_total))
+
                 break
 
             if not self.skip_agglomerating_nodes:
@@ -1030,13 +1040,6 @@ class Decomposer:
                                node_id))
 
         self.progress.end()
-
-        removed_outliers_total = 0
-        for reason in self.topology.outlier_reasons:
-            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
-            removed_outliers_total += count
-            self.run.info('removed_%s' % reason, pretty_print(count))
-        self.run.info('removed_outliers_total', pretty_print(removed_outliers_total))
 
         self._refresh_topology()
 
