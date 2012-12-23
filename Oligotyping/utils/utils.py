@@ -686,6 +686,11 @@ class Progress:
         self.reset()
         self.pid = None
 
+def get_pretty_name(key):
+    if pretty_names.has_key(key):
+        return pretty_names[key]
+    else:
+        return key
 
 class Run:
     """a class that keeps info about an oligotyping run, and deal with the console output"""
@@ -702,12 +707,9 @@ class Run:
             self.info_file_obj = open(info_file_path, 'w')
 
     def info(self, key, value):
-        if pretty_names.has_key(key):
-            label = pretty_names[key]
-        else:
-            label = key
-
         self.info_dict[key] = value
+
+        label = get_pretty_name(key)
 
         info_line = "%s %s: %s\n" % (label, '.' * (65 - len(label)), str(value))
         if self.info_file_obj:
