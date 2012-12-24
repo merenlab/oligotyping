@@ -11,7 +11,6 @@
 # Please read the COPYING file.
 
 import os
-import sys
 import copy
 import shutil
 import cPickle
