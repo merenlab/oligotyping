@@ -72,9 +72,9 @@ def decomposer():
     parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
                         help = 'When set, directory with temporary BLAST results will not be deleted at the end of the\
                                 run. It may be necessary to debug the results')
-    parser.add_argument('-T', '--threading', action = 'store_true', default = False,
-                        help = 'When set, decomposer start multiple threads to reduce computation time whenever it is\
-                                possible.')
+    parser.add_argument('-T', '--no-threading', action = 'store_true', default = False,
+                        help = 'When set, decomposer does not spawn multiple threads. Default behavior is\
+                                multi-threaded.')
     parser.add_argument('-N', '--number-of-threads', type=int, default = None, metavar = "INTEGER",
                         help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
                                 of CPU cores available. If not set, this number will be set to 90%% of available cores,\
