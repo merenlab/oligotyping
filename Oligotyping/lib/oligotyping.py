@@ -1051,7 +1051,7 @@ class Oligotyping:
     def _generate_html_output(self):
         from Oligotyping.utils.html.error import HTMLError
         try:
-            from Oligotyping.utils.html.generate import generate_html_output
+            from Oligotyping.utils.html.for_oligotyping import generate_html_output
         except HTMLError, e:
             sys.stdout.write('\n\n\t%s\n\n' % e)
             sys.exit()

@@ -138,7 +138,7 @@ absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
 
 from django.template.loader import get_template
-t = get_template('index.tmpl')
+t = get_template('index_for_oligo.tmpl')
 
 def generate_html_output(run_info_dict, html_output_directory = None, entropy_figure = None):
     if not html_output_directory:    
@@ -241,14 +241,14 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
             if i < (len(html_dict['oligos']) - 1):
                 tmp_dict['next'] = 'oligo_%s.html' % html_dict['oligos'][i + 1]
             
-            rendered = render_to_string('oligo.tmpl', tmp_dict)
+            rendered = render_to_string('single_oligo.tmpl', tmp_dict)
     
             open(oligo_page, 'w').write(rendered.encode("utf-8"))
 
 
     # generate index
     index_page = os.path.join(html_output_directory, 'index.html')
-    rendered = render_to_string('index.tmpl', html_dict)
+    rendered = render_to_string('index_for_oligo.tmpl', html_dict)
 
     open(index_page, 'w').write(rendered.encode("utf-8"))
 
