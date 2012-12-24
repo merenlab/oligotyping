@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="style.css" />
+    <title>{{ project }}</title>
+
+    <script type="text/javascript" src="jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="popup.js"></script>
+    <script type="text/javascript" src="raphael.js"></script>
+    <script type="text/javascript" src="morris.js"></script>
+    <script type="text/javascript" src="g.raphael.js"></script>
+    <script type="text/javascript" src="g.pie.js"></script>
+
+{{ pie_charts_js }}
+
+</head>
+
+<body >
+<div id="wrapper">
+<div>
+
+<div class="head">MED Results for "{{ project }}"</div>
+<div class="title">A user-friendly interface to make sense of minimum entropy decomposition results.</div>
+<div class="links-bar"><a href="http://oligotyping.org/MED">Oligotyping.org/MED</a></div>
+
+
+<div class="smallhead"><a name="General"></a>Overview</div>
+<p class="smallheadtitle">» A summary of what happened.
+<div class="info_table">
+<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">Minimum Entropy Decomposition analysis was performed on {{total_seq}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta}} sample{{ num_datasets_in_fasta|pluralize }} for "{{ project }}" with MED pipeline version {{version}} (available from http://oligotyping.org/MED).
+</div>
+
+
+<div class="smallhead"><a name="General"></a>General Information</div>
+<br />
+
+<p class="smallheadtitle">» Meta
+<div class="info_table">
+<table width=90%>
+    <tr><td id="l">{{pretty_names.run_date}}</td><td id="r"> {{run_date}}</td></tr>
+    <tr><td id="l">{{pretty_names.version}}</td><td id="r"> {{version}}</td></tr>
+</table>
+</div>
+
+
+<p class="smallheadtitle">» Given Parameters
+<div class="info_table">
+<table width=90%>
+    {% if number_of_auto_components %}
+    <tr><td id="l">{{pretty_names.number_of_auto_components}}</td><td id="r">{{number_of_auto_components}}</td></tr>
+    {% else %}
+    <tr><td id="l">{{pretty_names.number_of_selected_components}}</td><td id="r">{{number_of_selected_components}}</td></tr>
+    {% endif %}
+
+    <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
+    <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
+    <tr><td id="l">{{pretty_names.A}}</td><td id="r"> {{A}}</td></tr>
+    <tr><td id="l">{{pretty_names.M}}</td><td id="r"> {{M}}</td></tr>
+    <tr><td id="l">{{pretty_names.quals_provided}}</td><td id="r"> {{quals_provided}}</td></tr>
+    {% if quals_provided %}
+    <tr><td id="l">{{pretty_names.q}}</td><td id="r"> Q{{q}}</td></tr>
+    {% endif %}
+    {% if blast_ref_db %}
+    <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
+    {% endif %}
+            
+</table>
+</div>
+
+<p class="smallheadtitle">» Quality filtering results
+<div class="info_table">
+<table width=90%>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    {% if quals_provided %}
+    <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality}}</td></tr>
+    {% endif %}
+    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
+    {% if datasets_removed_after_qc %} 
+    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
+    {% endif %}
+</table>
+</div>
+
+
+<div class="smallhead"><a name="Downloads"></a>Downloads</div>
+<p class="smallheadtitle">» Files to analyze results further via third partry applications
+<div class="info_table">
+<table>
+    {% if node_representatives_file_path %}
+    <tr><td id="l">{{node_representatives_file_path}}</td><td id="r"><a href="{{node_representatives_file_path}}">node-representatives.fa.txt</a></td></tr>
+    {% else %}
+    <tr><td id="l">{{pretty_names.node_representatives_file_path}}</td><td id="r"><i>(representative sequences were not computed)</i></td></tr>
+    {% endif %}
+    <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
+    {% if blast_ref_db and blast_ref_db_path %}
+    <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
+    {% endif %}
+</table>
+</div>
+
+<div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
+<p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
+<div id="datasets"></div>
+
+<div class="smallhead"><a name="Datasets"></a>Datasets</div>
+<p class="smallheadtitle">» Overview of datasets.
+{% for dataset in datasets %}
+{% if forloop.counter0|mod:3 == 0 %}
+    <div id="p_container_{{forloop.counter0}}"></div>
+{% endif %}
+{% endfor %}
+
+
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Datasets">Datasets</a></div>
+<div class="footer"><p>For questions and comments: meren / mbl.edu</div>
+</body>
+</html>
+
+
