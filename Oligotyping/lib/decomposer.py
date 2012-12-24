@@ -934,6 +934,9 @@ class Decomposer:
             node_list = copy.deepcopy(self.topology.final_nodes)
 
 
+        max_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+                                                                          self.maximum_variation_allowed)
+
         if self.threading:
 
             total_number_of_nodes_to_analyze = len(node_list)
@@ -963,9 +966,6 @@ class Decomposer:
 
                     b = self._perform_blast(query, target, output, params = '', job = job, no_threading = True)
                     
-                    max_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
-                                                                                      self.maximum_variation_allowed)
-                    
                     similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
             
                     for _id in similarity_dict:
@@ -977,6 +977,10 @@ class Decomposer:
                         node.dirty = True
                         shared_dirty_nodes_list.append(node)
                 
+                        self.logger.info('%d outliers removed from node: %s'\
+                            % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
+                               node_id))
+
             mp = Multiprocessing(worker, self.number_of_threads)
             data_chunks = mp.get_data_chunks(node_list, spiral = True)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
@@ -994,9 +998,9 @@ class Decomposer:
                     # all threads are done
                     break
         
-                self.progress.update('Analyzed %d of %d in %d threads' % (shared_counter.value,
-                                                                          total_number_of_nodes_to_analyze,
-                                                                          num_processes,))
+                self.progress.update('%d of %d done in %d threads' % (shared_counter.value,
+                                                                      total_number_of_nodes_to_analyze,
+                                                                      num_processes,))
                 time.sleep(1)
 
 
@@ -1011,30 +1015,45 @@ class Decomposer:
             for i in range(0, len(node_list)):
                 node_id = node_list[i]
                 node = self.topology.nodes[node_id]
-                outlier_seqs = set([])
-    
+                
                 self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
-                for read in node.reads[1:]:
-                    e = quick_entropy([node.representative_seq, read.seq])
-    
-                    if len(e) > self.maximum_variation_allowed:
-                        # this read does not belong in this node.
-                        outlier_seqs.add(read)
-    
-                if not len(outlier_seqs):
-                    # no outlier whatsoever. move on to the next.
-                    continue
-                else:
+
+                job = 'XO_%s_' % node_id
+                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
+                                                                                  directory = self.tmp_directory)
+                id_to_read_object_dict = {}
+                for read_obj in node.reads[1:]:
+                    id_to_read_object_dict[read_obj.md5id] = read_obj
+
+                query_obj = u.FastaOutput(query)
+                for _id in id_to_read_object_dict:
+                    query_obj.write_id(_id)
+                    query_obj.write_seq(id_to_read_object_dict[_id].seq.replace('-', ''), split = False)
+                query_obj.close()
+
+                target_obj = u.FastaOutput(target)
+                target_obj.write_id(node.reads[0].md5id)
+                target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
+                target_obj.close()
+
+                b = self._perform_blast(query, target, output, params = '', job = job)
+                    
+                similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
+                               
+                if len(similarity_dict):
                     node.dirty = True
-                
-                self.progress.append(' / screening node to remove %d outliers' % len(outlier_seqs))
+                else:
+                    continue
     
-                for outlier_read_object in outlier_seqs:            
-                    self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
+                self.progress.append(' / screening node to remove %d outliers' % len(similarity_dict))
+
+                for _id in similarity_dict:
+                    outlier_read_object = id_to_read_object_dict[_id]
                     node.reads.remove(outlier_read_object)
-                
+                    self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
+ 
                 self.logger.info('%d outliers removed from node: %s'\
-                            % (sum([r.frequency for r in outlier_seqs]),
+                            % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
                                node_id))
 
         self.progress.end()
@@ -1211,13 +1230,10 @@ class Decomposer:
 
     def _perform_blast(self, query, target, output, params, no_threading = False, job = "NONE"):
         s = blast.LocalBLAST(query, target, output)
-            
-        self.progress.update('Running makeblastdb')
+
         s.make_blast_db()
         self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
     
-        self.progress.update('Running%s blastn' %\
-                            (' parallel' if self.threading else ''))
         if self.threading and not no_threading: 
             s.params = params 
             s.search_parallel(self.number_of_threads, 2000)
@@ -1225,7 +1241,7 @@ class Decomposer:
         else:
             s.params = params + " -num_threads %d" % (self.number_of_threads)
             s.search()
-        self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
+            self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
 
         return s
 
