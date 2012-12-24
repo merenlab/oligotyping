@@ -68,6 +68,7 @@ class Decomposer:
         self.threading = False
         self.number_of_threads = None
         self.log_file_path = None
+        self.keep_tmp = False
          
         if args:
             self.alignment = args.alignment
@@ -87,6 +88,7 @@ class Decomposer:
             self.maximum_variation_allowed = args.maximum_variation_allowed
             self.threading = args.threading
             self.number_of_threads = args.number_of_threads
+            self.keep_tmp = args.keep_tmp
             self.debug = args.debug
 
         self.decomposition_depth = -1
@@ -282,6 +284,9 @@ class Decomposer:
         for node_id in self.topology.final_nodes:
             self.logger.info('final node: %s (%d)' % (node_id,
                                                       self.topology.nodes[node_id].size))
+
+        if not self.keep_tmp:
+            shutil.rmtree(self.tmp_directory)
 
         self.run.info('end_of_run', get_date())
         

@@ -69,6 +69,9 @@ def decomposer():
     parser.add_argument('-F', '--store-full-topology', action = 'store_true', default = False,
                         help = 'When set, topology dict with read ids will be generated. This may take a very large\
                                 disk space and computation time for big datasets.')
+    parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
+                        help = 'When set, directory with temporary BLAST results will not be deleted at the end of the\
+                                run. It may be necessary to debug the results')
     parser.add_argument('-T', '--threading', action = 'store_true', default = False,
                         help = 'When set, decomposer start multiple threads to reduce computation time whenever it is\
                                 possible.')
