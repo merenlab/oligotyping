@@ -11,7 +11,6 @@
 
 import os
 import time
-import numpy
 
 import Oligotyping.lib.fastalib as u
 import Oligotyping.lib.b6lib as b6lib
