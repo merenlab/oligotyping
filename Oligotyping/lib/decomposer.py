@@ -23,7 +23,6 @@ import logging
 from Oligotyping.utils import blast
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
-from Oligotyping.lib.entropy import quick_entropy
 from Oligotyping.utils.utils import Multiprocessing
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
