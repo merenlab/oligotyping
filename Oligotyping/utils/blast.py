@@ -10,8 +10,8 @@
 # Please read the COPYING file.
 
 import os
-import copy
 import time
+import numpy
 
 import Oligotyping.lib.fastalib as u
 import Oligotyping.lib.b6lib as b6lib
@@ -188,7 +188,7 @@ class LocalBLAST:
         run_command(self.makeblastdb_cmd)
 
 
-    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None):
+    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None, max_identity = None):
         results_dict = {}
         
         b6 = b6lib.B6Source(self.output)
@@ -226,8 +226,12 @@ class LocalBLAST:
                 
             # done correcting the hit. carry on.
 
+            if max_identity is not None:
+                if round(b6.identity, 1) >= round(max_identity, 1):
+                    continue
+
             if min_identity is not None:
-                if b6.identity < min_identity:
+                if round(b6.identity, 1) < round(min_identity, 1):
                     continue
             
             if mismatches is not None:
