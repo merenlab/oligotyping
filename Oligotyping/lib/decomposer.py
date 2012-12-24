@@ -702,10 +702,13 @@ class Decomposer:
                 # of, and when we are here the second time no more zombie bins are found, we're golden). but for the sake
                 # of robustness, I didn't want to rely on this and implement this part of the algorithm as a complete
                 # state machine.
-                    
-                abundant_reads_in_outlier_bin = [read_object for read_object in \
-                                                    self.topology.outliers['maximum_variation_allowed_reason'] \
-                                                                if read_object.frequency > self.min_substantive_abundance]
+                
+                abundant_reads_in_outlier_bin = []
+                
+                if self.topology.outliers.has_key('maximum_variation_allowed_reason'):    
+                    abundant_reads_in_outlier_bin = [read_object for read_object in \
+                                                        self.topology.outliers['maximum_variation_allowed_reason'] \
+                                                            if read_object.frequency > self.min_substantive_abundance]
                 
                 self.progress.new('Abundant Outliers Bin; ITER %d' % (iteration))
                 number_of_abundant_reads_in_outlier_bin = len(abundant_reads_in_outlier_bin)
@@ -755,27 +758,13 @@ class Decomposer:
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        s = blast.LocalBLAST(query, target, output)
         
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
-        
-        self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
-        s.make_blast_db()
-        self.logger.info('makeblastdb for HPS: %s' % (s.makeblastdb_cmd))
-        
-        self.progress.update('Running%s blastn for %d sequences' %\
-                            (' parallel' if self.threading else '', len(nodes)))
-        if self.threading:
-            s.params = "-perc_identity %.2f" % (min_percent_identity)
-            s.search_parallel(self.number_of_threads, 2000)
-        else:
-            s.params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads,
-                                                                min_percent_identity)
-            s.search()
-        self.logger.info('blastn for HPS: %s' % (s.search_cmd))
+        params = "-perc_identity %.2f" % (min_percent_identity)
+        b = self._perform_blast(query, target, output, params, job = 'HPS')
         
         self.progress.update('Generating similarity dict from blastn results')
-        similarity_dict = s.get_results_dict(mismatches = 0, gaps = 1)
+        similarity_dict = b.get_results_dict(mismatches = 0, gaps = 1)
 
         node_ids = set(similarity_dict.keys())
         nodes_to_skip = set()
@@ -863,26 +852,12 @@ class Decomposer:
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
+        params = "-perc_identity %.2f" % (min_percent_identity)
 
-        s = blast.LocalBLAST(query, target, output)
-        
-        self.progress.update('Running makeblastdb for %d sequences' % (len(nodes)))
-        s.make_blast_db()
-        self.logger.info('makeblastdb for AN: %s' % (s.makeblastdb_cmd))
-        
-        self.progress.update('Running%s blastn for %d sequences' %\
-                            (' parallel' if self.threading else '', len(nodes)))
-        if self.threading:
-            s.params = "-perc_identity %.2f" % (min_percent_identity)
-            s.search_parallel(self.number_of_threads, 2000)
-        else:
-            s.params = "-num_threads %d -perc_identity %.2f" % (self.number_of_threads,
-                                                                min_percent_identity)
-            s.search()
-        self.logger.info('blastn for AN: %s' % (s.search_cmd))
+        b = self._perform_blast(query, target, output, params, job = 'AN')
         
         self.progress.update('Generating similarity dict from blastn results')
-        similarity_dict = s.get_results_dict(mismatches = 1, gaps = 0)
+        similarity_dict = b.get_results_dict(mismatches = 1, gaps = 0)
 
         node_ids = set(similarity_dict.keys())
         nodes_to_skip = set()
@@ -960,25 +935,43 @@ class Decomposer:
 
             def worker(data_chunk, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter):
                 for node_id in data_chunk:
-                    outlier_seqs = []
                     node = self.topology.nodes[node_id]
                     shared_counter.set(shared_counter.value + 1)
+                    
+                    job = 'XO_%s_' % node_id
+                    query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
+                                                                                      directory = self.tmp_directory)
+                    id_to_read_object_dict = {}
+                    for read_obj in node.reads[1:]:
+                        id_to_read_object_dict[read_obj.md5id] = read_obj
 
-                    for read in node.reads[1:]:
-                        e = quick_entropy([node.representative_seq, read.seq])
+                    query_obj = u.FastaOutput(query)
+                    for _id in id_to_read_object_dict:
+                        query_obj.write_id(_id)
+                        query_obj.write_seq(id_to_read_object_dict[_id].seq.replace('-', ''), split = False)
+                    query_obj.close()
 
-                        if len(e) > self.maximum_variation_allowed:
-                            # this read does not belong in this node.
-                            outlier_seqs.append(read)
-                            
-                    for outlier_read_object in outlier_seqs:            
+                    target_obj = u.FastaOutput(target)
+                    target_obj.write_id(node.reads[0].md5id)
+                    target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
+                    target_obj.close()
+
+                    b = self._perform_blast(query, target, output, params = '', job = job, no_threading = True)
+                    
+                    max_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+                                                                                      self.maximum_variation_allowed)
+                    
+                    similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
+            
+                    for _id in similarity_dict:
+                        outlier_read_object = id_to_read_object_dict[_id]
                         node.reads.remove(outlier_read_object)
                         shared_outlier_seqs_list.append(outlier_read_object)
-
-                    if len(outlier_seqs):
+                    
+                    if len(similarity_dict):
                         node.dirty = True
                         shared_dirty_nodes_list.append(node)
-
+                
             mp = Multiprocessing(worker, self.number_of_threads)
             data_chunks = mp.get_data_chunks(node_list, spiral = True)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
@@ -1061,7 +1054,7 @@ class Decomposer:
 
     def _relocate_outliers(self, reason, refresh_final_nodes = True):
         self.progress.new('Processing %s' % get_pretty_name(reason))
-        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_%s" % reason,
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_%s_" % reason,
                                                                           directory = self.tmp_directory)
 
         outliers = self.topology.outliers[reason]
@@ -1079,29 +1072,12 @@ class Decomposer:
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
-                                                                      N = self.maximum_variation_allowed)
-
-        s = blast.LocalBLAST(query, target, output)
-        
-        self.progress.update('Running makeblastdb for %d sequences' % (len(self.topology.final_nodes)))
-        s.make_blast_db()
-        self.logger.info('makeblastdb for RO: %s' % (s.makeblastdb_cmd))
-
-        self.progress.update('Running%s blastn for %d sequences' %\
-                            (' parallel' if self.threading else '', len(outliers)))
-        if self.threading:        
-            s.params = "-perc_identity %.2f -max_target_seqs 1" % (min_percent_identity)
-            s.search_parallel(self.number_of_threads, 2000)
-            self.logger.info('parallel blastn for RO: %s' % (s.search_cmd))
-        else:
-            s.params = "-num_threads %d -perc_identity %.2f -max_target_seqs 1"\
-                                     % (self.number_of_threads, min_percent_identity)
-            s.search()
-        self.logger.info('blastn for RO: %s' % (s.search_cmd))
+                                                                          self.maximum_variation_allowed)
+        params = "-perc_identity %.2f -max_target_seqs 1" % (min_percent_identity)
+        b = self._perform_blast(query, target, output, params)
 
         self.progress.update('Generating similarity dict from blastn results')
-        similarity_dict = s.get_results_dict(min_identity = min_percent_identity)
-
+        similarity_dict = b.get_results_dict(min_identity = min_percent_identity)
 
         outliers_relocated = len(similarity_dict)
         counter = 0
@@ -1132,9 +1108,6 @@ class Decomposer:
             
         self.progress.end()
         
-        num_sequences_after_qc = sum([self.topology.nodes[node_id].size for node_id in self.topology.final_nodes])
-        self.run.info('num_sequences_after_qc', pretty_print(num_sequences_after_qc))
-
 
     def _report_final_numbers(self):
         self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
@@ -1228,6 +1201,28 @@ class Decomposer:
         self.progress.end()
         trim_uninformative_columns_from_alignment(node_representatives_file_path)
         self.run.info('node_representatives_file_path', node_representatives_file_path)
+
+
+
+    def _perform_blast(self, query, target, output, params, no_threading = False, job = "NONE"):
+        s = blast.LocalBLAST(query, target, output)
+            
+        self.progress.update('Running makeblastdb')
+        s.make_blast_db()
+        self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
+    
+        self.progress.update('Running%s blastn' %\
+                            (' parallel' if self.threading else ''))
+        if self.threading and not no_threading: 
+            s.params = params 
+            s.search_parallel(self.number_of_threads, 2000)
+            self.logger.info('parallel blastn for %s: %s' % (job, s.search_cmd))
+        else:
+            s.params = params + " -num_threads %d" % (self.number_of_threads)
+            s.search()
+        self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
+
+        return s
 
 
 if __name__ == '__main__':
