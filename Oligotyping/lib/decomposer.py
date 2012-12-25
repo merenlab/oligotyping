@@ -1242,11 +1242,11 @@ class Decomposer:
         self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
     
         if self.no_threading or no_threading:
-            s.params = params + " -num_threads %d" % (self.number_of_threads)
+            s.params = params 
             s.search()
             self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
         else:
-            s.params = params 
+            s.params = params + " -num_threads %d" % (self.number_of_threads)
             s.search_parallel(self.number_of_threads, 2000)
             self.logger.info('parallel blastn for %s: %s' % (job, s.search_cmd))
 
