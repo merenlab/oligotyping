@@ -39,49 +39,75 @@
 <p class="smallheadtitle">» Meta
 <div class="info_table">
 <table width=90%>
-    <tr><td id="l">{{pretty_names.run_date}}</td><td id="r"> {{run_date}}</td></tr>
     <tr><td id="l">{{pretty_names.version}}</td><td id="r"> {{version}}</td></tr>
+	<tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.run_date}}</td><td id="r"> {{run_date}}</td></tr>
+    <tr><td id="l">{{pretty_names.end_of_run}}</td><td id="r"> {{end_of_run}}</td></tr>
 </table>
 </div>
-
 
 <p class="smallheadtitle">» Given Parameters
 <div class="info_table">
 <table width=90%>
-    {% if number_of_auto_components %}
-    <tr><td id="l">{{pretty_names.number_of_auto_components}}</td><td id="r">{{number_of_auto_components}}</td></tr>
-    {% else %}
-    <tr><td id="l">{{pretty_names.number_of_selected_components}}</td><td id="r">{{number_of_selected_components}}</td></tr>
-    {% endif %}
 
-    <tr><td id="l">{{pretty_names.s}}</td><td id="r"> {{s}}</td></tr>
-    <tr><td id="l">{{pretty_names.a}}</td><td id="r"> {{a}}%</td></tr>
+    <tr><td id="l">{{pretty_names.m}}</td><td id="r"> {{m}}</td></tr>
+    <tr><td id="l">{{pretty_names.d}}</td><td id="r"> {{d}}</td></tr>
     <tr><td id="l">{{pretty_names.A}}</td><td id="r"> {{A}}</td></tr>
     <tr><td id="l">{{pretty_names.M}}</td><td id="r"> {{M}}</td></tr>
-    <tr><td id="l">{{pretty_names.quals_provided}}</td><td id="r"> {{quals_provided}}</td></tr>
-    {% if quals_provided %}
-    <tr><td id="l">{{pretty_names.q}}</td><td id="r"> Q{{q}}</td></tr>
-    {% endif %}
-    {% if blast_ref_db %}
-    <tr><td id="l">{{pretty_names.blast_ref_db_provided}}</td><td id="r">True</td></tr>
-    {% endif %}
+    <tr><td id="l">{{pretty_names.maximum_variation_allowed}}</td><td id="r"> {{maximum_variation_allowed}} nt</td></tr>
+    <tr><td id="l">{{pretty_names.skip_agglomerating_nodes}}</td><td id="r"> {{skip_agglomerating_nodes}}</td></tr>
+    <tr><td id="l">{{pretty_names.merge_homopolymer_splits}}</td><td id="r"> {{merge_homopolymer_splits}}</td></tr>
+    <tr><td id="l">{{pretty_names.skip_removing_outliers}}</td><td id="r"> {{skip_removing_outliers}}</td></tr>
+    <tr><td id="l">{{pretty_names.relocate_outliers}}</td><td id="r"> {{relocate_outliers}}</td></tr>
             
 </table>
 </div>
 
-<p class="smallheadtitle">» Quality filtering results
+<p class="smallheadtitle">» Input Data
 <div class="info_table">
 <table width=90%>
     <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
+    <tr><td id="l">{{pretty_names.alignment_length}}</td><td id="r"> {{alignment_length}}</td></tr>
+    <tr><td id="l">{{pretty_names.average_read_length}}</td><td id="r"> {{average_read_length}}</td></tr>    
+</table>
+</div>
+
+<p class="smallheadtitle">» Handling Outliers
+<div class="info_table">
+<table width=90%>
     {% if quals_provided %}
     <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality}}</td></tr>
     {% endif %}
-    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
     {% if datasets_removed_after_qc %} 
     <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
     {% endif %}
+    
+	<tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.removed_min_substantive_abundance_reason}}</td><td id="r"> {{removed_min_substantive_abundance_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.removed_maximum_variation_allowed_reason}}</td><td id="r"> {{removed_maximum_variation_allowed_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.removed_outliers_total}}</td><td id="r"> {{removed_outliers_total}}</td></tr>
+	<tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.relocated_min_substantive_abundance_reason}}</td><td id="r"> {{relocated_min_substantive_abundance_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.relocated_maximum_variation_allowed_reason}}</td><td id="r"> {{relocated_maximum_variation_allowed_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.relocated_outliers_total}}</td><td id="r"> {{relocated_outliers_total}}</td></tr>
+	<tr><td colspan=2>&nbsp;</td></tr>
+    <tr><td id="l">{{pretty_names.final_min_substantive_abundance_reason}}</td><td id="r"> {{final_min_substantive_abundance_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.final_maximum_variation_allowed_reason}}</td><td id="r"> {{final_maximum_variation_allowed_reason}}</td></tr>
+    <tr><td id="l">{{pretty_names.final_outliers_total}}</td><td id="r"> {{final_outliers_total}}</td></tr>
 </table>
 </div>
+    
+<p class="smallheadtitle">» Nodes
+<div class="info_table">
+<table width=90%>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_raw_nodes}}</td><td id="r"> {{num_raw_nodes}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_final_nodes}}</td><td id="r"> {{num_final_nodes}}</td></tr>
+</table>
+</div>
+
 
 
 <div class="smallhead"><a name="Downloads"></a>Downloads</div>
