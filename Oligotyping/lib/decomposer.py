@@ -68,6 +68,7 @@ class Decomposer:
         self.number_of_threads = None
         self.log_file_path = None
         self.keep_tmp = False
+        self.gen_html = True
          
         if args:
             self.alignment = args.alignment
@@ -89,6 +90,7 @@ class Decomposer:
             self.number_of_threads = args.number_of_threads
             self.keep_tmp = args.keep_tmp
             self.debug = args.debug
+            self.gen_html = args.gen_html
 
         self.decomposition_depth = -1
 
@@ -296,6 +298,9 @@ class Decomposer:
         
         self.logger.info('fin.')
         self.run.quit()
+
+        if self.gen_html:
+            self._generate_html_output()
         
     def _store_final_nodes(self):
         self.progress.new('Storing final nodes')
@@ -387,6 +392,7 @@ class Decomposer:
 
         self.datasets.sort()
         self.progress.end()
+        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
 
 
     def _generate_ENVIRONMENT_file(self):
@@ -1245,6 +1251,21 @@ class Decomposer:
             self.logger.info('parallel blastn for %s: %s' % (job, s.search_cmd))
 
         return s
+
+    def _generate_html_output(self):
+        from Oligotyping.utils.html.error import HTMLError
+        try:
+            from Oligotyping.utils.html.for_decomposition import generate_html_output
+        except HTMLError, e:
+            sys.stdout.write('\n\n\t%s\n\n' % e)
+            sys.exit()
+
+        self.progress.new('HTML Output')
+        output_directory_for_html = self.generate_output_destination("HTML-OUTPUT", directory = True)
+        self.progress.update('Generating')
+        index_page = generate_html_output(self.run.info_dict, html_output_directory = output_directory_for_html)
+        self.progress.end()
+        sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
 
 
 if __name__ == '__main__':
