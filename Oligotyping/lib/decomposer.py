@@ -251,8 +251,8 @@ class Decomposer:
         self.run.info('average_read_length', self.topology.average_read_length)
         self.run.info('alignment_length', self.topology.alignment_length)
         self.run.info('output_directory', self.output_directory)
-        self.run.info('nodes_directory', self.topology.nodes_output_directory)
-        self.run.info('tmp_directory', self.topology.nodes_output_directory)
+        self.run.info('nodes_directory', self.nodes_directory)
+        self.run.info('tmp_directory', self.tmp_directory)
 
         # business time.
         self._generate_raw_topology()
