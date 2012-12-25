@@ -263,12 +263,12 @@ class Decomposer:
         if self.relocate_outliers:
             self._relocate_all_outliers()
 
-        # all done.        
-        self._report_final_numbers()
- 
         self._generate_datasets_dict()
         self._get_unit_counts_and_percents()
-        
+
+        # all done.        
+        self._report_final_numbers()
+         
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
 
@@ -392,7 +392,6 @@ class Decomposer:
 
         self.datasets.sort()
         self.progress.end()
-        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
 
 
     def _generate_ENVIRONMENT_file(self):
@@ -1141,6 +1140,7 @@ class Decomposer:
         
 
     def _report_final_numbers(self):
+        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
         self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
         self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
 
