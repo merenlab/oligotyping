@@ -28,6 +28,7 @@ from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
+from Oligotyping.utils.utils import run_command 
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_pretty_name
 from Oligotyping.utils.utils import human_readable_number
@@ -69,6 +70,7 @@ class Decomposer:
         self.log_file_path = None
         self.keep_tmp = False
         self.gen_html = True
+        self.skip_figures = False
          
         if args:
             self.alignment = args.alignment
@@ -89,6 +91,7 @@ class Decomposer:
             self.no_threading = args.no_threading
             self.number_of_threads = args.number_of_threads
             self.keep_tmp = args.keep_tmp
+            self.skip_figures = args.skip_figures
             self.debug = args.debug
             self.gen_html = args.gen_html
 
@@ -148,6 +151,7 @@ class Decomposer:
 
         self.tmp_directory = self.generate_output_destination('TMP', directory = True)
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
+        self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
         self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
         
         if not self.number_of_threads:
@@ -233,6 +237,7 @@ class Decomposer:
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
         self.run.info('store_full_topology', self.store_full_topology)
+        self.run.info('skip_figures', self.skip_figures)
         self.run.info('m', self.min_entropy)
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
@@ -253,6 +258,8 @@ class Decomposer:
         self.run.info('output_directory', self.output_directory)
         self.run.info('nodes_directory', self.nodes_directory)
         self.run.info('tmp_directory', self.tmp_directory)
+        if not self.skip_figures:
+            self.run.info('figures_directory', self.nodes_directory)
 
         # business time.
         self._generate_raw_topology()
@@ -290,18 +297,21 @@ class Decomposer:
 
         if not self.keep_tmp:
             shutil.rmtree(self.tmp_directory)
-
-        self.run.info('end_of_run', get_date())
+                
+        if not self.skip_figures:
+            self._generate_figures()
         
-        info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
-        self.run.store_info_dict(info_dict_file_path)
-        
-        self.logger.info('fin.')
-        self.run.quit()
-
         if self.gen_html:
             self._generate_html_output()
         
+        self.run.info('end_of_run', get_date())
+
+        info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
+        self.run.store_info_dict(info_dict_file_path)
+
+        self.logger.info('fin.')
+        self.run.quit()
+
     def _store_final_nodes(self):
         self.progress.new('Storing final nodes')
 
@@ -420,19 +430,19 @@ class Decomposer:
         self.progress.new('Matrix Files')
         self.progress.update('Being generated')
             
-        matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
-        matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
+        self.matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
+        self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
         generate_MATRIX_files(self.topology.final_nodes,
                               self.datasets,
                               self.unit_counts,
                               self.unit_percents,
-                              matrix_count_file_path,
-                              matrix_percent_file_path)
+                              self.matrix_count_file_path,
+                              self.matrix_percent_file_path)
             
         self.progress.end()
-        self.run.info('matrix_count_file_path', matrix_count_file_path)
-        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
+        self.run.info('matrix_count_file_path', self.matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', self.matrix_percent_file_path)
 
 
     def dataset_name_from_defline(self, defline):
@@ -1266,6 +1276,47 @@ class Decomposer:
         index_page = generate_html_output(self.run.info_dict, html_output_directory = output_directory_for_html)
         self.progress.end()
         sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
+
+
+    def _generate_figures(self):
+        if len(self.datasets) < 3:
+            return None
+
+        self.progress.new('Figures')
+
+        import Oligotyping
+        scripts_dir_path = os.path.dirname(Oligotyping.__file__)
+
+        figures_dict = {}
+        figures_dict['00_default'] = {}
+        figures_dict['00_default']['cluster_analysis'] = {}
+                
+        target_dir = self.generate_output_destination('%s/__default__/cluster_analysis' \
+                                                            % os.path.basename(self.figures_directory),
+                                                      directory = True)
+        
+        for (distance_metric, matrix_file) in [("canberra", self.matrix_percent_file_path),
+                                               ("kulczynski", self.matrix_percent_file_path),
+                                               ("jaccard", self.matrix_percent_file_path),
+                                               ("horn", self.matrix_percent_file_path),
+                                               ("chao", self.matrix_count_file_path)]:
+            output_prefix = os.path.join(target_dir, distance_metric)
+            cmd_line = ("%s %s %s %s %s &> /dev/null" % 
+                                    (os.path.join(scripts_dir_path, '../Scripts/R/cluster-analysis.R'),
+                                     matrix_file,
+                                     distance_metric,
+                                     self.project,
+                                     output_prefix))
+            self.progress.update('Cluster analysis with "%s" ...' % distance_metric)
+            self.logger.info('figure 00_default cluster_analysis %s: %s' % (distance_metric,
+                                                                            cmd_line))
+            run_command(cmd_line)
+            figures_dict['00_default']['cluster_analysis'][distance_metric] = output_prefix
+
+        figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
+        cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+        self.progress.end()
+        self.run.info('figures_dict_file_path', figures_dict_file_path)
 
 
 if __name__ == '__main__':

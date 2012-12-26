@@ -132,6 +132,30 @@
 <p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
 <div id="datasets"></div>
 
+
+{% if figures_dict %}
+	<div class="smallhead"><a name="Analyses"></a>Basic Analyses</div>
+	<p class="smallheadtitle">» Deafult
+	<div class="info_table">
+	{% for key, value in figures_dict.00_default.items %}
+	<p style="font-weight:bold;">» {{ key }}
+    <table width=90%>
+	<tr>
+		{% for distance in figures_dict.00_default|lookup:key %}
+    	<td style="padding: 10px;text-align: center;">
+    		<a href="{{figures_dict.00_default|lookup:key|lookup:distance}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.00_default|lookup:key|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
+    		</a>
+    		<p align="center">{{distance}}
+    	</td>
+    	{% endfor %}
+	</tr>
+	</table>
+	{% endfor %}
+	</div>
+{% endif %}
+
+
 <div class="smallhead"><a name="Datasets"></a>Datasets</div>
 <p class="smallheadtitle">» Overview of datasets.
 {% for dataset in datasets %}
