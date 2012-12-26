@@ -80,7 +80,9 @@ def decomposer():
                                 of CPU cores available. If not set, this number will be set to 90%% of available cores,\
                                 or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
     parser.add_argument('--gen-html', action = 'store_true', default = False,
-                        help = 'Generate static HTML output to browse analysis results.')
+                        help = 'Generate static HTML output to browse analysis results')
+    parser.add_argument('--skip-figures', action = 'store_true', default = False,
+                        help = 'When set, no figures will be generated')
 
 
     return parser
