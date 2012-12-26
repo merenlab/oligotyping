@@ -1,37 +1,48 @@
 #!/usr/bin/env Rscript
 
-X11(width=12, height=10)
 library("vegan")
 library(ctc)
-library(tcltk)
 library(gtools)
 
 args <- commandArgs(trailingOnly = TRUE)
 csv_path <- args[1]
-output_file_prefix <- args[2]
+distance <- args[2]
 title_text <- args[3]
+output_file_prefix <- args[4]
 
+if(invalid(distance))
+    distance <- "horn"
 
 if(invalid(title_text))
     title_text <- "Unknown Title"
 
-if(invalid(output_file_prefix))
+display <- FALSE
+if(invalid(output_file_prefix)){
     output_file_prefix <- "unknown"
+    display <- TRUE
+}
+
+if (display == TRUE){
+    X11(width=12, height=10)
+    library(tcltk)
+}
+
 
 csv <- read.csv(csv_path, header=TRUE, sep="\t")
 rownames(csv) <- csv[,1]
 
-
-d <- vegdist(csv[,-1], method="canberra") #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
+d <- vegdist(csv[,-1], method=distance) #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
 fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
 write(hc2Newick(fit),file=paste(output_file_prefix,".newick",sep=""))
 
 P <- function(){
-    plot(fit, labels=rownames(csv), cex = 0.7) # display dendogram
+    plot(fit, labels=rownames(csv), cex = 0.7, main = title_text, sub = paste("Distance metric: ",distance,sep=""), xlab = '') # display dendogram
 }
 
-P()
-tk_messageBox(message="Press a key")
+if(display == TRUE){
+    P()
+    tk_messageBox(message="Press a key")
+}
 
 # PDF
 pdf_output <- paste(output_file_prefix,".pdf",sep="")
