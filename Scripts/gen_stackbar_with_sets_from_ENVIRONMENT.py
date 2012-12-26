@@ -39,6 +39,8 @@ for set_id in oligotype_set_ids:
         for oligo in datasets_dict[dataset]:
             if oligo in oligotype_set:
                 datasets_dict_with_agglomerated_oligos[dataset][set_id] += datasets_dict[dataset][oligo]
+    
+    print 'set %s: %s' % (set_id, ', '.join(oligotype_set))
 
 oligotype_distribution_stack_bar(datasets_dict_with_agglomerated_oligos, None)
 generate_ENVIRONMENT_file(datasets,
