@@ -848,7 +848,9 @@ class Decomposer:
 
         # generating a temporary datasets dict.
         self._generate_datasets_dict()
+        self.logger.info('temp datasets dict is ready; %d samples found' % (len(self.datasets)))
         self._get_unit_counts_and_percents()
+        self.logger.info('temp unit counts and percents dicts are ready')
         
         self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
                 get_units_across_datasets_dicts(self.topology.final_nodes, self.datasets, self.unit_percents) 
