@@ -1,7 +1,6 @@
 #!/usr/bin/env Rscript
 
 library("vegan")
-library(ctc)
 library(gtools)
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -33,7 +32,6 @@ rownames(csv) <- csv[,1]
 
 d <- vegdist(csv[,-1], method=distance) #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
 fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
-write(hc2Newick(fit),file=paste(output_file_prefix,".newick",sep=""))
 
 P <- function(){
     plot(fit, labels=rownames(csv), cex = 0.7, main = title_text, sub = paste("Distance metric: ",distance,sep=""), xlab = '') # display dendogram
