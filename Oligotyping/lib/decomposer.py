@@ -297,20 +297,21 @@ class Decomposer:
 
         if not self.keep_tmp:
             shutil.rmtree(self.tmp_directory)
+
+        self.run.info('end_of_run', get_date())
                 
         if not self.skip_figures:
             self._generate_figures()
-        
-        if self.gen_html:
-            self._generate_html_output()
-        
-        self.run.info('end_of_run', get_date())
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
 
         self.logger.info('fin.')
         self.run.quit()
+
+        # finally:
+        if self.gen_html:
+            self._generate_html_output()
 
     def _store_final_nodes(self):
         self.progress.new('Storing final nodes')
@@ -1291,30 +1292,35 @@ class Decomposer:
 
         figures_dict = {}
         figures_dict['00_default'] = {}
-        figures_dict['00_default']['cluster_analysis'] = {}
-                
-        target_dir = self.generate_output_destination('%s/__default__/cluster_analysis' \
-                                                            % os.path.basename(self.figures_directory),
-                                                      directory = True)
         
-        for (distance_metric, matrix_file) in [("canberra", self.matrix_percent_file_path),
-                                               ("kulczynski", self.matrix_percent_file_path),
-                                               ("jaccard", self.matrix_percent_file_path),
-                                               ("horn", self.matrix_percent_file_path),
-                                               ("chao", self.matrix_count_file_path)]:
-            output_prefix = os.path.join(target_dir, distance_metric)
-            cmd_line = ("%s %s %s %s %s &> /dev/null" % 
-                                    (os.path.join(scripts_dir_path, '../Scripts/R/cluster-analysis.R'),
-                                     matrix_file,
-                                     distance_metric,
-                                     self.project,
-                                     output_prefix))
-            self.progress.update('Cluster analysis with "%s" ...' % distance_metric)
-            self.logger.info('figure 00_default cluster_analysis %s: %s' % (distance_metric,
-                                                                            cmd_line))
-            run_command(cmd_line)
-            figures_dict['00_default']['cluster_analysis'][distance_metric] = output_prefix
-
+        for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
+                                               ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
+            figures_dict['00_default'][output_dir] = {}
+                    
+            target_dir = self.generate_output_destination('%s/__default__/%s' \
+                                                                % (os.path.basename(self.figures_directory), output_dir),
+                                                          directory = True)
+            
+            for (distance_metric, matrix_file) in [("canberra", self.matrix_percent_file_path),
+                                                   ("kulczynski", self.matrix_percent_file_path),
+                                                   ("jaccard", self.matrix_percent_file_path),
+                                                   ("horn", self.matrix_percent_file_path),
+                                                   ("chao", self.matrix_count_file_path)]:
+                output_prefix = os.path.join(target_dir, distance_metric)
+                cmd_line = ("%s %s %s %s %s >> %s 2>&1" % 
+                                        (os.path.join(scripts_dir_path, script),
+                                         matrix_file,
+                                         distance_metric,
+                                         self.project,
+                                         output_prefix,
+                                         self.log_file_path))
+                self.progress.update('%s "%s" ...' % (analysis, distance_metric))
+                self.logger.info('figure 00_default %s %s: %s' % (output_prefix,
+                                                                  distance_metric,
+                                                                  cmd_line))
+                run_command(cmd_line)
+                figures_dict['00_default'][output_dir][distance_metric] = output_prefix
+    
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
         cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
         self.progress.end()
