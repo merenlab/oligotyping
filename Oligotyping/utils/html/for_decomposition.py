@@ -149,6 +149,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
 
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header_2.png'), os.path.join(html_output_directory, 'header.png'))
+    shutil.copy2(os.path.join(absolute, 'static/missing_image.png'), os.path.join(html_output_directory, 'missing.png'))
     shutil.copy2(os.path.join(absolute, 'scripts/jquery-1.7.1.js'), os.path.join(html_output_directory, 'jquery-1.7.1.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/popup.js'), os.path.join(html_output_directory, 'popup.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/g.pie.js'), os.path.join(html_output_directory, 'g.pie.js'))
@@ -170,9 +171,12 @@ def generate_html_output(run_info_dict, html_output_directory = None):
         for _map in figures_dict:
             for _func in figures_dict[_map]:
                 for _op in figures_dict[_map][_func]:
-                    prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
-                    prefix = copy_as(figures_dict[_map][_func][_op] + '.png', '%s.png' % '-'.join([_map, _func, _op]))
-                    figures_dict[_map][_func][_op] = '.'.join(prefix.split('.')[:-1])
+                    if os.path.exists(figures_dict[_map][_func][_op] + '.pdf') and os.path.exists(figures_dict[_map][_func][_op] + '.png'):
+                        prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
+                        prefix = copy_as(figures_dict[_map][_func][_op] + '.png', '%s.png' % '-'.join([_map, _func, _op]))
+                        figures_dict[_map][_func][_op] = '.'.join(prefix.split('.')[:-1])
+                    else:
+                        figures_dict[_map][_func][_op] = None
                     
         html_dict['figures_dict'] = figures_dict
 
