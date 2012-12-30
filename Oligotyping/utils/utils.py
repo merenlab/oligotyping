@@ -704,17 +704,17 @@ def get_sample_mapping_dict(mapping_file_path):
     for fields in [line.strip('\n').split('\t') for line in mapping_file.readlines()]:
         sample = fields[0]
         mappings = fields[1:]
-        for i in range(0, len(mappings)):
+        
+        for i in range(0, len(categories)):
+            category = categories[i]
             mapping = mappings[i]
             
             if mapping == '':
+                mapping_dict[categories[i]][sample] = None
                 continue
-
-            if not mapping_dict[categories[i]].has_key(mapping):        
-                mapping_dict[categories[i]][mapping] = []
+            else:
+                mapping_dict[categories[i]][sample] = mapping        
             
-            mapping_dict[categories[i]][mapping].append(sample)
-
     mapping_file.close()
     return mapping_dict
 
