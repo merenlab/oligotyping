@@ -49,8 +49,6 @@ def decomposer():
                         help = 'When set, figure with frequency curve for unique reads and entropy distribution\
                                 will be generated for each node. Depending on the number of nodes, this might\
                                 be a time consuming step.')
-    parser.add_argument('-D', '--debug', action = 'store_true', default = False,
-                        help = 'When set, debug messages will be shown.')
     parser.add_argument('-S', '--skip-removing-outliers', action = 'store_true', default = False,
                         help = 'When set, outliers will not be removed from nodes.')
     parser.add_argument('-G', '--skip-agglomerating-nodes', action = 'store_true', default = False,
@@ -79,10 +77,15 @@ def decomposer():
                         help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
                                 of CPU cores available. If not set, this number will be set to 90%% of available cores,\
                                 or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
+    parser.add_argument('-E', '--sample-mapping', metavar = 'FILEPATH', default = None,
+                        help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
+                                visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
                         help = 'Generate static HTML output to browse analysis results')
     parser.add_argument('--skip-figures', action = 'store_true', default = False,
                         help = 'When set, no figures will be generated')
+    parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
+                        help = 'When set, input FASTA will not be checked for potential errors')
 
 
     return parser

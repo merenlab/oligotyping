@@ -31,9 +31,14 @@ from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import run_command 
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_pretty_name
+from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import store_filtered_matrix
+from Oligotyping.utils.utils import get_temporary_file_name
+from Oligotyping.utils.utils import get_sample_mapping_dict
 from Oligotyping.utils.utils import homopolymer_indel_exists
+from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
@@ -57,7 +62,6 @@ class Decomposer:
         self.dataset_name_separator = '_'
         self.generate_sets = False
         self.generate_frequency_curves = False
-        self.debug = False
         self.skip_refining_topology = False # FIXME: ADD THIS IN PARSERS!
         self.skip_removing_outliers = False
         self.skip_agglomerating_nodes = False
@@ -71,6 +75,8 @@ class Decomposer:
         self.keep_tmp = False
         self.gen_html = True
         self.skip_figures = False
+        self.skip_check_input_file = False
+        self.sample_mapping = None
          
         if args:
             self.alignment = args.alignment
@@ -92,7 +98,8 @@ class Decomposer:
             self.number_of_threads = args.number_of_threads
             self.keep_tmp = args.keep_tmp
             self.skip_figures = args.skip_figures
-            self.debug = args.debug
+            self.skip_check_input_file = args.skip_check_input_file
+            self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
 
         self.decomposition_depth = -1
@@ -131,11 +138,18 @@ class Decomposer:
         if self.number_of_threads:
             self.no_threading = False
 
+    def check_apps(self):
+        try:
+            blast.LocalBLAST(None, None, None)
+        except blast.ModuleVersionError:
+            raise ConfigError, blast.version_error_text
+        except blast.ModuleBinaryError:
+            raise ConfigError, blast.missing_binary_error_text
 
-    def sanity_check(self):
-        if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
-            raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+        # FIXME: check R modules here.
 
+
+    def check_dirs(self):
         # check output associated stuff
         if not self.output_directory:
             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
@@ -153,16 +167,25 @@ class Decomposer:
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
         self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
         self.outliers_directory = self.generate_output_destination('OUTLIERS', directory = True)
-        
-        if not self.number_of_threads:
-            self.number_of_threads = Multiprocessing(None).num_thread
 
-        try:
-            blast.LocalBLAST(None, None, None)
-        except blast.ModuleVersionError:
-            raise ConfigError, blast.version_error_text
-        except blast.ModuleBinaryError:
-            raise ConfigError, blast.missing_binary_error_text
+
+    def check_input_files(self):
+        if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
+            raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+
+        if self.sample_mapping and (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
+            raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+
+        if self.sample_mapping:
+            mapping_file_simple_check(self.sample_mapping)
+
+        if self.skip_check_input_file:
+            return 
+
+        self.progress.new('Checking the input FASTA')
+        samples = check_input_alignment(self.alignment, self.dataset_name_from_defline, self.progress)
+        if not samples:
+            raise ConfigError, 'Exiting.'
 
     def _init_logger(self):
         self.logger = logging.getLogger('decomposer')
@@ -217,13 +240,17 @@ class Decomposer:
 
 
     def decompose(self):
-        self.sanity_check()
-        
-        self._init_logger()
+        self.check_apps()
+        self.check_dirs()
 
+        # we have just enough to start logging.        
+        self._init_logger()
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
+
+        self.check_input_files()
         
+        # we're in business.
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
         self.run.info('version', __version__)
@@ -232,6 +259,7 @@ class Decomposer:
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
+        self.run.info('sample_mapping', self.sample_mapping)
         self.run.info('skip_agglomerating_nodes', self.skip_agglomerating_nodes)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
@@ -242,6 +270,10 @@ class Decomposer:
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
+
+        # set number of threads to be used
+        if not self.number_of_threads:
+            self.number_of_threads = Multiprocessing(None).num_thread
 
         self._init_topology()
 
@@ -295,16 +327,19 @@ class Decomposer:
             self.logger.info('final node: %s (%d)' % (node_id,
                                                       self.topology.nodes[node_id].size))
 
-        if not self.keep_tmp:
-            shutil.rmtree(self.tmp_directory)
-
         self.run.info('end_of_run', get_date())
                 
-        if not self.skip_figures:
-            self._generate_figures()
+        if (not self.skip_figures):
+            self._generate_default_figures()
+        
+        if (not self.skip_figures) and self.sample_mapping:
+            self._generate_exclusive_figures()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
+
+        if (not self.keep_tmp):
+            shutil.rmtree(self.tmp_directory)
 
         self.logger.info('fin.')
         self.run.quit()
@@ -1281,7 +1316,7 @@ class Decomposer:
         sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
 
 
-    def _generate_figures(self):
+    def _generate_default_figures(self):
         if len(self.datasets) < 3:
             return None
 
@@ -1326,6 +1361,92 @@ class Decomposer:
         self.progress.end()
         self.run.info('figures_dict_file_path', figures_dict_file_path)
 
+
+    def _generate_exclusive_figures(self):
+        self.progress.new('Exclusive Figures')
+
+        import Oligotyping
+        scripts_dir_path = os.path.dirname(Oligotyping.__file__)
+        exclusive_figures_dict = {}
+
+        sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
+        
+        for category in sample_mapping_dict:
+            exclusive_figures_dict[category] = {}
+            samples = sample_mapping_dict[category].keys()
+            
+            # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
+            # refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
+            samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in self.datasets, samples))
+            samples.sort()
+
+            mapping_file_path = get_temporary_file_name('%s-' % category, '-mapping.txt', self.tmp_directory)
+            mapping_file = open(mapping_file_path, 'w')
+            mapping_file.write('samples\t%s\n' % (category))
+            
+            for sample in samples:
+                mapping_file.write('%s\t%s\n' % (sample, sample_mapping_dict[category][sample]))
+            mapping_file.close()
+
+            if samples == self.datasets:
+                matrix_percent_path = self.matrix_percent_file_path
+                matrix_count_path = self.matrix_count_file_path
+            else:
+                matrix_percent_path = get_temporary_file_name('%s-' % category, '-matrix-percent.txt', self.tmp_directory)
+                matrix_count_path = get_temporary_file_name('%s-' % category, '-matrix-count.txt', self.tmp_directory)
+
+                if store_filtered_matrix(self.matrix_percent_file_path, matrix_percent_path, samples) < 3:
+                    self.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MP"\
+                                             % (category))
+                    continue
+                if store_filtered_matrix(self.matrix_count_file_path, matrix_count_path, samples) < 3:
+                    self.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MC"\
+                                             % (category))
+                    continue
+
+            # ready to roll.
+            self.logger.info("exclusive figs for '%s' with %d samples; mapping: '%s', MP: '%s', MC: '%s'"\
+                                 % (category, len(samples), mapping_file_path, matrix_percent_path, matrix_count_path))
+
+
+            for (analysis, script, output_dir) in [('NMDS Analysis', '../Scripts/R/metaMDS-analysis-with-metadata.R', 'nmds_analysis')]:
+                exclusive_figures_dict[category][output_dir] = {}
+                        
+                target_dir = self.generate_output_destination('%s/%s/%s' % (os.path.basename(self.figures_directory),
+                                                                            category,
+                                                                            output_dir),
+                                                              directory = True)
+                
+                for (distance_metric, matrix_file) in [("canberra", matrix_percent_path),
+                                                       ("kulczynski", matrix_percent_path),
+                                                       ("jaccard", matrix_percent_path),
+                                                       ("horn", matrix_percent_path),
+                                                       ("chao", matrix_count_path)]:
+                    output_prefix = os.path.join(target_dir, distance_metric)
+                    cmd_line = ("%s %s %s %s %s %s %s >> %s 2>&1" % 
+                                            (os.path.join(scripts_dir_path, script),
+                                             matrix_file,
+                                             mapping_file_path,
+                                             distance_metric,
+                                             category,
+                                             self.project,
+                                             output_prefix,
+                                             self.log_file_path))
+                    self.progress.update('%s "%s" ...' % (analysis, distance_metric))
+                    self.logger.info('exclusive figure %s %s %s: %s' % (category,
+                                                                        output_prefix,
+                                                                        distance_metric,
+                                                                        cmd_line))
+                    run_command(cmd_line)
+                    exclusive_figures_dict[category][output_dir][distance_metric] = output_prefix
+    
+        exclusive_figures_dict_file_path = self.generate_output_destination("EXCLUSIVE-FIGURES.cPickle")
+        cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
+        self.progress.end()
+        self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
+
+
+            
 
 if __name__ == '__main__':
     pass
