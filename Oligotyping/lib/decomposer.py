@@ -173,8 +173,9 @@ class Decomposer:
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
             raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
 
-        if self.sample_mapping and (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
-            raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+        if self.sample_mapping:
+            if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
+                raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
 
         if self.sample_mapping:
             mapping_file_simple_check(self.sample_mapping)
