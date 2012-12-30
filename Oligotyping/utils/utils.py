@@ -618,8 +618,8 @@ def check_input_alignment(alignment_path, dataset_name_from_defline_func, progre
         alignment = u.SequenceSource(alignment_path)
         samples = set([])
         while alignment.next():
-            if progress_func and alignment.pos % 10000 == 0:
-                progress_func.update('Reading entry %s, number of samples found'\
+            if progress_func and alignment.pos % 5000 == 0:
+                progress_func.update('Reading input; %s, %s samples found'\
                                             % (pretty_print(alignment.pos),
                                                pretty_print(len(samples))))
 
@@ -651,8 +651,12 @@ def check_input_alignment(alignment_path, dataset_name_from_defline_func, progre
             sys.stderr.write("\n\n")
             
             alignment.close()
+            if progress_func:
+                progress_func.end()
             return None
         else:
+            if progress_func:
+                progress_func.end()
             alignment.close()
             return samples
 
@@ -717,6 +721,22 @@ def get_sample_mapping_dict(mapping_file_path):
             
     mapping_file.close()
     return mapping_dict
+
+def store_filtered_matrix(old_matrix_path, new_matrix_path, datasets):
+    new_matrix = open(new_matrix_path, 'w')
+    old_matrix = open(old_matrix_path, 'r')
+
+    num_lines_written = 0                
+    new_matrix.write(old_matrix.readline())
+    for line in old_matrix.readlines():
+        if line.split('\t')[0] in datasets:
+            num_lines_written += 1
+            new_matrix.write(line)
+    
+    new_matrix.close()
+    old_matrix.close()
+
+    return num_lines_written
 
 
 class Progress:
