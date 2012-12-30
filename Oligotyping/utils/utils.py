@@ -614,6 +614,111 @@ def check_command_output(cmdline):
     return subprocess.check_output(cmdline.split())
 
 
+def check_input_alignment(alignment_path, dataset_name_from_defline_func, progress_func = None):
+        alignment = u.SequenceSource(alignment_path)
+        samples = set([])
+        while alignment.next():
+            if progress_func and alignment.pos % 10000 == 0:
+                progress_func.update('Reading entry %s, number of samples found'\
+                                            % (pretty_print(alignment.pos),
+                                               pretty_print(len(samples))))
+
+            sample = dataset_name_from_defline_func(alignment.id)
+            if sample not in samples:
+                samples.add(sample)
+    
+        # if the number of samples we find in the alignment is more than half of the number of
+        # reads in the alignment, we might be in trouble.
+        if len(samples) * 2 > alignment.pos:
+            sys.stderr.write("\n\n")
+            sys.stderr.write("Number of samples in the alignment is more than half of the number of reads.\n")
+            sys.stderr.write("This usually indicates that the sample name recovery from the defline is not\n")
+            sys.stderr.write("working properly. If you believe this is normal, and your sample names\n")
+            sys.stderr.write("expected to look like these, you can bypass this check with --skip-check-input\n")
+            sys.stderr.write("parameter:\n\n")
+                
+            counter = 0
+            for sample in samples:
+                if counter == 10:
+                    break
+                sys.stderr.write('\t- %s\n' % sample)
+                counter += 1
+            if len(samples) > 10:
+                sys.stderr.write('\t- (%s more)\n' % pretty_print(len(samples) - 10))
+            sys.stderr.write("\n\n")
+            sys.stderr.write("If these sample names seem to be incorrect, please refer to the tutorial for the\n")
+            sys.stderr.write("proper formatting of FASTA deflines.")
+            sys.stderr.write("\n\n")
+            
+            alignment.close()
+            return None
+        else:
+            alignment.close()
+            return samples
+
+
+def mapping_file_simple_check(mapping_file_path):
+    mapping_file = open(mapping_file_path)
+    header_line = mapping_file.readline()
+    
+    if header_line.find('\t') < 0:
+        raise ConfigError, "Mapping file doesn't seem to be a TAB delimited file"
+
+    header_fields = header_line.strip('\n').split('\t')
+
+    if len(header_fields) < 2:
+        raise ConfigError, "No categories were found in the mapping file"
+    if header_fields[0] != 'samples':
+        raise ConfigError, "First column of the first row of mapping file must be 'samples'"
+    if len(header_fields) != len(set(header_fields)):
+        raise ConfigError, "In the mapping file, every category must be unique"
+
+    num_entries = 0
+    for line in mapping_file.readlines():
+        num_entries += 1
+        fields = line.strip('\n').split('\t')
+        if len(fields) != len(header_fields):
+            raise ConfigError, "Not every line in the mapping file has the same number of fields"
+        for field in fields[1:]:
+            if field == "":
+                continue
+            if field[0] in '0123456789':
+                raise ConfigError, "Categories in the mapping file cannot start with digits: '%s'" % field
+
+    if num_entries < 3:
+        raise ConfigError, "Mapping file seems to have less than three samples"
+
+    mapping_file.close()
+    return True
+
+
+def get_sample_mapping_dict(mapping_file_path):
+    mapping_dict = {}
+    mapping_file = open(mapping_file_path)
+    
+    header_line = mapping_file.readline()
+    categories = header_line.strip('\n').split('\t')[1:]
+    for category in categories:
+        mapping_dict[category] = {}
+    
+    for fields in [line.strip('\n').split('\t') for line in mapping_file.readlines()]:
+        sample = fields[0]
+        mappings = fields[1:]
+        for i in range(0, len(mappings)):
+            mapping = mappings[i]
+            
+            if mapping == '':
+                continue
+
+            if not mapping_dict[categories[i]].has_key(mapping):        
+                mapping_dict[categories[i]][mapping] = []
+            
+            mapping_dict[categories[i]][mapping].append(sample)
+
+    mapping_file.close()
+    return mapping_dict
+
+
 class Progress:
     def __init__(self):
         self.pid = None
