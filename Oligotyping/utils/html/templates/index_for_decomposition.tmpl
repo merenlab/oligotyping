@@ -149,7 +149,7 @@
 
 
 {% if figures_dict %}
-	<div class="smallhead"><a name="Analyses"></a>Basic Analyses</div>
+	<div class="smallhead"><a name="BasicAnalyses"></a>Basic Analyses</div>
 	<p class="smallheadtitle">» Deafult
 	<div class="info_table">
 	{% for key, value in figures_dict.00_default.items %}
@@ -175,7 +175,36 @@
 {% endif %}
 
 
-<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#ReadCounts">Counts</a> | <a href="#Analyses">Analyses</a></div>
+{% if exclusive_figures_dict %}
+	<div class="smallhead"><a name="ExclusiveAnalyses"></a>Exclusive Analyses</div>
+	{% for category in exclusive_figures_dict %}
+		<p class="smallheadtitle">» {{category}}
+		<div class="info_table">
+		{% for analysis in exclusive_figures_dict|lookup:category %}
+		<p style="font-weight:bold;">» {{ analysis }}
+	    <table width=90%>
+		<tr>
+			{% for distance in exclusive_figures_dict|lookup:category|lookup:analysis %}
+	    	<td style="padding: 10px; text-align: center; width: 100px; height: 100px;">
+	    		{% if exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance %}
+	    		<a href="{{exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance}}.pdf" target="_blank" />
+	    			<img src="{{exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
+	    		</a>
+	    		{% else %}
+	    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+	    		{% endif %}
+	    		<p align="center">{{distance}}
+	    	</td>
+	    	{% endfor %}
+		</tr>
+		</table>
+		{% endfor %}
+		</div>
+	{% endfor %}
+{% endif %}
+
+
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#ReadCounts">Counts</a> | <a href="#BasicAnalyses">Basic Analyses</a> | <a href="#ExclusiveAnalyses">Exclusive Analyses</a></div>
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>

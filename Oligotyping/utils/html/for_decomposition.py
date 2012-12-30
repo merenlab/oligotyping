@@ -166,19 +166,27 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
 
-    if html_dict.has_key('figures_dict_file_path'):
-        figures_dict = cPickle.load(open(html_dict['figures_dict_file_path']))
-        for _map in figures_dict:
-            for _func in figures_dict[_map]:
-                for _op in figures_dict[_map][_func]:
-                    if os.path.exists(figures_dict[_map][_func][_op] + '.pdf') and os.path.exists(figures_dict[_map][_func][_op] + '.png'):
-                        prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
-                        prefix = copy_as(figures_dict[_map][_func][_op] + '.png', '%s.png' % '-'.join([_map, _func, _op]))
-                        figures_dict[_map][_func][_op] = '.'.join(prefix.split('.')[:-1])
-                    else:
-                        figures_dict[_map][_func][_op] = None
-                    
-        html_dict['figures_dict'] = figures_dict
+
+    def get_figures_dict(html_dict_prefix):
+        html_dict_key = '%s_file_path' % html_dict_prefix
+        if html_dict.has_key(html_dict_key):
+            figures_dict = cPickle.load(open(html_dict[html_dict_key]))
+            for _map in figures_dict:
+                for _func in figures_dict[_map]:
+                    for _op in figures_dict[_map][_func]:
+                        if os.path.exists(figures_dict[_map][_func][_op] + '.pdf') and os.path.exists(figures_dict[_map][_func][_op] + '.png'):
+                            prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
+                            prefix = copy_as(figures_dict[_map][_func][_op] + '.png', '%s.png' % '-'.join([_map, _func, _op]))
+                            figures_dict[_map][_func][_op] = '.'.join(prefix.split('.')[:-1])
+                        else:
+                            figures_dict[_map][_func][_op] = None
+            return figures_dict
+        else:
+            return None
+        
+    
+    html_dict['figures_dict'] = get_figures_dict('figures_dict')
+    html_dict['exclusive_figures_dict'] = get_figures_dict('exclusive_figures_dict')
 
 
     if html_dict.has_key('node_representatives_file_path'):
