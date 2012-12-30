@@ -60,9 +60,9 @@ col.names <- colnames(metadata)
 
 mds <- metaMDS(csv[,-1], distance=distance)
 
-NMDS = data.frame(MDS1 = mds$points[,1], MDS2 = mds$points[,2],group=with(metadata, get(mapping_variable)))
+NMDS = data.frame(MDS1 = mds$points[,1], MDS2 = mds$points[,2], group=with(metadata, get(mapping_variable)))
 
-NMDS.mean=aggregate(NMDS[,1:2],list(group=with(metadata, get(mapping_variable))),mean)
+NMDS.mean=aggregate(NMDS[,1:2], list(group=with(metadata, get(mapping_variable))), mean)
 
 veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100){
     theta <- (0:npoints) * 2 * pi/npoints
