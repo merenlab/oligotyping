@@ -72,15 +72,17 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100){
 
 
 df_ell <- data.frame()
+only_two_groups <- list()
+
 for(g in levels(NMDS$group)){
     if (nrow(NMDS[NMDS$group==g,]) == 2)
-        next
+        only_two_groups <- c(only_two_groups, g)
     else
         df_ell <- rbind(df_ell, cbind(as.data.frame(with(NMDS[NMDS$group==g,], veganCovEllipse(cov.wt(cbind(MDS1,MDS2), wt=rep(1/length(MDS1), length(MDS2)))$cov, center=c(mean(MDS1),mean(MDS2))))), group=g))
 }
 
 P <- function(){
-    ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group)
+    ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group) + geom_line(data = NMDS[NMDS$group %in% only_two_groups,], aes(color = group))
 }
 
 # PDF
