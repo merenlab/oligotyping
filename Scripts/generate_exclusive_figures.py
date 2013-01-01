@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf-8
+
+# Copyright (C) 2010 - 2012, A. Murat Eren
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Please read the COPYING file.
+
+import os
+import sys
+import cPickle
+
+from Oligotyping.lib.decomposer import Decomposer
+from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+
+runinfo = cPickle.load(open(sys.argv[1]))
+sample_mapping = sys.argv[2]
+
+decomposer = Decomposer()
+decomposer.matrix_percent_file_path = runinfo['matrix_percent_file_path']
+decomposer.matrix_count_file_path = runinfo['matrix_count_file_path']
+decomposer.tmp_directory = runinfo['tmp_directory']
+decomposer.output_directory = runinfo['output_directory']
+decomposer.figures_directory = os.path.join(os.path.dirname(runinfo['figures_directory']), 'FIGURES')
+
+if not os.path.exists(decomposer.tmp_directory):
+    os.makedirs(decomposer.tmp_directory)
+
+decomposer.sample_mapping = sample_mapping
+decomposer._init_logger('exclusive_figures.log')
+decomposer.datasets_dict = get_datasets_dict_from_environment_file(runinfo['environment_file_path'])
+decomposer.datasets = sorted(decomposer.datasets_dict.keys())
+
+decomposer._generate_exclusive_figures()
