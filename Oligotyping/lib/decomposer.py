@@ -1433,7 +1433,7 @@ class Decomposer:
                                              self.project,
                                              output_prefix,
                                              self.log_file_path))
-                    self.progress.update('%s "%s" ...' % (analysis, distance_metric))
+                    self.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
                     self.logger.info('exclusive figure %s %s %s: %s' % (category,
                                                                         output_prefix,
                                                                         distance_metric,
