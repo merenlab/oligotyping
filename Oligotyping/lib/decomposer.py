@@ -1162,23 +1162,25 @@ class Decomposer:
         self.progress.update('Generating similarity dict from blastn results')
         similarity_dict = b.get_results_dict(min_identity = min_percent_identity)
 
-        outliers_relocated = len(similarity_dict)
+        num_outlier_objects = len(similarity_dict)
+        num_outliers_relocated = sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict])
+
         counter = 0
         for _id in similarity_dict:
             counter += 1
             self.progress.update('Relocating outliers: %d of %d' % (counter,
-                                                                    outliers_relocated))
+                                                                    num_outlier_objects))
             self.topology.relocate_outlier(id_to_read_object_dict[_id],
                                            similarity_dict[_id].pop(),
                                            reason)
 
         self.progress.end()
-        self.run.info('relocated_%s' % reason, pretty_print(outliers_relocated))
+        self.run.info('relocated_%s' % reason, pretty_print(num_outliers_relocated))
 
         if refresh_final_nodes:
             self._refresh_final_nodes()
         
-        return outliers_relocated
+        return num_outliers_relocated
 
 
     def _refresh_final_nodes(self):
