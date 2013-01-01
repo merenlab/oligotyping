@@ -188,9 +188,13 @@ class Decomposer:
         if not samples:
             raise ConfigError, 'Exiting.'
 
-    def _init_logger(self):
+    def _init_logger(self, path = None):
         self.logger = logging.getLogger('decomposer')
-        self.log_file_path = self.generate_output_destination('RUNINFO.log')
+        
+        if path:
+            self.log_file_path = path 
+        else:
+            self.log_file_path = self.generate_output_destination('RUNINFO.log')
         
         if os.path.exists(self.log_file_path):
             os.remove(self.log_file_path)
@@ -292,7 +296,7 @@ class Decomposer:
         self.run.info('nodes_directory', self.nodes_directory)
         self.run.info('tmp_directory', self.tmp_directory)
         if not self.skip_figures:
-            self.run.info('figures_directory', self.nodes_directory)
+            self.run.info('figures_directory', self.figures_directory)
 
         # business time.
         self._generate_raw_topology()
