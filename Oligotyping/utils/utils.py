@@ -212,6 +212,22 @@ def unique_and_store_alignment(alignment_path, output_path):
     return (read_ids, unique_read_counts, most_abundant_unique_read)
 
 
+def generate_TAB_delim_file_from_dict(data_dict, output_file_path, order, first_column = 'samples'):
+    f = open(output_file_path, 'w')
+    
+    f.write('%s\n' % ('\t'.join([first_column] + order)))
+    for item in data_dict:
+        line = [item]
+        for column in order:
+            if not data_dict[item].has_key(column):
+                line.append('')
+            else:
+                line.append(str(data_dict[item][column]))
+        f.write('%s\n' % '\t'.join(line))
+
+    f.close()
+
+
 def generate_ENVIRONMENT_file(datasets, datasets_dict, environment_file_path):
     # generate environment file
     f = open(environment_file_path, 'w')
