@@ -3,6 +3,8 @@
 library("vegan")
 library(gtools)
 
+# DATA DIST TITLE OUTPUT_PREFIX
+
 args <- commandArgs(trailingOnly = TRUE)
 csv_path <- args[1]
 distance <- args[2]
