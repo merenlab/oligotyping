@@ -42,6 +42,8 @@ def diffs(l, index):
 
 @register.filter(name='lookup')
 def lookup(d, index):
+    if not d:
+        return ''
     if index in d:
         return d[index]
     return ''
@@ -150,12 +152,6 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header_2.png'), os.path.join(html_output_directory, 'header.png'))
     shutil.copy2(os.path.join(absolute, 'static/missing_image.png'), os.path.join(html_output_directory, 'missing.png'))
-    shutil.copy2(os.path.join(absolute, 'scripts/jquery-1.7.1.js'), os.path.join(html_output_directory, 'jquery-1.7.1.js'))
-    shutil.copy2(os.path.join(absolute, 'scripts/popup.js'), os.path.join(html_output_directory, 'popup.js'))
-    shutil.copy2(os.path.join(absolute, 'scripts/g.pie.js'), os.path.join(html_output_directory, 'g.pie.js'))
-    shutil.copy2(os.path.join(absolute, 'scripts/g.raphael.js'), os.path.join(html_output_directory, 'g.raphael.js'))
-    shutil.copy2(os.path.join(absolute, 'scripts/raphael.js'), os.path.join(html_output_directory, 'raphael.js'))
-    shutil.copy2(os.path.join(absolute, 'scripts/morris.js'), os.path.join(html_output_directory, 'morris.js'))
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
@@ -165,7 +161,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
     html_dict['environment_file_path'] = copy_as(run_info_dict['environment_file_path'], 'environment.txt')
-
+    html_dict['read_distribution_table_path'] = copy_as(run_info_dict['read_distribution_table_path'], 'read_distribution.txt')
 
     def get_figures_dict(html_dict_prefix):
         html_dict_key = '%s_file_path' % html_dict_prefix
