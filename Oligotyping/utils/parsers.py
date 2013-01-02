@@ -81,9 +81,9 @@ def decomposer():
                         help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
                                 visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
-                        help = 'Generate static HTML output to browse analysis results')
-    parser.add_argument('--skip-figures', action = 'store_true', default = False,
-                        help = 'When set, no figures will be generated')
+                        help = 'When set, decomposer will generate a static HTML output to browse analysis results')
+    parser.add_argument('--gen-figures', action = 'store_true', default = False,
+                        help = 'When set, decomposer will attempt to generate figures post analysis')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
                         help = 'When set, input FASTA will not be checked for potential errors')
 

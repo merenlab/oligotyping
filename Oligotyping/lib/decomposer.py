@@ -75,7 +75,7 @@ class Decomposer:
         self.log_file_path = None
         self.keep_tmp = False
         self.gen_html = True
-        self.skip_figures = False
+        self.gen_figures = False
         self.skip_check_input_file = False
         self.sample_mapping = None
          
@@ -98,7 +98,7 @@ class Decomposer:
             self.no_threading = args.no_threading
             self.number_of_threads = args.number_of_threads
             self.keep_tmp = args.keep_tmp
-            self.skip_figures = args.skip_figures
+            self.gen_figures = args.gen_figures
             self.skip_check_input_file = args.skip_check_input_file
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
@@ -271,7 +271,7 @@ class Decomposer:
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
         self.run.info('store_full_topology', self.store_full_topology)
-        self.run.info('skip_figures', self.skip_figures)
+        self.run.info('gen_figures', self.gen_figures)
         self.run.info('m', self.min_entropy)
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
@@ -296,7 +296,7 @@ class Decomposer:
         self.run.info('output_directory', self.output_directory)
         self.run.info('nodes_directory', self.nodes_directory)
         self.run.info('tmp_directory', self.tmp_directory)
-        if not self.skip_figures:
+        if self.gen_figures:
             self.run.info('figures_directory', self.figures_directory)
 
         # business time.
@@ -336,10 +336,10 @@ class Decomposer:
 
         self.run.info('end_of_run', get_date())
                 
-        if (not self.skip_figures):
+        if self.gen_figures:
             self._generate_default_figures()
         
-        if (not self.skip_figures) and self.sample_mapping:
+        if self.gen_figures and self.sample_mapping:
             self._generate_exclusive_figures()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
@@ -354,178 +354,6 @@ class Decomposer:
         # finally:
         if self.gen_html:
             self._generate_html_output()
-
-
-    def _store_read_distribution_table(self):
-        self.progress.new('Read distribution table')
-        self.read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
-
-        def get_dict_entry_tmpl():
-            d = {'represented_reads': 0}
-            for reason in self.topology.outlier_reasons:
-                d[reason] = 0
-            return d
-
-        read_distribution_dict = {}
-        
-        self.progress.update('Processing reads that were represented in results')
-        for dataset in self.datasets_dict:
-            if not read_distribution_dict.has_key(dataset):
-                read_distribution_dict[dataset] = get_dict_entry_tmpl()
-
-            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
-            
-        for reason in self.topology.outlier_reasons:
-            self.progress.update('Processing outliers (%s)' % (reason))
-            for read_object in self.topology.outliers[reason]:
-                for read_id in read_object.ids:
-                    dataset = self.dataset_name_from_defline(read_id)
-                    
-                    if not read_distribution_dict.has_key(dataset):
-                        read_distribution_dict[dataset] = get_dict_entry_tmpl()
-                
-                    read_distribution_dict[dataset][reason] += 1
-        
-        self.progress.update('Storing...')
-        generate_TAB_delim_file_from_dict(read_distribution_dict,
-                                          self.read_distribution_table_path,
-                                          order = ['represented_reads'] + self.topology.outlier_reasons)
-
-        self.progress.end()
-        self.run.info('read_distribution_table_path', self.read_distribution_table_path)
-
-
-    def _store_final_nodes(self):
-        self.progress.new('Storing final nodes')
-
-        total_final_nodes = len(self.topology.final_nodes)
-        
-        if self.no_threading:
-            for i in range(0, total_final_nodes):
-                self.progress.update('%s of %s' % (pretty_print(i + 1),
-                                                   pretty_print(total_final_nodes)))
-                node_id = self.topology.final_nodes[i]
-                node = self.topology.get_node(node_id)
-                node.store()
-
-        else:
-            
-            def worker(data_chunk, shared_counter):
-                for node_id in data_chunk:
-                    node = self.topology.get_node(node_id)
-                    node.store()
-                    shared_counter.set(shared_counter.value + 1)
-
-            mp = Multiprocessing(worker, self.number_of_threads)
-            data_chunks = mp.get_data_chunks(self.topology.final_nodes, spiral = True)
-            shared_counter = mp.get_shared_integer()
-            
-            for chunk in data_chunks:
-                args = (chunk, shared_counter)
-                mp.run(args)
-        
-            while 1:
-                num_processes = len([p for p in mp.processes if p.is_alive()])
-                
-                if not num_processes:
-                    # all threads are done.
-                    break
-        
-                self.progress.update('Storing final nodes in %d threads: %d of %d' % (num_processes,
-                                                                                      shared_counter.value,
-                                                                                      total_final_nodes))
-                time.sleep(1)
-
-
-        self.progress.end()
-        
-
-    def _store_outliers(self, reason, output_file_path):
-        self.progress.new('Storing outliers')
-        output = u.FastaOutput(output_file_path)
-            
-        self.progress.update('Storing reads removed due to "%s" (size: %d)'\
-                                            % (reason, len(self.topology.outliers[reason])))
- 
-        for read_object in self.topology.outliers[reason]:
-            for read_id in read_object.ids:
-                output.write_id(read_id)
-                output.write_seq(read_object.seq, split = False)
-            
-        output.close()
-        self.progress.end()
-
-
-    def _store_all_outliers(self):
-        for reason in self.topology.outlier_reasons:
-            output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
-            self._store_outliers(reason, output_file_path)
-
-
-    def _generate_datasets_dict(self):
-        self.progress.new('Computing Samples Dict')
-        
-        for node_id in self.topology.final_nodes:
-            node = self.topology.nodes[node_id]
-            self.progress.update('Analyzing Node ID: "%s" (size: %d)'\
-                                                        % (node_id, node.size))
-        
-            for read in node.reads:
-                for read_id in read.ids:
-                    dataset = self.dataset_name_from_defline(read_id)
-            
-                    if not self.datasets_dict.has_key(dataset):
-                        self.datasets_dict[dataset] = {}
-                        self.datasets.append(dataset)
-    
-                    if self.datasets_dict[dataset].has_key(node_id):
-                        self.datasets_dict[dataset][node_id] += 1
-                    else:
-                        self.datasets_dict[dataset][node_id] = 1
-
-        self.datasets.sort()
-        self.progress.end()
-
-
-    def _generate_ENVIRONMENT_file(self):
-        self.progress.new('ENVIRONMENT File')
-        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
-        self.progress.update('Being generated')
-        
-        generate_ENVIRONMENT_file(self.datasets,
-                                  self.datasets_dict,
-                                  environment_file_path)
-
-        self.progress.end()
-        self.run.info('environment_file_path', environment_file_path)        
-
-
-    def _get_unit_counts_and_percents(self):
-        self.progress.new('Unit counts and percents')
-        self.progress.update('Data is being generated')
-            
-        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.datasets_dict)
-            
-        self.progress.end()
-
-
-    def _generate_MATRIX_files(self):
-        self.progress.new('Matrix Files')
-        self.progress.update('Being generated')
-            
-        self.matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
-        self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
-            
-        generate_MATRIX_files(self.topology.final_nodes,
-                              self.datasets,
-                              self.unit_counts,
-                              self.unit_percents,
-                              self.matrix_count_file_path,
-                              self.matrix_percent_file_path)
-            
-        self.progress.end()
-        self.run.info('matrix_count_file_path', self.matrix_count_file_path)
-        self.run.info('matrix_percent_file_path', self.matrix_percent_file_path)
 
 
     def dataset_name_from_defline(self, defline):
@@ -1236,19 +1064,6 @@ class Decomposer:
         self.progress.end()
         
 
-    def _report_final_numbers(self):
-        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
-        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
-        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
-
-        final_outliers_total = 0
-        for reason in self.topology.outlier_reasons:
-            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
-            final_outliers_total += count
-            self.run.info('final_%s' % reason, pretty_print(count))
-
-        self.run.info('final_outliers_total', pretty_print(final_outliers_total))
-
     def _generate_frequency_curves(self):
         self.progress.new('Generating mini entropy figures')
         for i in range(0, len(self.topology.alive_nodes)):
@@ -1264,6 +1079,178 @@ class Decomposer:
                            title = '%s\n(%s)' % (node.pretty_id, human_readable_number(node.size))) 
         
         self.progress.end()
+
+
+    def _store_read_distribution_table(self):
+        self.progress.new('Read distribution table')
+        self.read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
+
+        def get_dict_entry_tmpl():
+            d = {'represented_reads': 0}
+            for reason in self.topology.outlier_reasons:
+                d[reason] = 0
+            return d
+
+        read_distribution_dict = {}
+        
+        self.progress.update('Processing reads that were represented in results')
+        for dataset in self.datasets_dict:
+            if not read_distribution_dict.has_key(dataset):
+                read_distribution_dict[dataset] = get_dict_entry_tmpl()
+
+            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
+            
+        for reason in self.topology.outlier_reasons:
+            self.progress.update('Processing outliers (%s)' % (reason))
+            for read_object in self.topology.outliers[reason]:
+                for read_id in read_object.ids:
+                    dataset = self.dataset_name_from_defline(read_id)
+                    
+                    if not read_distribution_dict.has_key(dataset):
+                        read_distribution_dict[dataset] = get_dict_entry_tmpl()
+                
+                    read_distribution_dict[dataset][reason] += 1
+        
+        self.progress.update('Storing...')
+        generate_TAB_delim_file_from_dict(read_distribution_dict,
+                                          self.read_distribution_table_path,
+                                          order = ['represented_reads'] + self.topology.outlier_reasons)
+
+        self.progress.end()
+        self.run.info('read_distribution_table_path', self.read_distribution_table_path)
+
+
+    def _store_final_nodes(self):
+        self.progress.new('Storing final nodes')
+
+        total_final_nodes = len(self.topology.final_nodes)
+        
+        if self.no_threading:
+            for i in range(0, total_final_nodes):
+                self.progress.update('%s of %s' % (pretty_print(i + 1),
+                                                   pretty_print(total_final_nodes)))
+                node_id = self.topology.final_nodes[i]
+                node = self.topology.get_node(node_id)
+                node.store()
+
+        else:
+            
+            def worker(data_chunk, shared_counter):
+                for node_id in data_chunk:
+                    node = self.topology.get_node(node_id)
+                    node.store()
+                    shared_counter.set(shared_counter.value + 1)
+
+            mp = Multiprocessing(worker, self.number_of_threads)
+            data_chunks = mp.get_data_chunks(self.topology.final_nodes, spiral = True)
+            shared_counter = mp.get_shared_integer()
+            
+            for chunk in data_chunks:
+                args = (chunk, shared_counter)
+                mp.run(args)
+        
+            while 1:
+                num_processes = len([p for p in mp.processes if p.is_alive()])
+                
+                if not num_processes:
+                    # all threads are done.
+                    break
+        
+                self.progress.update('Storing final nodes in %d threads: %d of %d' % (num_processes,
+                                                                                      shared_counter.value,
+                                                                                      total_final_nodes))
+                time.sleep(1)
+
+
+        self.progress.end()
+        
+
+    def _store_outliers(self, reason, output_file_path):
+        self.progress.new('Storing outliers')
+        output = u.FastaOutput(output_file_path)
+            
+        self.progress.update('Storing reads removed due to "%s" (size: %d)'\
+                                            % (reason, len(self.topology.outliers[reason])))
+ 
+        for read_object in self.topology.outliers[reason]:
+            for read_id in read_object.ids:
+                output.write_id(read_id)
+                output.write_seq(read_object.seq, split = False)
+            
+        output.close()
+        self.progress.end()
+
+
+    def _store_all_outliers(self):
+        for reason in self.topology.outlier_reasons:
+            output_file_path = os.path.join(self.outliers_directory, reason + '.fa')
+            self._store_outliers(reason, output_file_path)
+
+
+    def _generate_datasets_dict(self):
+        self.progress.new('Computing Samples Dict')
+        
+        for node_id in self.topology.final_nodes:
+            node = self.topology.nodes[node_id]
+            self.progress.update('Analyzing Node ID: "%s" (size: %d)'\
+                                                        % (node_id, node.size))
+        
+            for read in node.reads:
+                for read_id in read.ids:
+                    dataset = self.dataset_name_from_defline(read_id)
+            
+                    if not self.datasets_dict.has_key(dataset):
+                        self.datasets_dict[dataset] = {}
+                        self.datasets.append(dataset)
+    
+                    if self.datasets_dict[dataset].has_key(node_id):
+                        self.datasets_dict[dataset][node_id] += 1
+                    else:
+                        self.datasets_dict[dataset][node_id] = 1
+
+        self.datasets.sort()
+        self.progress.end()
+
+
+    def _generate_ENVIRONMENT_file(self):
+        self.progress.new('ENVIRONMENT File')
+        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
+        self.progress.update('Being generated')
+        
+        generate_ENVIRONMENT_file(self.datasets,
+                                  self.datasets_dict,
+                                  environment_file_path)
+
+        self.progress.end()
+        self.run.info('environment_file_path', environment_file_path)        
+
+
+    def _get_unit_counts_and_percents(self):
+        self.progress.new('Unit counts and percents')
+        self.progress.update('Data is being generated')
+            
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.datasets_dict)
+            
+        self.progress.end()
+
+
+    def _generate_MATRIX_files(self):
+        self.progress.new('Matrix Files')
+        self.progress.update('Being generated')
+            
+        self.matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
+        self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
+            
+        generate_MATRIX_files(self.topology.final_nodes,
+                              self.datasets,
+                              self.unit_counts,
+                              self.unit_percents,
+                              self.matrix_count_file_path,
+                              self.matrix_percent_file_path)
+            
+        self.progress.end()
+        self.run.info('matrix_count_file_path', self.matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', self.matrix_percent_file_path)
 
 
     def _store_topology_dict(self):
@@ -1519,8 +1506,19 @@ class Decomposer:
         self.progress.end()
         self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
 
-
             
+    def _report_final_numbers(self):
+        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
+        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
+        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
+
+        final_outliers_total = 0
+        for reason in self.topology.outlier_reasons:
+            count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
+            final_outliers_total += count
+            self.run.info('final_%s' % reason, pretty_print(count))
+
+        self.run.info('final_outliers_total', pretty_print(final_outliers_total))
 
 if __name__ == '__main__':
     pass
