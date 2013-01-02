@@ -6,30 +6,6 @@
     <link rel="stylesheet" href="style.css" />
     <title>{{ project }}</title>
 
-    <script type="text/javascript" src="jquery-1.7.1.js"></script>
-    <script type="text/javascript" src="raphael.js"></script>
-    <script type="text/javascript" src="morris.js"></script>
-    <script type="text/javascript" src="g.raphael.js"></script>
-
-    <script>
-        window.onload = function () {
-
-            var datasets = [
-                {% for dataset in datasets %}
-                {"abundance": "{{ dataset }}", "count": "{{datasets_dict|lookup:dataset|sumvals:"clean"}}"},
-                {% endfor %}
-            ];
-            Morris.Line({
-              element: 'datasets',
-              data: datasets,
-              xkey: 'abundance',
-              ykeys: ['count'],
-              labels: [{% for dataset in datasets %}'Total Count',{% endfor %}],
-              parseTime: false,
-            });
-        };
-    </script>
-
 </head>
 
 <body >
@@ -130,10 +106,11 @@
 <div class="info_table">
 <table>
     {% if node_representatives_file_path %}
-    <tr><td id="l">{{node_representatives_file_path}}</td><td id="r"><a href="{{node_representatives_file_path}}">node-representatives.fa.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.node_representatives_file_path}}</td><td id="r"><a href="{{node_representatives_file_path}}">node-representatives.fa.txt</a></td></tr>
     {% else %}
     <tr><td id="l">{{pretty_names.node_representatives_file_path}}</td><td id="r"><i>(representative sequences were not computed)</i></td></tr>
     {% endif %}
+    <tr><td id="l">{{pretty_names.read_distribution_table_path}}</td><td id="r"><a href="{{read_distribution_table_path}}">read_distribution.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
@@ -143,24 +120,45 @@
 </table>
 </div>
 
-<div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
+
+{% if figures_dict %}
+<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Dataset</div>
 <p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
-<div id="datasets"></div>
+	<div class="content">
+    		{% if figures_dict.basic_reports|lookup:"lines"|lookup:"lines" %}
+    		<a href="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.png" border="0" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+	</div>
+
+	<div class="content">
+    		{% if figures_dict.basic_reports|lookup:"bars"|lookup:"bars" %}
+    		<a href="{{figures_dict.basic_reports|lookup:"bars"|lookup:"bars"}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_reports|lookup:"bars"|lookup:"bars"}}.png" border="0" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+	</div>
+{% endif %}
 
 
 {% if figures_dict %}
 	<div class="smallhead"><a name="BasicAnalyses"></a>Basic Analyses</div>
 	<p class="smallheadtitle">» Deafult
 	<div class="info_table">
-	{% for key, value in figures_dict.00_default.items %}
+	{% for key, value in figures_dict.basic_analyses.items %}
 	<p style="font-weight:bold;">» {{ key }}
     <table width=90%>
 	<tr>
-		{% for distance in figures_dict.00_default|lookup:key %}
+		{% for distance in figures_dict.basic_analyses|lookup:key %}
     	<td style="padding: 10px; text-align: center; width: 100px; height: 100px;">
-    		{% if figures_dict.00_default|lookup:key|lookup:distance %}
-    		<a href="{{figures_dict.00_default|lookup:key|lookup:distance}}.pdf" target="_blank" />
-    			<img src="{{figures_dict.00_default|lookup:key|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% if figures_dict.basic_analyses|lookup:key|lookup:distance %}
+    		<a href="{{figures_dict.basic_analyses|lookup:key|lookup:distance}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_analyses|lookup:key|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
     		</a>
     		{% else %}
     			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
