@@ -1026,8 +1026,11 @@ class Decomposer:
 
         min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                           self.maximum_variation_allowed)
+
+        self.progress.update('Running blastn (query: %s, target: %s)' % (pretty_print(len(outliers)),
+                                                                         pretty_print(len(self.topology.final_nodes))))
         params = "-perc_identity %.2f -max_target_seqs 1" % (min_percent_identity)
-        b = self._perform_blast(query, target, output, params)
+        b = self._perform_blast(query, target, output, params, job = 'RO_%s_' % reason)
 
         self.progress.update('Generating similarity dict from blastn results')
         similarity_dict = b.get_results_dict(min_identity = min_percent_identity)
