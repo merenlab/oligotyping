@@ -358,7 +358,7 @@ class Decomposer:
 
     def _store_read_distribution_table(self):
         self.progress.new('Read distribution table')
-        read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
+        self.read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
 
         def get_dict_entry_tmpl():
             d = {'represented_reads': 0}
@@ -388,11 +388,11 @@ class Decomposer:
         
         self.progress.update('Storing...')
         generate_TAB_delim_file_from_dict(read_distribution_dict,
-                                          read_distribution_table_path,
+                                          self.read_distribution_table_path,
                                           order = ['represented_reads'] + self.topology.outlier_reasons)
 
         self.progress.end()
-        self.run.info('read_distribution_table_path', read_distribution_table_path)
+        self.run.info('read_distribution_table_path', self.read_distribution_table_path)
 
 
     def _store_final_nodes(self):
@@ -1375,11 +1375,41 @@ class Decomposer:
         scripts_dir_path = os.path.dirname(Oligotyping.__file__)
 
         figures_dict = {}
-        figures_dict['00_default'] = {}
+        figures_dict['basic_analyses'] = {}
+        figures_dict['basic_reports'] = {}
         
+        #
+        # basic reports
+        #
+
+
+
+
+        for (analysis, script, output_dir) in [('Read Distribution Lines', '../Scripts/R/lines-for-each-column.R', 'lines'),
+                                               ('Read Distribution Bars', '../Scripts/R/bars-for-each-column.R', 'bars')]:
+            figures_dict['basic_reports'][output_dir] = {}
+
+            target_dir = self.generate_output_destination('%s/__default__/%s' \
+                                                                % (os.path.basename(self.figures_directory), output_dir),
+                                                          directory = True)
+            
+            output_prefix = os.path.join(target_dir, output_dir)
+            cmd_line = ('%s %s %s >> %s 2>&1' % (os.path.join(scripts_dir_path, script),
+                                                 self.read_distribution_table_path,
+                                                 output_prefix,
+                                                 self.log_file_path))
+            self.progress.update('%s ...' % (analysis))
+            self.logger.info('figure basic_reports: %s' % (cmd_line))
+            run_command(cmd_line)
+            figures_dict['basic_reports'][output_dir][output_dir] = output_prefix
+
+        
+        #
+        # basic analyses
+        #
         for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
                                                ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
-            figures_dict['00_default'][output_dir] = {}
+            figures_dict['basic_analyses'][output_dir] = {}
                     
             target_dir = self.generate_output_destination('%s/__default__/%s' \
                                                                 % (os.path.basename(self.figures_directory), output_dir),
@@ -1399,11 +1429,9 @@ class Decomposer:
                                          output_prefix,
                                          self.log_file_path))
                 self.progress.update('%s "%s" ...' % (analysis, distance_metric))
-                self.logger.info('figure 00_default %s %s: %s' % (output_prefix,
-                                                                  distance_metric,
-                                                                  cmd_line))
+                self.logger.info('figure basic_analyses: %s' % (cmd_line))
                 run_command(cmd_line)
-                figures_dict['00_default'][output_dir][distance_metric] = output_prefix
+                figures_dict['basic_analyses'][output_dir][distance_metric] = output_prefix
     
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
         cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
@@ -1482,10 +1510,7 @@ class Decomposer:
                                              output_prefix,
                                              self.log_file_path))
                     self.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
-                    self.logger.info('exclusive figure %s %s %s: %s' % (category,
-                                                                        output_prefix,
-                                                                        distance_metric,
-                                                                        cmd_line))
+                    self.logger.info('exclusive figure: %s' % (cmd_line))
                     run_command(cmd_line)
                     exclusive_figures_dict[category][output_dir][distance_metric] = output_prefix
     
