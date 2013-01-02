@@ -43,6 +43,7 @@ from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
 from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
 from Oligotyping.utils.utils import get_percent_identity_for_N_base_difference
@@ -324,6 +325,7 @@ class Decomposer:
         self._store_final_nodes()
         self._store_all_outliers()
         self._store_node_representatives()
+        self._store_read_distribution_table()
         
         if self.store_full_topology:
             self._store_topology_dict()
@@ -352,6 +354,46 @@ class Decomposer:
         # finally:
         if self.gen_html:
             self._generate_html_output()
+
+
+    def _store_read_distribution_table(self):
+        self.progress.new('Read distribution table')
+        read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
+
+        def get_dict_entry_tmpl():
+            d = {'represented_reads': 0}
+            for reason in self.topology.outlier_reasons:
+                d[reason] = 0
+            return d
+
+        read_distribution_dict = {}
+        
+        self.progress.update('Processing reads that were represented in results')
+        for dataset in self.datasets_dict:
+            if not read_distribution_dict.has_key(dataset):
+                read_distribution_dict[dataset] = get_dict_entry_tmpl()
+
+            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
+            
+        for reason in self.topology.outlier_reasons:
+            self.progress.update('Processing outliers (%s)' % (reason))
+            for read_object in self.topology.outliers[reason]:
+                for read_id in read_object.ids:
+                    dataset = self.dataset_name_from_defline(read_id)
+                    
+                    if not read_distribution_dict.has_key(dataset):
+                        read_distribution_dict[dataset] = get_dict_entry_tmpl()
+                
+                    read_distribution_dict[dataset][reason] += 1
+        
+        self.progress.update('Storing...')
+        generate_TAB_delim_file_from_dict(read_distribution_dict,
+                                          read_distribution_table_path,
+                                          order = ['represented_reads'] + self.topology.outlier_reasons)
+
+        self.progress.end()
+        self.run.info('read_distribution_table_path', read_distribution_table_path)
+
 
     def _store_final_nodes(self):
         self.progress.new('Storing final nodes')
