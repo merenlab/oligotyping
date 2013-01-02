@@ -84,4 +84,6 @@ pretty_names = {'output_directory': 'Output directory',
                 'merge_homopolymer_splits': 'Merge homopolymer splits',
                 'skip_removing_outliers': 'Skip removing outliers',
                 'relocate_outliers': 'Try to relocate outliers',
+                'read_distribution_table_path': 'Read distribution among datasets table',
+                'node_representatives_file_path': 'Representative sequences per node',
                 }
