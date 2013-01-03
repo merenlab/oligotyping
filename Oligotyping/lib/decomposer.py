@@ -916,66 +916,72 @@ class Decomposer:
             
             total_number_of_nodes_to_analyze = len(node_list)
 
-            def worker(data_chunk, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter):
-                for node_id in data_chunk:
-                    node = self.topology.nodes[node_id]
-                    shared_counter.set(shared_counter.value + 1)
+            def worker(node_id, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter):
+                node = self.topology.nodes[node_id]
+                shared_counter.set(shared_counter.value + 1)
                     
-                    job = 'XO_%s_' % node_id
-                    query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
-                                                                                      directory = self.tmp_directory)
-                    id_to_read_object_dict = {}
-                    for read_obj in node.reads[1:]:
-                        id_to_read_object_dict[read_obj.md5id] = read_obj
+                job = 'XO_%s_' % node_id
+                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
+                                                                                  directory = self.tmp_directory)
+                id_to_read_object_dict = {}
+                for read_obj in node.reads[1:]:
+                    id_to_read_object_dict[read_obj.md5id] = read_obj
 
-                    query_obj = u.FastaOutput(query)
-                    for _id in id_to_read_object_dict:
-                        query_obj.write_id(_id)
-                        query_obj.write_seq(id_to_read_object_dict[_id].seq.replace('-', ''), split = False)
-                    query_obj.close()
+                query_obj = u.FastaOutput(query)
+                for _id in id_to_read_object_dict:
+                    query_obj.write_id(_id)
+                    query_obj.write_seq(id_to_read_object_dict[_id].seq.replace('-', ''), split = False)
+                query_obj.close()
 
-                    target_obj = u.FastaOutput(target)
-                    target_obj.write_id(node.reads[0].md5id)
-                    target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
-                    target_obj.close()
+                target_obj = u.FastaOutput(target)
+                target_obj.write_id(node.reads[0].md5id)
+                target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
+                target_obj.close()
 
-                    b = self._perform_blast(query, target, output, params = '', job = job, no_threading = True)
+                b = self._perform_blast(query, target, output, params = '', job = job, no_threading = True)
                     
-                    similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
+                similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
             
-                    for _id in similarity_dict:
-                        outlier_read_object = id_to_read_object_dict[_id]
-                        node.reads.remove(outlier_read_object)
-                        shared_outlier_seqs_list.append(outlier_read_object)
-                    
-                    if len(similarity_dict):
-                        node.dirty = True
-                        shared_dirty_nodes_list.append(node)
+                for _id in similarity_dict:
+                    outlier_read_object = id_to_read_object_dict[_id]
+                    node.reads.remove(outlier_read_object)
+                    shared_outlier_seqs_list.append(outlier_read_object)
                 
-                        self.logger.info('%d outliers removed from node: %s'\
-                            % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
-                               node_id))
+                if len(similarity_dict):
+                    node.dirty = True
+                    shared_dirty_nodes_list.append(node)
+                
+                    self.logger.info('%d outliers removed from node: %s'\
+                        % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
+                           node_id))
 
             mp = Multiprocessing(worker, self.number_of_threads)
-            data_chunks = mp.get_data_chunks(node_list, spiral = True)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
             shared_outlier_seqs_list = mp.get_empty_shared_array()
             shared_counter = mp.get_shared_integer()
 
-            for chunk in data_chunks:
-                args = (chunk, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter)
-                mp.run(args)
-        
+            processes_to_run = []
+            
+            for node in node_list:
+                processes_to_run.append((node, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter),)
+
             while 1:
-                num_processes = len([p for p in mp.processes if p.is_alive()])
-                
-                if not num_processes:
-                    # all threads are done
+                NumRunningProceses = lambda: len([p for p in mp.processes if p.is_alive()])
+            
+                if NumRunningProceses() < self.number_of_threads and processes_to_run:
+                    mp.run(processes_to_run.pop())
+
+                if not NumRunningProceses() and not processes_to_run:
+                    # let the blastn program finish writing all output files.
+                    # FIXME: this is ridiculous. find a better solution.
+                    time.sleep(5)
                     break
-        
-                self.progress.update('%d of %d done in %d threads' % (shared_counter.value,
-                                                                      total_number_of_nodes_to_analyze,
-                                                                      num_processes,))
+
+                self.progress.update('%d of %d done in %d threads (currently running processes: %d)'\
+                                                             % (shared_counter.value - NumRunningProceses(),
+                                                                total_number_of_nodes_to_analyze,
+                                                                self.number_of_threads,
+                                                                NumRunningProceses()))
                 time.sleep(1)
 
 
