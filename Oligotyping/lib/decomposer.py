@@ -1323,19 +1323,33 @@ class Decomposer:
 
 
     def _perform_blast(self, query, target, output, params, no_threading = False, job = "NONE"):
-        s = blast.LocalBLAST(query, target, output)
+        s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
         self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s (th) %s'\
                                                % (job, query, target, output, params, not no_threading))
 
         s.make_blast_db()
         self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
-    
+
+        # OK. this is what it was like for params within the else clause below:
+        #
+        #    s.params = params + " -num_threads %d" % (self.number_of_threads) 
+        #
+        # I think there is a problem with asking blastn to run multi-threaded in the context
+        # of this pipeline, since it handles multiprocessing by itself (even though I know it sounds
+        # funny, my home-made poor man's parallel blast is faster than blast with -num_threads option).
+        # if search_parallel is being called, blast process shouldn't be bothered with -num_threads.
+        # because I believe it makes everything extremely slower (since N blast search start each with
+        # N threads, we exceed the number of cores quickly and the overhead from the scheduler kills it).
+        # no_threading is only coming from remove_outliers, and the process that calls with no_threading True
+        # is already multi-threaded there as well. so either of these cases require an extra -num_threads
+        # directive to blastn. therefore I removed it from both (I'll do more tests, I might put it back). 
+
         if self.no_threading or no_threading:
-            s.params = params 
+            s.params = params
             s.search()
             self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
         else:
-            s.params = params + " -num_threads %d" % (self.number_of_threads)
+            s.params = params
             s.search_parallel(self.number_of_threads, 2000)
             self.logger.info('parallel blastn for %s: %s' % (job, s.search_cmd))
 
