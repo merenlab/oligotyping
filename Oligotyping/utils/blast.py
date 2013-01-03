@@ -80,7 +80,6 @@ class LocalBLAST:
         self.makeblastdb = makeblastdb
         self.log = log
         self.outfmt = "'6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen'"
-        self.debug = False
 
         self.binary_check()        
         self.version_check()
@@ -90,12 +89,8 @@ class LocalBLAST:
         else:
             self.output = output
         
-        if self.debug:
-            self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s"
-            self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl"
-        else:
-            self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s &> %(log)s"
-            self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl &> %(log)s"
+        self.search_cmd_tmpl = "%(binary)s -query %(input)s -db %(target)s -out %(output)s -outfmt %(outfmt)s %(params)s >> %(log)s 2>&1"
+        self.makeblastdb_cmd_tmpl = "%(makeblastdb)s -in %(target)s -dbtype nucl >> %(log)s 2>&1"
         
         self.results_dict = {}
 
