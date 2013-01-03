@@ -25,17 +25,20 @@ col.names <- colnames(data)
 df <- melt(data ,  id = 'samples', variable_name = 'bins')
 
 P <- function(){
-    ggplot(df, aes(x = samples, y = value, colour = bins, group = bins)) + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = 'top') + labs(x='', y='Number of Reads')
+    ggplot(df, aes(x = samples, y = value, colour = bins, group = bins)) + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.position = 'top') + labs(x='', y='Number of Reads')
 }
+
+pdf_w = 5 + (length(row.names) / 10)
+png_w = pdf_w * 100
 
 # PDF
 pdf_output <- paste(output_file_prefix,".pdf",sep="")
-pdf(pdf_output, width = 12, height = 3)
+pdf(pdf_output, width = pdf_w, height = 4)
 P()
 sprintf("Lines PDF: '%s'", pdf_output)
 
 # PNG
 png_output <- paste(output_file_prefix,".png",sep="")
-png(png_output, width = 1200, height = 300, units = "px", pointsize = 12, bg = "transparent", type = c("cairo", "cairo-png", "Xlib", "quartz"))
+png(png_output, width = png_w, height = 400, units = "px", pointsize = 12, bg = "transparent", type = c("cairo", "cairo-png", "Xlib", "quartz"))
 P()
 sprintf("Lines PNG: '%s'", png_output)
