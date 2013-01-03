@@ -969,7 +969,9 @@ class Decomposer:
                 NumRunningProceses = lambda: len([p for p in mp.processes if p.is_alive()])
             
                 if NumRunningProceses() < self.number_of_threads and processes_to_run:
-                    mp.run(processes_to_run.pop())
+                    for i in range(0, self.number_of_threads - NumRunningProceses()):
+                        if len(processes_to_run):
+                            mp.run(processes_to_run.pop())
 
                 if not NumRunningProceses() and not processes_to_run:
                     # let the blastn program finish writing all output files.
