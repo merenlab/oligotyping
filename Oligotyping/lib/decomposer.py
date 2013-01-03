@@ -1324,6 +1324,8 @@ class Decomposer:
 
     def _perform_blast(self, query, target, output, params, no_threading = False, job = "NONE"):
         s = blast.LocalBLAST(query, target, output)
+        self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s (th) %s'\
+                                               % (job, query, target, output, params, not no_threading))
 
         s.make_blast_db()
         self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
