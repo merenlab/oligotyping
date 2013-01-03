@@ -136,11 +136,15 @@ def homopolymer_indel_exists(seq1, seq2):
     if gap_index == -1:
         gap_index = seq2.find('-')
         
+        # so the gap is in seq2. replace seq1 and 2 so it would be certain
+        # that the sequence with gap is seq1:
+        seq1, seq2 = seq2, seq1
+        
     if gap_index == -1:
         return False
 
     isHP = lambda x: len(set(x)) == 1
-    isHPindel = lambda (s, e): seq1[s:e] == seq2[s:e] and isHP(seq1[s:e]) == 1
+    isHPindel = lambda (s, e): seq1[s:e] == seq2[s:e] and isHP(seq1[s:e]) == 1 and seq2[gap_index] == seq2[s]
     
     def DownStream(sequence):
         i = 3
