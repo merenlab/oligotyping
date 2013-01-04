@@ -914,11 +914,8 @@ class Decomposer:
  
         else:
             
-            total_number_of_nodes_to_analyze = len(node_list)
-
-            def worker(node_id, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter):
+            def worker(node_id, shared_outlier_seqs_list, shared_dirty_nodes_list):
                 node = self.topology.nodes[node_id]
-                shared_counter.set(shared_counter.value + 1)
                     
                 job = 'XO_%s_' % node_id
                 query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
@@ -958,34 +955,14 @@ class Decomposer:
             mp = Multiprocessing(worker, self.number_of_threads)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
             shared_outlier_seqs_list = mp.get_empty_shared_array()
-            shared_counter = mp.get_shared_integer()
 
+            # arrange processes
             processes_to_run = []
-            
             for node in node_list:
-                processes_to_run.append((node, shared_outlier_seqs_list, shared_dirty_nodes_list, shared_counter),)
+                processes_to_run.append((node, shared_outlier_seqs_list, shared_dirty_nodes_list),)
 
-            while 1:
-                NumRunningProceses = lambda: len([p for p in mp.processes if p.is_alive()])
-            
-                if NumRunningProceses() < self.number_of_threads and processes_to_run:
-                    for i in range(0, self.number_of_threads - NumRunningProceses()):
-                        if len(processes_to_run):
-                            mp.run(processes_to_run.pop())
-
-                if not NumRunningProceses() and not processes_to_run:
-                    # let the blastn program finish writing all output files.
-                    # FIXME: this is ridiculous. find a better solution.
-                    time.sleep(5)
-                    break
-
-                self.progress.update('%d of %d done in %d threads (currently running processes: %d)'\
-                                                             % (shared_counter.value - NumRunningProceses(),
-                                                                total_number_of_nodes_to_analyze,
-                                                                self.number_of_threads,
-                                                                NumRunningProceses()))
-                time.sleep(1)
-
+            # start the main loop to run all processes
+            mp.run_processes(processes_to_run, self.progress)
 
             for node in shared_dirty_nodes_list:
                 self.topology.nodes[node.node_id] = node
@@ -1146,32 +1123,19 @@ class Decomposer:
 
         else:
             
-            def worker(data_chunk, shared_counter):
-                for node_id in data_chunk:
-                    node = self.topology.get_node(node_id)
-                    node.store()
-                    shared_counter.set(shared_counter.value + 1)
+            def worker(node_id):
+                node = self.topology.get_node(node_id)
+                node.store()
 
             mp = Multiprocessing(worker, self.number_of_threads)
-            data_chunks = mp.get_data_chunks(self.topology.final_nodes, spiral = True)
-            shared_counter = mp.get_shared_integer()
             
-            for chunk in data_chunks:
-                args = (chunk, shared_counter)
-                mp.run(args)
-        
-            while 1:
-                num_processes = len([p for p in mp.processes if p.is_alive()])
-                
-                if not num_processes:
-                    # all threads are done.
-                    break
-        
-                self.progress.update('Storing final nodes in %d threads: %d of %d' % (num_processes,
-                                                                                      shared_counter.value,
-                                                                                      total_final_nodes))
-                time.sleep(1)
+            # arrange processes
+            processes_to_run = []
+            for node_id in self.topology.final_nodes:
+                processes_to_run.append((node_id,),)
 
+            # start the main loop to run all processes
+            mp.run_processes(processes_to_run, self.progress)
 
         self.progress.end()
         
