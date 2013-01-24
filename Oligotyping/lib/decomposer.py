@@ -20,23 +20,22 @@ import shutil
 import cPickle
 import logging
 
-from Oligotyping.utils import blast
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
+from Oligotyping.lib.shared import generate_default_figures
+from Oligotyping.lib.shared import generate_exclusive_figures
+
+from Oligotyping.utils import blast
 from Oligotyping.utils.utils import Multiprocessing
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
-from Oligotyping.utils.utils import run_command 
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_pretty_name
 from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
-from Oligotyping.utils.utils import store_filtered_matrix
-from Oligotyping.utils.utils import get_temporary_file_name
-from Oligotyping.utils.utils import get_sample_mapping_dict
 from Oligotyping.utils.utils import homopolymer_indel_exists
 from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file
@@ -335,7 +334,7 @@ class Decomposer:
                                                       self.topology.nodes[node_id].size))
 
         self.run.info('end_of_run', get_date())
-                
+
         if self.gen_figures:
             self._generate_default_figures()
         
@@ -1349,151 +1348,24 @@ class Decomposer:
 
         self.progress.new('Figures')
 
-        import Oligotyping
-        scripts_dir_path = os.path.dirname(Oligotyping.__file__)
-
-        figures_dict = {}
-        figures_dict['basic_analyses'] = {}
-        figures_dict['basic_reports'] = {}
-        
-        #
-        # basic reports
-        #
-
-
-
-
-        for (analysis, script, output_dir) in [('Read Distribution Lines', '../Scripts/R/lines-for-each-column.R', 'lines'),
-                                               ('Read Distribution Bars', '../Scripts/R/bars-for-each-column.R', 'bars')]:
-            figures_dict['basic_reports'][output_dir] = {}
-
-            target_dir = self.generate_output_destination('%s/__default__/%s' \
-                                                                % (os.path.basename(self.figures_directory), output_dir),
-                                                          directory = True)
-            
-            output_prefix = os.path.join(target_dir, output_dir)
-            cmd_line = ('%s %s %s >> %s 2>&1' % (os.path.join(scripts_dir_path, script),
-                                                 self.read_distribution_table_path,
-                                                 output_prefix,
-                                                 self.log_file_path))
-            self.progress.update('%s ...' % (analysis))
-            self.logger.info('figure basic_reports: %s' % (cmd_line))
-            run_command(cmd_line)
-            figures_dict['basic_reports'][output_dir][output_dir] = output_prefix
-
-        
-        #
-        # basic analyses
-        #
-        for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
-                                               ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
-            figures_dict['basic_analyses'][output_dir] = {}
-                    
-            target_dir = self.generate_output_destination('%s/__default__/%s' \
-                                                                % (os.path.basename(self.figures_directory), output_dir),
-                                                          directory = True)
-            
-            for (distance_metric, matrix_file) in [("canberra", self.matrix_percent_file_path),
-                                                   ("kulczynski", self.matrix_percent_file_path),
-                                                   ("jaccard", self.matrix_percent_file_path),
-                                                   ("horn", self.matrix_percent_file_path),
-                                                   ("chao", self.matrix_count_file_path)]:
-                output_prefix = os.path.join(target_dir, distance_metric)
-                cmd_line = ("%s %s %s %s %s >> %s 2>&1" % 
-                                        (os.path.join(scripts_dir_path, script),
-                                         matrix_file,
-                                         distance_metric,
-                                         self.project,
-                                         output_prefix,
-                                         self.log_file_path))
-                self.progress.update('%s "%s" ...' % (analysis, distance_metric))
-                self.logger.info('figure basic_analyses: %s' % (cmd_line))
-                run_command(cmd_line)
-                figures_dict['basic_analyses'][output_dir][distance_metric] = output_prefix
-    
+        figures_dict = generate_default_figures(self)
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
         cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+
         self.progress.end()
         self.run.info('figures_dict_file_path', figures_dict_file_path)
 
 
     def _generate_exclusive_figures(self):
+        if len(self.datasets) < 3:
+            return None
+
         self.progress.new('Exclusive Figures')
 
-        import Oligotyping
-        scripts_dir_path = os.path.dirname(Oligotyping.__file__)
-        exclusive_figures_dict = {}
-
-        sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
-        
-        for category in sample_mapping_dict:
-            exclusive_figures_dict[category] = {}
-            samples = sample_mapping_dict[category].keys()
-            
-            # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
-            # refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
-            samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in self.datasets, samples))
-            samples.sort()
-
-            mapping_file_path = get_temporary_file_name('%s-' % category, '-mapping.txt', self.tmp_directory)
-            mapping_file = open(mapping_file_path, 'w')
-            mapping_file.write('samples\t%s\n' % (category))
-            
-            for sample in samples:
-                mapping_file.write('%s\t%s\n' % (sample, sample_mapping_dict[category][sample]))
-            mapping_file.close()
-
-            if samples == self.datasets:
-                matrix_percent_path = self.matrix_percent_file_path
-                matrix_count_path = self.matrix_count_file_path
-            else:
-                matrix_percent_path = get_temporary_file_name('%s-' % category, '-matrix-percent.txt', self.tmp_directory)
-                matrix_count_path = get_temporary_file_name('%s-' % category, '-matrix-count.txt', self.tmp_directory)
-
-                if store_filtered_matrix(self.matrix_percent_file_path, matrix_percent_path, samples) < 3:
-                    self.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MP"\
-                                             % (category))
-                    continue
-                if store_filtered_matrix(self.matrix_count_file_path, matrix_count_path, samples) < 3:
-                    self.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MC"\
-                                             % (category))
-                    continue
-
-            # ready to roll.
-            self.logger.info("exclusive figs for '%s' with %d samples; mapping: '%s', MP: '%s', MC: '%s'"\
-                                 % (category, len(samples), mapping_file_path, matrix_percent_path, matrix_count_path))
-
-
-            for (analysis, script, output_dir) in [('NMDS Analysis', '../Scripts/R/metaMDS-analysis-with-metadata.R', 'nmds_analysis')]:
-                exclusive_figures_dict[category][output_dir] = {}
-                        
-                target_dir = self.generate_output_destination('%s/%s/%s' % (os.path.basename(self.figures_directory),
-                                                                            category,
-                                                                            output_dir),
-                                                              directory = True)
-                
-                for (distance_metric, matrix_file) in [("canberra", matrix_percent_path),
-                                                       ("kulczynski", matrix_percent_path),
-                                                       ("jaccard", matrix_percent_path),
-                                                       ("horn", matrix_percent_path),
-                                                       ("chao", matrix_count_path)]:
-                    output_prefix = os.path.join(target_dir, distance_metric)
-                    cmd_line = ("%s %s %s %s %s %s %s >> %s 2>&1" % 
-                                            (os.path.join(scripts_dir_path, script),
-                                             matrix_file,
-                                             mapping_file_path,
-                                             distance_metric,
-                                             category,
-                                             self.project,
-                                             output_prefix,
-                                             self.log_file_path))
-                    self.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
-                    self.logger.info('exclusive figure: %s' % (cmd_line))
-                    run_command(cmd_line)
-                    exclusive_figures_dict[category][output_dir][distance_metric] = output_prefix
-    
+        exclusive_figures_dict = generate_exclusive_figures(self)
         exclusive_figures_dict_file_path = self.generate_output_destination("EXCLUSIVE-FIGURES.cPickle")
         cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
+
         self.progress.end()
         self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
 
