@@ -1,0 +1,167 @@
+#!/usr/bin/python
+# -*- coding: utf-8
+
+# Copyright (C) 2013, A. Murat Eren
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Please read the COPYING file.
+
+#
+# some shared functions between decomposition and oligotyping, that require
+# 'self' to be passed.
+#
+
+import os
+
+from Oligotyping.utils.utils import run_command
+from Oligotyping.utils.utils import store_filtered_matrix
+from Oligotyping.utils.utils import get_sample_mapping_dict
+from Oligotyping.utils.utils import get_temporary_file_name
+
+
+def generate_default_figures(_object):
+    import Oligotyping
+    scripts_dir_path = os.path.dirname(Oligotyping.__file__)
+
+    figures_dict = {}
+    figures_dict['basic_analyses'] = {}
+    figures_dict['basic_reports'] = {}
+        
+    #
+    # basic reports
+    #
+
+
+    for (analysis, script, output_dir) in [('Read Distribution Lines', '../Scripts/R/lines-for-each-column.R', 'lines'),
+                                           ('Read Distribution Bars', '../Scripts/R/bars-for-each-column.R', 'bars')]:
+        figures_dict['basic_reports'][output_dir] = {}
+
+        target_dir = _object.generate_output_destination('%s/__default__/%s' \
+                                                            % (os.path.basename(_object.figures_directory), output_dir),
+                                                      directory = True)
+            
+        output_prefix = os.path.join(target_dir, output_dir)
+        cmd_line = ('%s %s %s >> %s 2>&1' % (os.path.join(scripts_dir_path, script),
+                                             _object.read_distribution_table_path,
+                                             output_prefix,
+                                             _object.log_file_path))
+        _object.progress.update('%s ...' % (analysis))
+        _object.logger.info('figure basic_reports: %s' % (cmd_line))
+        run_command(cmd_line)
+        figures_dict['basic_reports'][output_dir][output_dir] = output_prefix
+
+        
+    #
+    # basic analyses
+    #
+    for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
+                                           ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
+        figures_dict['basic_analyses'][output_dir] = {}
+                    
+        target_dir = _object.generate_output_destination('%s/__default__/%s' \
+                                                            % (os.path.basename(_object.figures_directory), output_dir),
+                                                      directory = True)
+            
+        for (distance_metric, matrix_file) in [("canberra", _object.matrix_percent_file_path),
+                                               ("kulczynski", _object.matrix_percent_file_path),
+                                               ("jaccard", _object.matrix_percent_file_path),
+                                               ("horn", _object.matrix_percent_file_path),
+                                               ("chao", _object.matrix_count_file_path)]:
+            output_prefix = os.path.join(target_dir, distance_metric)
+            cmd_line = ("%s %s %s %s %s >> %s 2>&1" % 
+                                    (os.path.join(scripts_dir_path, script),
+                                     matrix_file,
+                                     distance_metric,
+                                     _object.project,
+                                     output_prefix,
+                                     _object.log_file_path))
+            _object.progress.update('%s "%s" ...' % (analysis, distance_metric))
+            _object.logger.info('figure basic_analyses: %s' % (cmd_line))
+            run_command(cmd_line)
+            figures_dict['basic_analyses'][output_dir][distance_metric] = output_prefix
+        
+    return figures_dict
+
+
+def generate_exclusive_figures(_object):
+    import Oligotyping
+    scripts_dir_path = os.path.dirname(Oligotyping.__file__)
+    exclusive_figures_dict = {}
+
+    sample_mapping_dict = get_sample_mapping_dict(_object.sample_mapping)
+        
+    for category in sample_mapping_dict:
+        exclusive_figures_dict[category] = {}
+        samples = sample_mapping_dict[category].keys()
+            
+        # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
+        # refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
+        samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in _object.datasets, samples))
+        samples.sort()
+
+        mapping_file_path = get_temporary_file_name('%s-' % category, '-mapping.txt', _object.tmp_directory)
+        mapping_file = open(mapping_file_path, 'w')
+        mapping_file.write('samples\t%s\n' % (category))
+            
+        for sample in samples:
+            mapping_file.write('%s\t%s\n' % (sample, sample_mapping_dict[category][sample]))
+        mapping_file.close()
+
+        if samples == _object.datasets:
+            matrix_percent_path = _object.matrix_percent_file_path
+            matrix_count_path = _object.matrix_count_file_path
+        else:
+            matrix_percent_path = get_temporary_file_name('%s-' % category, '-matrix-percent.txt', _object.tmp_directory)
+            matrix_count_path = get_temporary_file_name('%s-' % category, '-matrix-count.txt', _object.tmp_directory)
+
+            if store_filtered_matrix(_object.matrix_percent_file_path, matrix_percent_path, samples) < 3:
+                _object.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MP"\
+                                         % (category))
+                continue
+            if store_filtered_matrix(_object.matrix_count_file_path, matrix_count_path, samples) < 3:
+                _object.logger.info("skipping exclusive figs for '%s'; less than 3 samples were left in MC"\
+                                         % (category))
+                continue
+
+        # ready to roll.
+        _object.logger.info("exclusive figs for '%s' with %d samples; mapping: '%s', MP: '%s', MC: '%s'"\
+                             % (category, len(samples), mapping_file_path, matrix_percent_path, matrix_count_path))
+
+
+        for (analysis, script, output_dir) in [('NMDS Analysis', '../Scripts/R/metaMDS-analysis-with-metadata.R', 'nmds_analysis')]:
+            exclusive_figures_dict[category][output_dir] = {}
+                        
+            target_dir = _object.generate_output_destination('%s/%s/%s' % (os.path.basename(_object.figures_directory),
+                                                                        category,
+                                                                        output_dir),
+                                                          directory = True)
+                
+            for (distance_metric, matrix_file) in [("canberra", matrix_percent_path),
+                                                   ("kulczynski", matrix_percent_path),
+                                                   ("jaccard", matrix_percent_path),
+                                                   ("horn", matrix_percent_path),
+                                                   ("chao", matrix_count_path)]:
+                output_prefix = os.path.join(target_dir, distance_metric)
+                cmd_line = ("%s %s %s %s %s %s %s >> %s 2>&1" % 
+                                        (os.path.join(scripts_dir_path, script),
+                                         matrix_file,
+                                         mapping_file_path,
+                                         distance_metric,
+                                         category,
+                                         _object.project,
+                                         output_prefix,
+                                         _object.log_file_path))
+                _object.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
+                _object.logger.info('exclusive figure: %s' % (cmd_line))
+                run_command(cmd_line)
+                exclusive_figures_dict[category][output_dir][distance_metric] = output_prefix
+
+    return exclusive_figures_dict
+
+
+if __name__ == '__main__':
+    pass
