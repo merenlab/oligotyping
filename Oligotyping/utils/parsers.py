@@ -189,12 +189,18 @@ def oligotyping():
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
                         datasets are similar. Oligotype sets simply put oligotypes into the same set if they \
                         co-occur in datasets consistenly.')
+    parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
+                        help = 'When set, directory with temporary results will not be deleted at the end of the\
+                                run. It may be necessary to debug the results')
     parser.add_argument('-T', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
                         help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
                                 the threshold is, the more oligotypes will be pulled together. Cosine similarity\
                                 would return 0 for perfectly similar two vectors. Default is %(default)f.')
     parser.add_argument('--gen-dataset-oligo-networks', action = 'store_true', default = False,
                         help = 'Generate oligotype network structure figures for each dataset.')
+    parser.add_argument('-E', '--sample-mapping', metavar = 'FILEPATH', default = None,
+                        help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
+                                visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
 
