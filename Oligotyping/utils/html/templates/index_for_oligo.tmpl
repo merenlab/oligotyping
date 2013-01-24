@@ -129,6 +129,7 @@
     {% else %}
     <tr><td id="l">{{pretty_names.representative_seqs_fasta_file_path}}</td><td id="r"><i>(representative sequences were not computed)</i></td></tr>
     {% endif %}
+    <tr><td id="l">{{pretty_names.read_distribution_table_path}}</td><td id="r"><a href="{{read_distribution_table_path}}">read_distribution.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
@@ -155,9 +156,29 @@
 <p class="smallheadtitle">» Figure shows the oligotype distribution profiles among datasets. TAB separated files <a href="{{matrix_percent_file_path}}">matrix_percents.txt</a> and <a href="{{matrix_count_file_path}}">matrix_counts.txt</a> hold the information that were used to generate this figure.
 <p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
 
-<div class="smallhead"><a name="ReadCounts"></a>Read Counts per Dataset</div>
-<p class="smallheadtitle">» Total number of reads for each dataset that underwent the oligotyping analysis.
-<div id="datasets"></div>
+{% if figures_dict %}
+<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Dataset</div>
+<p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
+	<div class="content">
+    		{% if figures_dict.basic_reports|lookup:"lines"|lookup:"lines" %}
+    		<a href="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.png" border="0" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+	</div>
+
+	<div class="content">
+    		{% if figures_dict.basic_reports|lookup:"bars"|lookup:"bars" %}
+    		<a href="{{figures_dict.basic_reports|lookup:"bars"|lookup:"bars"}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_reports|lookup:"bars"|lookup:"bars"}}.png" border="0" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+	</div>
+{% endif %}
 
 
 <div class="smallhead"><a name="Oligotypes"></a>Oligotypes</div>
@@ -249,7 +270,6 @@
 {% endif %}
 
 
-
 <div class="smallhead"><a name="Datasets"></a>Datasets</div>
 <p class="smallheadtitle">» Overview of datasets.
 {% for dataset in datasets %}
@@ -259,7 +279,66 @@
 {% endfor %}
 
 
-<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Datasets">Datasets</a></div>
+
+{% if figures_dict %}
+	<div class="smallhead"><a name="BasicAnalyses"></a>Basic Analyses</div>
+	<p class="smallheadtitle">» Deafult
+	<div class="info_table">
+	{% for key, value in figures_dict.basic_analyses.items %}
+	<p style="font-weight:bold;">» {{ key }}
+    <table width=90%>
+	<tr>
+		{% for distance in figures_dict.basic_analyses|lookup:key %}
+    	<td style="padding: 10px; text-align: center; width: 100px; height: 100px;">
+    		{% if figures_dict.basic_analyses|lookup:key|lookup:distance %}
+    		<a href="{{figures_dict.basic_analyses|lookup:key|lookup:distance}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_analyses|lookup:key|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+    		<p align="center">{{distance}}
+    	</td>
+    	{% endfor %}
+	</tr>
+	</table>
+	{% endfor %}
+	</div>
+{% endif %}
+
+
+{% if exclusive_figures_dict %}
+	<div class="smallhead"><a name="ExclusiveAnalyses"></a>Exclusive Analyses</div>
+	{% for category in exclusive_figures_dict %}
+		<p class="smallheadtitle">» {{category}}
+		<div class="info_table">
+		{% for analysis in exclusive_figures_dict|lookup:category %}
+		<p style="font-weight:bold;">» {{ analysis }}
+	    <table width=90%>
+		<tr>
+			{% for distance in exclusive_figures_dict|lookup:category|lookup:analysis %}
+	    	<td style="padding: 10px; text-align: center; width: 100px; height: 100px;">
+	    		{% if exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance %}
+	    		<a href="{{exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance}}.pdf" target="_blank" />
+	    			<img src="{{exclusive_figures_dict|lookup:category|lookup:analysis|lookup:distance}}.png" style="width: 100px; border: 5px solid #EEE;" />
+	    		</a>
+	    		{% else %}
+	    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+	    		{% endif %}
+	    		<p align="center">{{distance}}
+	    	</td>
+	    	{% endfor %}
+		</tr>
+		</table>
+		{% endfor %}
+		</div>
+	{% endfor %}
+{% endif %}
+
+
+
+
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Datasets">Datasets</a> | <a href="#BasicAnalyses"><b>Basic Analyses</b></a> | {% if exclusive_figures_dict %}<a href="#ExclusiveAnalyses"><b>Exclusive Analyses</b></a>{% else %}Exclusive Analyses <a href="http://oligotyping.org">?</a>{% endif %}</div>
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>

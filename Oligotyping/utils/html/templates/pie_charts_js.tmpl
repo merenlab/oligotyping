@@ -1,21 +1,7 @@
 {% for dataset in datasets %}
 {% if forloop.first %}
     <script>
-        window.onload = function () {
-
-            var datasets = [
-                {% for dataset in datasets %}
-                {"abundance": "{{ dataset }}", "count": "{{datasets_dict|lookup:dataset|sumvals:"clean"}}"},
-                {% endfor %}
-            ];
-            Morris.Line({
-              element: 'datasets',
-              data: datasets,
-              xkey: 'abundance',
-              ykeys: ['count'],
-              labels: [{% for dataset in datasets %}'Total Count',{% endfor %}],
-              parseTime: false,
-            });
+        window.onload = function () {  
 
 {% endif %}
 

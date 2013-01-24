@@ -10,15 +10,19 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.6'
+__version__ = '0.7'
 
 import os
 import sys
 import copy
 import shutil
 import cPickle
+import logging
 
 from Oligotyping.lib import fastalib as u
+from Oligotyping.lib.shared import generate_default_figures
+from Oligotyping.lib.shared import generate_exclusive_figures
+
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
@@ -34,9 +38,11 @@ from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import generate_MATRIX_files
+from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
 from Oligotyping.utils.utils import generate_MATRIX_files_for_units_across_datasets
 
@@ -66,6 +72,7 @@ class Oligotyping:
         self.quick = False
         self.no_figures = False
         self.no_display = False
+        self.keep_tmp = False
         self.blast_ref_db = None
         self.skip_blast_search = False
         self.gen_html = False
@@ -73,6 +80,8 @@ class Oligotyping:
         self.colors_list_file = None
         self.generate_sets = False
         self.cosine_similarity_threshold = 0.1
+        self.sample_mapping = None
+        self.log_file_path = None
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -96,6 +105,7 @@ class Oligotyping:
             self.quick = args.quick
             self.no_figures = args.no_figures
             self.no_display = args.no_display
+            self.keep_tmp = args.keep_tmp
             self.blast_ref_db = Absolute(args.blast_ref_db) if args.blast_ref_db else None
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
@@ -103,6 +113,7 @@ class Oligotyping:
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
             self.generate_sets = args.generate_sets
+            self.sample_mapping = args.sample_mapping
         
         self.run = Run()
         self.progress = Progress()
@@ -118,6 +129,7 @@ class Oligotyping:
         self.abundant_oligos = []
         self.final_oligo_counts_dict = {}
         self.colors_dict = None
+        self.figures_directory = None
 
     def sanity_check(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
@@ -125,6 +137,13 @@ class Oligotyping:
         
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
             raise ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
+
+        if self.sample_mapping:
+            if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
+                raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+
+        if self.sample_mapping:
+            mapping_file_simple_check(self.sample_mapping)
 
         if self.number_of_auto_components != None and self.selected_components != None:
             raise ConfigError, "Both 'auto components' (-c) and 'selected components' (-C) has been declared."
@@ -179,8 +198,25 @@ class Oligotyping:
             if len(first_characters) != 1 or first_characters[0] != '#':
                 raise ConfigError, "Colors list file does not seem to be correctly formatted"
 
-
         return True
+
+
+    def _init_logger(self, path = None):
+        self.logger = logging.getLogger('oligotyping')
+        
+        if path:
+            self.log_file_path = path 
+        else:
+            self.log_file_path = self.generate_output_destination('RUNINFO.log')
+        
+        if os.path.exists(self.log_file_path):
+            os.remove(self.log_file_path)
+        
+        hdlr = logging.FileHandler(self.log_file_path)
+        formatter = logging.Formatter('%(asctime)s\t%(levelname)s\t%(message)s')
+        hdlr.setFormatter(formatter)
+        self.logger.addHandler(hdlr) 
+        self.logger.setLevel(logging.DEBUG)
 
 
     def dataset_name_from_defline(self, defline):
@@ -218,6 +254,11 @@ class Oligotyping:
     def run_all(self):
         self.sanity_check()
         
+        # FIXME this should go into 'check dirs'.
+        self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
+        self.tmp_directory = self.generate_output_destination('TMP', directory = True)
+        
+        self._init_logger()
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
 
@@ -233,7 +274,9 @@ class Oligotyping:
         self.run.info('version', __version__)
         self.run.info('alignment', self.alignment)
         self.run.info('entropy', self.entropy)
+        self.run.info('sample_mapping', self.sample_mapping)
         self.run.info('output_directory', self.output_directory)
+        self.run.info('tmp_directory', self.tmp_directory)
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('quals_provided', True if self.quals_dict else False)
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
@@ -266,7 +309,6 @@ class Oligotyping:
         if self.blast_ref_db:
             self.run.info('blast_ref_db', self.blast_ref_db)
         
-
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
         self._refine_datasets_dict()
@@ -277,6 +319,7 @@ class Oligotyping:
         self._generate_NEXUS_file()        
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
+        self._store_read_distribution_table()
         
         if self.generate_sets:
             self._get_units_across_datasets_dicts()
@@ -299,8 +342,18 @@ class Oligotyping:
         if self.representative_sequences_per_oligotype:
             self._generate_representative_sequences_FASTA_file()
 
+        if ((not self.no_figures) and (not self.quick)):
+            self._generate_default_figures()
+
+        if ((not self.no_figures) and (not self.quick)) and self.sample_mapping:
+            self._generate_exclusive_figures()
+
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
+
+        if (not self.keep_tmp):
+            shutil.rmtree(self.tmp_directory)
+
         self.run.quit()
 
         if self.gen_html:
@@ -679,24 +732,51 @@ class Oligotyping:
 
         self.progress.end()
         self.run.info('environment_file_path', environment_file_path)
-        
+
     def _generate_MATRIX_files(self):
         self.progress.new('Matrix Files')
         self.progress.update('Being generated')
             
-        matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
-        matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
+        self.matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
+        self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
         generate_MATRIX_files(self.abundant_oligos,
                               self.datasets,
                               self.unit_counts,
                               self.unit_percents,
-                              matrix_count_file_path,
-                              matrix_percent_file_path)
+                              self.matrix_count_file_path,
+                              self.matrix_percent_file_path)
             
         self.progress.end()
-        self.run.info('matrix_count_file_path', matrix_count_file_path)
-        self.run.info('matrix_percent_file_path', matrix_percent_file_path)
+        self.run.info('matrix_count_file_path', self.matrix_count_file_path)
+        self.run.info('matrix_percent_file_path', self.matrix_percent_file_path)
+
+
+    def _store_read_distribution_table(self):
+        self.progress.new('Read distribution table')
+        self.read_distribution_table_path = self.generate_output_destination("READ-DISTRIBUTION.txt")
+
+        def get_dict_entry_tmpl():
+            d = {'represented_reads': 0}
+            return d
+
+        read_distribution_dict = {}
+        
+        self.progress.update('Processing reads that were represented in results')
+        for dataset in self.datasets_dict:
+            if not read_distribution_dict.has_key(dataset):
+                read_distribution_dict[dataset] = get_dict_entry_tmpl()
+
+            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
+            
+        self.progress.update('Storing...')
+        generate_TAB_delim_file_from_dict(read_distribution_dict,
+                                          self.read_distribution_table_path,
+                                          order = ['represented_reads'])
+
+        self.progress.end()
+        self.run.info('read_distribution_table_path', self.read_distribution_table_path)
+
 
     def _generate_random_colors(self):
         colors_file_path = self.generate_output_destination('COLORS')
@@ -1046,6 +1126,34 @@ class Oligotyping:
                                          display = not self.no_display)
         self.progress.end()
         self.run.info('stack_bar_with_agglomerated_oligos_file_path', stack_bar_file_path)
+
+
+    def _generate_default_figures(self):
+        if len(self.datasets) < 3:
+            return None
+
+        self.progress.new('Figures')
+
+        figures_dict = generate_default_figures(self)
+
+        figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
+        cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+        self.progress.end()
+        self.run.info('figures_dict_file_path', figures_dict_file_path)
+
+
+    def _generate_exclusive_figures(self):
+        if len(self.datasets) < 3:
+            return None
+
+        self.progress.new('Exclusive Figures')
+
+        exclusive_figures_dict = generate_exclusive_figures(self)
+    
+        exclusive_figures_dict_file_path = self.generate_output_destination("EXCLUSIVE-FIGURES.cPickle")
+        cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
+        self.progress.end()
+        self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
 
 
     def _generate_html_output(self):
