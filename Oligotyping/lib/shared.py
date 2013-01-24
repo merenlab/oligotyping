@@ -72,7 +72,7 @@ def generate_default_figures(_object):
                                                ("horn", _object.matrix_percent_file_path),
                                                ("chao", _object.matrix_count_file_path)]:
             output_prefix = os.path.join(target_dir, distance_metric)
-            cmd_line = ("%s %s %s %s %s >> %s 2>&1" % 
+            cmd_line = ('%s "%s" %s "%s" "%s" >> %s 2>&1' % 
                                     (os.path.join(scripts_dir_path, script),
                                      matrix_file,
                                      distance_metric,
@@ -146,7 +146,7 @@ def generate_exclusive_figures(_object):
                                                    ("horn", matrix_percent_path),
                                                    ("chao", matrix_count_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
-                cmd_line = ("%s %s %s %s %s %s %s >> %s 2>&1" % 
+                cmd_line = ('%s "%s" "%s" %s "%s" "%s" "%s" >> "%s" 2>&1' % 
                                         (os.path.join(scripts_dir_path, script),
                                          matrix_file,
                                          mapping_file_path,
