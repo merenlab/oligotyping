@@ -119,6 +119,7 @@ class Oligotyping:
         self.progress = Progress()
 
         self.datasets_dict = {}
+        self.excluded_read_ids_tracker = {}
         self.representative_sequences_per_oligotype = {}
         self.across_datasets_sum_normalized = {}
         self.across_datasets_max_normalized = {}
@@ -130,6 +131,7 @@ class Oligotyping:
         self.final_oligo_counts_dict = {}
         self.colors_dict = None
         self.figures_directory = None
+
 
     def sanity_check(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
@@ -418,6 +420,18 @@ class Oligotyping:
                 raise ConfigError, "All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality
         
 
+    def _register_removal(self, oligo, reason = 'unknown'):
+        if not self.excluded_read_ids_tracker.has_key(reason):
+            self.excluded_read_ids_tracker[reason] = {}
+            
+        for dataset in self.datasets:
+            if self.datasets_dict[dataset].has_key(oligo):
+                if not self.excluded_read_ids_tracker[reason].has_key(dataset):
+                    self.excluded_read_ids_tracker[reason][dataset] = self.datasets_dict[dataset][oligo]
+                else:
+                    self.excluded_read_ids_tracker[reason][dataset] += self.datasets_dict[dataset][oligo]
+
+        
     def _contrive_abundant_oligos(self):
         # cat oligos | uniq
         self.progress.new('Contriving Abundant Oligos')
@@ -464,9 +478,12 @@ class Oligotyping:
             tpl = oligo_dataset_abundance[i]
             if tpl[0] >= self.min_number_of_datasets:
                 non_singleton_oligos.append(tpl[1])
+            else:
+                self._register_removal(tpl[1], 'failed_s')
+
         self.progress.reset()
         self.run.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
-        
+
 
         # dataset_sums keeps the actual number of oligos that are present in non_singleton_oligos list,
         # for each dataset. computing it here once is more optimized.
@@ -506,6 +523,8 @@ class Oligotyping:
                 if PercentAbundance_OK and DatesetSize_OK:
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
                     break
+                else:
+                    self._register_removal(oligo, 'failed_a')
 
         self.progress.reset()
         self.run.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
@@ -530,6 +549,8 @@ class Oligotyping:
 
             for oligo in oligos_for_removal:
                 self.abundant_oligos.remove(oligo)
+                self._register_removal(oligo, 'failed_A')
+
             self.progress.reset()
             self.run.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
 
@@ -571,6 +592,7 @@ class Oligotyping:
                     oligos_for_removal.append(oligo)
 
             for oligo in oligos_for_removal:
+                self._register_removal(oligo, 'failed_M')
                 self.abundant_oligos.remove(oligo)
 
             self.progress.reset()
@@ -580,6 +602,10 @@ class Oligotyping:
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
         if self.limit_oligotypes_to:
             self.abundant_oligos = [oligo for oligo in self.abundant_oligos if oligo in self.limit_oligotypes_to]
+            
+            for oligo in [oligo for oligo in self.abundant_oligos if not oligo in self.limit_oligotypes_to]:
+                self._register_removal(oligo, 'failed_limit')
+            
             self.run.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
             if len(self.abundant_oligos) == 0:
                 raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
@@ -587,6 +613,10 @@ class Oligotyping:
         # if 'exclude_oligotypes' is defined, remove them from analysis if they are present
         if self.exclude_oligotypes:
             self.abundant_oligos = [oligo for oligo in self.abundant_oligos if not oligo in self.exclude_oligotypes]
+            
+            for oligo in self.exclude_oligotypes:
+                self._register_removal(oligo, 'excluded')
+            
             self.run.info('num_oligos_after_e_elim', pretty_print(len(self.abundant_oligos)))
 
 
@@ -758,6 +788,8 @@ class Oligotyping:
 
         def get_dict_entry_tmpl():
             d = {'represented_reads': 0}
+            for reason in self.excluded_read_ids_tracker:
+                d[reason] = 0
             return d
 
         read_distribution_dict = {}
@@ -768,11 +800,20 @@ class Oligotyping:
                 read_distribution_dict[dataset] = get_dict_entry_tmpl()
 
             read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
-            
+
+        for reason in self.excluded_read_ids_tracker:
+            self.progress.update('Processing excluded oligos (%s)' % (reason))
+            for dataset in self.excluded_read_ids_tracker[reason]:
+                if not read_distribution_dict.has_key(dataset):
+                    read_distribution_dict[dataset] = get_dict_entry_tmpl()
+                        
+                read_distribution_dict[dataset][reason] = self.excluded_read_ids_tracker[reason][dataset]
+
+    
         self.progress.update('Storing...')
         generate_TAB_delim_file_from_dict(read_distribution_dict,
                                           self.read_distribution_table_path,
-                                          order = ['represented_reads'])
+                                          order = ['represented_reads'] + sorted(self.excluded_read_ids_tracker.keys()))
 
         self.progress.end()
         self.run.info('read_distribution_table_path', self.read_distribution_table_path)
