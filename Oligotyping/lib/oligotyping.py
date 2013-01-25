@@ -61,10 +61,10 @@ class Oligotyping:
         self.selected_components = None
         self.limit_oligotypes_to = None
         self.exclude_oligotypes = None
-        self.min_number_of_datasets = 5
+        self.min_number_of_datasets = 1
         self.min_percent_abundance = 0.0
         self.min_actual_abundance = 0
-        self.min_substantive_abundance = 0
+        self.min_substantive_abundance = 4
         self.project = None
         self.output_directory = None
         self.dataset_name_separator = '_'
