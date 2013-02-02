@@ -661,50 +661,50 @@ def check_command_output(cmdline):
 
 
 def check_input_alignment(alignment_path, dataset_name_from_defline_func, progress_func = None):
-        alignment = u.SequenceSource(alignment_path)
-        samples = set([])
-        while alignment.next():
-            if progress_func and alignment.pos % 5000 == 0:
-                progress_func.update('Reading input; %s, %s samples found'\
-                                            % (pretty_print(alignment.pos),
-                                               pretty_print(len(samples))))
+    alignment = u.SequenceSource(alignment_path)
+    samples = set([])
+    while alignment.next():
+        if progress_func and alignment.pos % 5000 == 0:
+            progress_func.update('Reading input; %s, %s samples found'\
+                                        % (pretty_print(alignment.pos),
+                                           pretty_print(len(samples))))
 
-            sample = dataset_name_from_defline_func(alignment.id)
-            if sample not in samples:
-                samples.add(sample)
+        sample = dataset_name_from_defline_func(alignment.id)
+        if sample not in samples:
+            samples.add(sample)
     
-        # if the number of samples we find in the alignment is more than half of the number of
-        # reads in the alignment, we might be in trouble.
-        if len(samples) * 2 > alignment.pos:
-            sys.stderr.write("\n\n")
-            sys.stderr.write("Number of samples in the alignment is more than half of the number of reads.\n")
-            sys.stderr.write("This usually indicates that the sample name recovery from the defline is not\n")
-            sys.stderr.write("working properly. If you believe this is normal, and your sample names\n")
-            sys.stderr.write("expected to look like these, you can bypass this check with --skip-check-input\n")
-            sys.stderr.write("parameter:\n\n")
+    # if the number of samples we find in the alignment is more than half of the number of
+    # reads in the alignment, we might be in trouble.
+    if len(samples) * 2 > alignment.pos:
+        sys.stderr.write("\n\n")
+        sys.stderr.write("Number of samples in the alignment is more than half of the number of reads.\n")
+        sys.stderr.write("This usually indicates that the sample name recovery from the defline is not\n")
+        sys.stderr.write("working properly. If you believe this is normal, and your sample names\n")
+        sys.stderr.write("expected to look like these, you can bypass this check with --skip-check-input\n")
+        sys.stderr.write("parameter:\n\n")
                 
-            counter = 0
-            for sample in samples:
-                if counter == 10:
-                    break
-                sys.stderr.write('\t- %s\n' % sample)
-                counter += 1
-            if len(samples) > 10:
-                sys.stderr.write('\t- (%s more)\n' % pretty_print(len(samples) - 10))
-            sys.stderr.write("\n\n")
-            sys.stderr.write("If these sample names seem to be incorrect, please refer to the tutorial for the\n")
-            sys.stderr.write("proper formatting of FASTA deflines.")
-            sys.stderr.write("\n\n")
+        counter = 0
+        for sample in samples:
+            if counter == 10:
+                break
+            sys.stderr.write('\t- %s\n' % sample)
+            counter += 1
+        if len(samples) > 10:
+            sys.stderr.write('\t- (%s more)\n' % pretty_print(len(samples) - 10))
+        sys.stderr.write("\n\n")
+        sys.stderr.write("If these sample names seem to be incorrect, please refer to the tutorial for the\n")
+        sys.stderr.write("proper formatting of FASTA deflines.")
+        sys.stderr.write("\n\n")
             
-            alignment.close()
-            if progress_func:
-                progress_func.end()
-            return None
-        else:
-            if progress_func:
-                progress_func.end()
-            alignment.close()
-            return samples
+        alignment.close()
+        if progress_func:
+            progress_func.end()
+        return None
+    else:
+        if progress_func:
+            progress_func.end()
+        alignment.close()
+        return samples
 
 
 def mapping_file_simple_check(mapping_file_path):
