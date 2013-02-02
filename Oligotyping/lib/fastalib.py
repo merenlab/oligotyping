@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.120530
+# v.130201
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -10,7 +10,6 @@
 #
 # Please read the docs/COPYING file.
 
-import os
 import sys
 import numpy
 import hashlib
@@ -132,7 +131,7 @@ class SequenceSource():
                 return False
         else:
             return False
-        
+
     def next_regular(self):
         self.seq = None
         self.id = self.file_pointer.readline()[1:].strip()
@@ -155,6 +154,15 @@ class SequenceSource():
         self.seq = sequence
         self.pos += 1
         return True
+
+
+    def get_seq_by_read_id(self, read_id):
+        self.reset()
+        while self.next():
+            if self.id == read_id:
+                return self.seq
+
+        return False
 
 
     def close(self):
