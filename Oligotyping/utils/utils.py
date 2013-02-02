@@ -195,6 +195,31 @@ def append_reads_to_FASTA(read_id_sequence_tuples_list, fasta_file_path):
     fasta_file.close()
 
 
+def remove_white_space_mask_from_B6_entry(entry, defline_white_space_mask = '<$!$>'):
+    # a stupid workaround due to the stupid behavior of blastn. if there are white spaces in the
+    # defline of a FASTA file, it removes anything after the first white space. so if any input file
+    # underwent of any cleaning process, this is an attempt to put those white spaces back in their
+    # place.
+    entry.subject_id = entry.subject_id.replace(defline_white_space_mask, ' ')
+    entry.hit_def = entry.hit_def.replace(defline_white_space_mask, ' ')
+    entry.query_id = entry.query_id.replace(defline_white_space_mask, ' ')
+    entry.raw_line = entry.raw_line.replace(defline_white_space_mask, ' ')
+
+    return entry
+
+    
+
+def mask_defline_whitespaces_in_FASTA(fasta_file_path, defline_white_space_mask = '<$!$>'):
+    temp_file_path = fasta_file_path + '.tmp'
+    fasta = u.SequenceSource(fasta_file_path)
+    output = u.FastaOutput(fasta_file_path + '.tmp')
+    
+    while fasta.next():
+        output.write_id(fasta.id.replace(' ', defline_white_space_mask))
+        output.write_seq(fasta.seq, split = False)
+
+    shutil.move(temp_file_path, fasta_file_path)
+
 def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
     alignment = u.SequenceSource(alignment_path, unique = True)
