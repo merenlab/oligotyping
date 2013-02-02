@@ -28,27 +28,9 @@ MISMATCHES, GAPS, Q_START, Q_END, S_START, S_END,\
 E_VALUE, BIT_SCORE, Q_LEN, S_LEN = range(0, 14)
 
 
-class B6Source:
-    def __init__(self, b6_source, lazy_init = True):
-        self.init()
-       
-        self.b6_source = b6_source
-        self.file_pointer = open(self.b6_source)
-        self.file_pointer.seek(0)
-        
-        self.conversion = [str, str, float, int, int, int, int, int, int, int, float, float, int, int]
-        
-        if lazy_init:
-            self.total_seq = None
-        else:
-            self.total_seq = len([l for l in self.file_pointer.readlines() if not l.startswith('#')])
-
-    def init(self):
-        self.pos = 0
-        self.entry = None
-        self.matrix = []
-
-        #b6 columns..
+class B6Entry:
+    def __init__(self, line = None):
+        self.raw_line = line
         self.query_id = None
         self.subject_id = None
         self.identity = None
@@ -63,6 +45,56 @@ class B6Source:
         self.bit_score = None
         self.q_len = None
         self.s_len = None
+        self.accession = None
+        self.ncbi_link = None
+        self.coverage = None
+        self.hsp_query = None
+        self.hsp_match = None
+        self.hsp_subject = None
+        self.hit_def = None
+        self.query_length = None
+
+        F = lambda x: line.split('\t')[x]
+        conversion = [str, str, float, int, int, int, int, int, int, int, float, float, int, int]
+
+        if line:
+            try:
+                self.query_id, self.subject_id, self.identity, self.alignment_length,\
+                self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
+                self.s_end, self.e_value, self.bit_score, self.q_len, self.s_len =\
+                    [conversion[x](F(x)) if F(x) != '*' else None for x in range(0, 14)]
+                self.hit_def = self.subject_id
+                self.query_length = self.q_len
+            except:
+                sys.stderr.write('\n\nError: This library requires 14 column non-standard tabular output.\n')
+                sys.stderr.write('       See source code for details.\n')
+                sys.stderr.write('\n       This was the illegal entry_line:\n\n')
+                sys.stderr.write('       ' + line)
+                sys.stderr.write('\n\n')
+                sys.exit()
+            
+
+class B6Source:
+    def __init__(self, b6_source, lazy_init = True):
+        self.init()
+       
+        self.b6_source = b6_source
+        self.file_pointer = open(self.b6_source)
+        self.file_pointer.seek(0)
+        
+        
+        if lazy_init:
+            self.total_seq = None
+        else:
+            self.total_seq = len([l for l in self.file_pointer.readlines() if not l.startswith('#')])
+
+
+    def init(self):
+        self.pos = 0
+        self.entry_line = None
+        self.matrix = []
+        self.entry = None
+
 
     def show_progress(self, end = False):
         sys.stderr.write('\r[b6lib] Reading: %s' % (pretty_print(self.pos)))
@@ -72,16 +104,16 @@ class B6Source:
 
     def next(self, raw = False, show_progress = False, progress_step = 1000):
         while 1:
-            self.entry = self.file_pointer.readline()
+            self.entry_line = self.file_pointer.readline()
             
-            if self.entry == '':
+            if self.entry_line == '':
                 if show_progress:
                     self.show_progress(end = True)
                 return False
 
-            self.entry = self.entry.strip()
+            self.entry_line = self.entry_line.strip()
             
-            if not (self.entry.startswith('#') or len(self.entry) == 0):
+            if not (self.entry_line.startswith('#') or len(self.entry_line) == 0):
                 self.pos   += 1
                 break
 
@@ -91,23 +123,10 @@ class B6Source:
         if raw == True:
             return True
         
-        F = lambda x: self.entry.split('\t')[x]
-      
-        try:
-            self.query_id, self.subject_id, self.identity, self.alignment_length,\
-            self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
-            self.s_end, self.e_value, self.bit_score, self.q_len, self.s_len =\
-                [self.conversion[x](F(x)) if F(x) != '*' else None for x in range(0, 14)]
-        except:
-            sys.stderr.write('\n\nError: This library requires 14 column non-standard tabular output.\n')
-            sys.stderr.write('       See source code for details.\n')
-            sys.stderr.write('\n       This was the illegal entry:\n\n')
-            sys.stderr.write('       ' + self.entry)
-            sys.stderr.write('\n\n')
-            sys.exit()
+        self.entry = B6Entry(self.entry_line)
 
-        self.entry += '\n'
         return True
+
 
     def reset(self):
         self.init()
@@ -129,7 +148,7 @@ class B6Source:
                 sys.stderr.write('\r[b6_matrix] Reading: %s' % (pretty_print(self.pos)))
                 sys.stderr.flush()
  
-            b6_columns = self.entry.split(('\t'))
+            b6_columns = self.entry_line.split(('\t'))
             for i in range(0, 12):
                 self.matrix[i].append(F(b6_columns[i], i))
 
