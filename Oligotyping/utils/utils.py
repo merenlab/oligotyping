@@ -558,15 +558,16 @@ def is_program_exist(program):
 def trim_uninformative_columns_from_alignment(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
     input_fasta.next()
-    invalid_columns = range(0, len(input_fasta.seq))
+    fasta_read_len = len(input_fasta.seq)
+    invalid_columns = range(0, fasta_read_len)
     input_fasta.reset()
     
     while input_fasta.next():
         for i in invalid_columns:
             if input_fasta.seq[i] != '-':
                 invalid_columns.remove(i)
-    
-    columns_to_keep = [x for x in range(0, invalid_columns[-1]) if x not in invalid_columns]
+   
+    columns_to_keep = [x for x in range(0, fasta_read_len) if x not in invalid_columns]
     
     input_fasta.reset()
 
