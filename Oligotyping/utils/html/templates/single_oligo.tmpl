@@ -111,18 +111,18 @@
 {% if oligo_reps_dict.blast_results|lookup:oligo %}
         <div id='sequences' style="height: 900px;"> 
             <div style="width: {{alignment_length|multiply:9}}px; position: relative;">
-                {% for i in oligo_reps_dict.blast_results|lookup:oligo|length|mklist %}
-                    <p><strong>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hit_def" }}</strong>
+                {% for entry in oligo_reps_dict.blast_results|lookup:oligo %}
+                    <p><strong>{{ entry.hit_def }}</strong>
                     {% if not blast_ref_db and not blast_ref_db_path %}
-                    <br />Accession: <a href="{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"ncbi_link" }}">
-                            {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"accession" }}</a></em>
+                    <br />Accession: <a href="{{ entry.ncbi_link }}">
+                            {{ entry.accession }}</a></em>
                     {% endif %}
-                    <br />Identity : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"identity"|floatformat:1 }}%</em>
-                    <br />Coverage : {{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"coverage"|floatformat:1 }}%</em>
+                    <br />Identity : {{ entry.identity|floatformat:1 }}%</em>
+                    <br />Coverage : {{ entry.coverage|floatformat:1 }}%</em>
                     <p>&nbsp;
-                    <br /><em>QUERY: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_query" }}</em>
-                    <br /><em>MATCH: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_match" }}</em>
-                    <br /><em>SUBJE: </em>{{ oligo_reps_dict.blast_results|lookup:oligo|lookup:i|lookup:"hsp_subject" }}</em>
+                    <br /><em>QUERY: </em>{{ entry.hsp_query }}</em>
+                    <br /><em>MATCH: </em>{{ entry.hsp_match }}</em>
+                    <br /><em>SUBJE: </em>{{ entry.hsp_subject }}</em>
                     <p>&nbsp;
                     <p>&nbsp;
                 {% endfor %}

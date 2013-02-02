@@ -196,7 +196,7 @@
                 {% for oligo in oligos %}
                     <p>
                         {% if blast_results_found %}
-                            {% if oligo_reps_dict.blast_results|lookup:oligo|lookup:0|lookup:"identity" == 100.0 %}
+                            {% if oligo_reps_dict.blast_results|lookup:oligo|has_perfect_hit %}
                                 <span class="check">✓</span>
                             {% else %}
                                 <span class="cross">✗</span>

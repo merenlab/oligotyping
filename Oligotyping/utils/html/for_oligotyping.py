@@ -20,7 +20,6 @@ from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
-from Oligotyping.utils.blast_interface import get_blast_results_dict, get_local_blast_results_dict
 from error import HTMLError
 
 
@@ -54,6 +53,12 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
+
+
+@register.filter(name='has_perfect_hit')
+def has_perfect_hit(b6_entry_list):
+    return b6_entry_list[0].identity == 100.0
+
 @register.filter(name='get_blast_hits')
 def get_blast_hits(d, max_num = 8):
     '''gets a dictionary of BLAST results, returns
@@ -67,17 +72,18 @@ def get_blast_hits(d, max_num = 8):
         
     ret_line = '<p><b>BLAST search results at a glance</b> (%d of %d total hits are shown):' %\
                                             (num_show, len(d))
-    for i in d.keys()[0:num_show]:
-        if d[i]['identity'] == 100.0:
+    for i in range(0, num_show):
+        entry = d[i]
+        if entry.identity == 100.0:
             ret_line += '<p>* %s (<b><i>identity: %.2f%%, query coverage: %.2f%%</i></b>)' \
-                                    % (d[i]['hit_def'].replace("'", '"'),
-                                       d[i]['identity'],
-                                       d[i]['coverage'])
+                                    % (entry.hit_def.replace("'", '"'),
+                                       entry.identity,
+                                       entry.coverage)
         else:
             ret_line += '<p>* %s (<i>identity: %.2f%%, query coverage: %.2f%%</i>)' \
-                                    % (d[i]['hit_def'].replace("'", '"'),
-                                       d[i]['identity'],
-                                       d[i]['coverage'])
+                                    % (entry.hit_def.replace("'", '"'),
+                                       entry.identity,
+                                       entry.coverage)
     return ret_line
 
 @register.filter(name='percentify') 
@@ -346,21 +352,12 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
         oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
-        if html_dict.has_key('blast_ref_db') and html_dict['blast_ref_db']:
-            # BLAST search was done locally
-            blast_results_file_path = alignment_base_path + '_unique_BLAST.txt'
-            if os.path.exists(blast_results_file_path):
-                html_dict['blast_results_found'] = True
-                oligo_reps_dict['blast_results'][oligo] = get_local_blast_results_dict(open(blast_results_file_path).readlines(), num_results = 50)
-            else:
-                oligo_reps_dict['blast_results'][oligo] = None
+        blast_results_dict = alignment_base_path + '_unique_BLAST.cPickle'
+        if os.path.exists(blast_results_dict):
+            html_dict['blast_results_found'] = True
+            oligo_reps_dict['blast_results'][oligo] = cPickle.load(open(blast_results_dict))
         else:
-            blast_results_file_path = alignment_base_path + '_unique_BLAST.xml'
-            if os.path.exists(blast_results_file_path):
-                html_dict['blast_results_found'] = True
-                oligo_reps_dict['blast_results'][oligo] = get_blast_results_dict(open(blast_results_file_path), num_results = 50)
-            else:
-                oligo_reps_dict['blast_results'][oligo] = None
+            oligo_reps_dict['blast_results'][oligo] = None
 
     return oligo_reps_dict
 
