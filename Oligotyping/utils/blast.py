@@ -225,14 +225,14 @@ class LocalBLAST:
         run_command(self.makeblastdb_cmd)
 
 
-    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None, max_identity = None, penalty_for_terminal_gaps = True, defline_white_space_mask = None):
+    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None, max_identity = None, penalty_for_terminal_gaps = True):
         results_dict = {}
         
-        b6 = b6lib.B6Source(self.output, defline_white_space_mask = defline_white_space_mask)
-        
+        b6 = b6lib.B6Source(self.output)
+
         ids_with_hits = set()
         while b6.next():
-            if b6.query_id == b6.subject_id:
+            if b6.entry.query_id == b6.entry.subject_id:
                 continue
 
             if penalty_for_terminal_gaps:
@@ -251,41 +251,41 @@ class LocalBLAST:
                 # the alignment discards the T at the beginning and gives 0 mismatches.
                 # here we introduce those gaps back:
                 additional_gaps = 0
-                if b6.q_start != 1 or b6.s_start != 1:
-                    additional_gaps += (b6.q_start - 1) if b6.q_start > b6.s_start else (b6.s_start - 1)
-                if additional_gaps != b6.q_len or b6.s_end != b6.s_len:
-                    additional_gaps += (b6.q_len - b6.q_end) if (b6.q_len - b6.q_end) > (b6.s_len - b6.s_end) else (b6.s_len - b6.s_end)
+                if b6.entry.q_start != 1 or b6.entry.s_start != 1:
+                    additional_gaps += (b6.entry.q_start - 1) if b6.entry.q_start > b6.entry.s_start else (b6.entry.s_start - 1)
+                if additional_gaps != b6.entry.q_len or b6.entry.s_end != b6.entry.s_len:
+                    additional_gaps += (b6.entry.q_len - b6.entry.q_end) if (b6.entry.q_len - b6.entry.q_end) > (b6.entry.s_len - b6.entry.s_end) else (b6.entry.s_len - b6.entry.s_end)
     
-                identity_penalty = additional_gaps * 100.0 / (b6.q_len + additional_gaps)
+                identity_penalty = additional_gaps * 100.0 / (b6.entry.q_len + additional_gaps)
                 
                 if identity_penalty:
-                    b6.gaps += additional_gaps
-                    b6.identity -= identity_penalty
+                    b6.entry.gaps += additional_gaps
+                    b6.entry.identity -= identity_penalty
                     
                 # done correcting the hit. carry on.
 
             if max_identity is not None:
-                if round(b6.identity, 1) >= round(max_identity, 1):
+                if round(b6.entry.identity, 1) >= round(max_identity, 1):
                     continue
 
             if min_identity is not None:
-                if round(b6.identity, 1) < round(min_identity, 1):
+                if round(b6.entry.identity, 1) < round(min_identity, 1):
                     continue
             
             if mismatches is not None:
-                if b6.mismatches != mismatches:
+                if b6.entry.mismatches != mismatches:
                     continue
                 
             if gaps is not None:
-                if b6.gaps != gaps:
+                if b6.entry.gaps != gaps:
                     continue
             
             # if it made here, we are interested in this one, after all.
-            if b6.query_id not in ids_with_hits:
-                results_dict[b6.query_id] = set()
-                ids_with_hits.add(b6.query_id)
+            if b6.entry.query_id not in ids_with_hits:
+                results_dict[b6.entry.query_id] = set()
+                ids_with_hits.add(b6.entry.query_id)
                 
-            results_dict[b6.query_id].add(b6.subject_id)
+            results_dict[b6.entry.query_id].add(b6.entry.subject_id)
                 
         b6.close()
         
