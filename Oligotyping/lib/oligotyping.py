@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.7'
+__version__ = '0.8'
 
 import os
 import sys
@@ -19,6 +19,7 @@ import shutil
 import cPickle
 import logging
 
+from Oligotyping.utils import blast
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.shared import generate_default_figures
 from Oligotyping.lib.shared import generate_exclusive_figures
@@ -37,17 +38,17 @@ from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import append_reads_to_FASTA
 from Oligotyping.utils.utils import generate_MATRIX_files
 from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import mask_defline_whitespaces_in_FASTA
 from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
+from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
 from Oligotyping.utils.utils import generate_MATRIX_files_for_units_across_datasets
-
-# FIXME: test whether Biopython is installed or not here.
-from Oligotyping.utils.blast_interface import remote_blast_search, local_blast_search
 
 
 class Oligotyping:
@@ -1054,44 +1055,6 @@ class Oligotyping:
             distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
             cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
 
-            if (not self.quick) and (not self.skip_blast_search):
-                # perform BLAST search and store results
-                unique_fasta = u.SequenceSource(unique_fasta_path)
-                unique_fasta.next()
-               
-                if self.blast_ref_db:
-                    # if self.blast_ref_db is set, then perform a local BLAST search 
-                    # against self.blast_ref_db
-                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.txt'
-
-                    self.progress.update('Local BLAST Search..')
-                        
-                    local_blast_search(unique_fasta.seq, self.blast_ref_db, oligo_representative_blast_output)
-
-                else:
-                    # if self.blast_ref_db is not set, perform a BLAST search on NCBI
-                    oligo_representative_blast_output = unique_fasta_path + '_BLAST.xml'
-
-                    # FIXME: this value should be paramaterized
-                    max_blast_attempt = 3
-
-                    def blast_search_wrapper(seq, blast_output):
-                        try:
-                            remote_blast_search(seq, blast_output)
-                            return True
-                        except:
-                            return False
-
-                    for blast_attempt in range(0, max_blast_attempt):
-                        self.progress.update('NCBI BLAST search (attempt #%d)' % (blast_attempt + 1))
-                            
-                        if blast_search_wrapper(unique_fasta.seq, oligo_representative_blast_output):
-                            break
-                        else:
-                            continue
-
-                unique_fasta.close()
-
             if (not self.quick) and (not self.no_figures):
                 entropy_file_path = unique_fasta_path + '_entropy'
                 color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
@@ -1112,6 +1075,93 @@ class Oligotyping:
                     color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
 
                 cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
+
+
+
+        if (not self.quick) and (not self.skip_blast_search):
+            self.progress.new('Performing %s BLAST search for representative sequences'\
+                                % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
+
+            
+            if self.blast_ref_db:
+                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
+                
+                representative_fasta_entries = []
+                for oligo in self.abundant_oligos:
+                    self.progress.update('Storing representative sequences for "%s" ...' % oligo)
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    unique_fasta = u.SequenceSource(unique_fasta_path)
+                    unique_fasta.next()
+                    representative_fasta_entries.append((oligo, unique_fasta.seq),)
+                    unique_fasta.close()
+                append_reads_to_FASTA(representative_fasta_entries, query)
+
+
+                self.progress.update('Generating a copy of target BLAST db ...')
+                self.logger.info('copying blastdb from "%s" to %s' % (self.blast_ref_db, target))
+                shutil.copy(self.blast_ref_db, target)
+                mask_defline_whitespaces_in_FASTA(target, '<$!$>')
+                mask_defline_whitespaces_in_FASTA(query, '<$!$>')
+    
+                params = "-perc_identity 80"
+                job = 'reps'
+                s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
+                self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
+                                                       % (job, query, target, output, params))
+        
+        
+                self.progress.update('Running makeblastdb ...')
+                s.make_blast_db()
+                self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
+        
+                s.params = params
+                self.progress.update('Performing blastn ...')
+                s.search()
+                self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
+        
+                self.progress.update('Getting BLAST results ...')
+                fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
+
+                for oligo in self.abundant_oligos:
+                    self.progress.update('Storing BLAST results ...')
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
+                    cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+
+            else:
+                # will perform remote BLAST
+                r = blast.RemoteBLAST()
+                for oligo in self.abundant_oligos:
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    unique_fasta = u.SequenceSource(unique_fasta_path)
+                    unique_fasta.next()
+                    blast_output_xml = unique_fasta_path + '_BLAST.xml'
+                    blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
+
+                    # FIXME: this value should be paramaterized
+                    max_blast_attempt = 3
+
+                    def blast_search_wrapper(seq, xml_path, pickle_path):
+                        try:
+                            results = r.search(seq, xml_path)
+                            results_list = r.get_fancy_results_list(results)
+                            cPickle.dump(results_list, open(pickle_path, 'w'))
+                            return True
+                        except:
+                            return False
+
+                    for blast_attempt in range(0, max_blast_attempt):
+                        self.progress.update('searching for "%s" (%d of %d) (attempt #%d)' % (oligo,
+                                                                                              self.abundant_oligos.index(oligo) + 1,
+                                                                                              len(self.abundant_oligos), blast_attempt + 1))
+                            
+                        if blast_search_wrapper(unique_fasta.seq, blast_output_xml, blast_output_dict):
+                            break
+                        else:
+                            continue
+
+                    unique_fasta.close()
+
        
         self.progress.end()
         self.run.info('output_directory_for_reps', output_directory_for_reps) 
@@ -1198,6 +1248,10 @@ class Oligotyping:
 
 
     def _generate_html_output(self):
+        if self.no_figures:
+            sys.stdout.write('\n\n\t"--no-figures" parameter is given, skipping HTML output...\n\n')
+            return
+
         from Oligotyping.utils.html.error import HTMLError
         try:
             from Oligotyping.utils.html.for_oligotyping import generate_html_output
