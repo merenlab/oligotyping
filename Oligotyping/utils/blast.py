@@ -11,6 +11,8 @@
 
 import os
 import time
+import copy
+import cStringIO
 
 import Oligotyping.lib.fastalib as u
 import Oligotyping.lib.b6lib as b6lib
@@ -22,7 +24,26 @@ from Oligotyping.utils.utils import split_fasta_file
 from Oligotyping.utils.utils import is_program_exist
 from Oligotyping.utils.utils import check_command_output
 from Oligotyping.utils.utils import get_temporary_file_name
+from Oligotyping.utils.utils import remove_white_space_mask_from_B6_entry
 
+
+cogent_error_text = '''\n
+            You need 'cogent' module in your Python path to run this software.
+
+            You can get more information about the installation here:
+
+                http://pycogent.sourceforge.net/install.html
+
+            Exiting.\n'''
+
+biopython_error_text = '''\n
+            You need 'BioPython' module in your Python path to run this software.
+
+            You can get more information about the installation here:
+
+                http://biopython.org/wiki/Biopython
+
+            Exiting.\n'''
 
 version_error_text = '''\n
             Certain steps of decomposition requires fast searching, and it seems NCBI's BLAST tools
@@ -52,6 +73,16 @@ missing_binary_error_text = '''\n
             
             Exiting.\n'''
 
+
+class MissingModuleError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        return
+    def __str__(self):
+        return 'Missing Module Error: %s' % self.e
+
+
 class ModuleBinaryError(Exception):
     def __init__(self, e = None):
         Exception.__init__(self)
@@ -68,6 +99,18 @@ class ModuleVersionError(Exception):
         return
     def __str__(self):
         return 'Module Version Error: %s' % self.e
+
+
+try:
+    from Bio.Blast import NCBIWWW
+    from Bio.Blast import NCBIXML
+except:
+    raise MissingModuleError, biopython_error_text
+
+try:
+    from cogent.align.algorithm import nw_align
+except:
+    raise MissingModuleError, cogent_error_text
 
 
 class LocalBLAST:
@@ -182,43 +225,44 @@ class LocalBLAST:
         run_command(self.makeblastdb_cmd)
 
 
-    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None, max_identity = None):
+    def get_results_dict(self, mismatches = None, gaps = None, min_identity = None, max_identity = None, penalty_for_terminal_gaps = True, defline_white_space_mask = None):
         results_dict = {}
         
-        b6 = b6lib.B6Source(self.output)
+        b6 = b6lib.B6Source(self.output, defline_white_space_mask = defline_white_space_mask)
         
         ids_with_hits = set()
         while b6.next():
             if b6.query_id == b6.subject_id:
                 continue
 
-            # following correction is to take secret gaps into consideration.
-            # because we are working with reads that are supposed to be almost the
-            # same length, we want query and target to be aligned 100%. sometimes it
-            # is not the case, and mismatches are being calculated by the aligned
-            # part of query or target. for instance if query is this:
-            #
-            #    ATCGATCG
-            #
-            # and target is this:
-            #
-            #   TATCGATCG
-            #
-            # the alignment discards the T at the beginning and gives 0 mismatches.
-            # here we introduce those gaps back:
-            additional_gaps = 0
-            if b6.q_start != 1 or b6.s_start != 1:
-                additional_gaps += (b6.q_start - 1) if b6.q_start > b6.s_start else (b6.s_start - 1)
-            if additional_gaps != b6.q_len or b6.s_end != b6.s_len:
-                additional_gaps += (b6.q_len - b6.q_end) if (b6.q_len - b6.q_end) > (b6.s_len - b6.s_end) else (b6.s_len - b6.s_end)
-
-            identity_penalty = additional_gaps * 100.0 / (b6.q_len + additional_gaps)
-            
-            if identity_penalty:
-                b6.gaps += additional_gaps
-                b6.identity -= identity_penalty
+            if penalty_for_terminal_gaps:
+                # following correction is to take secret gaps into consideration.
+                # because we are working with reads that are supposed to be almost the
+                # same length, we want query and target to be aligned 100%. sometimes it
+                # is not the case, and mismatches are being calculated by the aligned
+                # part of query or target. for instance if query is this:
+                #
+                #    ATCGATCG
+                #
+                # and target is this:
+                #
+                #   TATCGATCG
+                #
+                # the alignment discards the T at the beginning and gives 0 mismatches.
+                # here we introduce those gaps back:
+                additional_gaps = 0
+                if b6.q_start != 1 or b6.s_start != 1:
+                    additional_gaps += (b6.q_start - 1) if b6.q_start > b6.s_start else (b6.s_start - 1)
+                if additional_gaps != b6.q_len or b6.s_end != b6.s_len:
+                    additional_gaps += (b6.q_len - b6.q_end) if (b6.q_len - b6.q_end) > (b6.s_len - b6.s_end) else (b6.s_len - b6.s_end)
+    
+                identity_penalty = additional_gaps * 100.0 / (b6.q_len + additional_gaps)
                 
-            # done correcting the hit. carry on.
+                if identity_penalty:
+                    b6.gaps += additional_gaps
+                    b6.identity -= identity_penalty
+                    
+                # done correcting the hit. carry on.
 
             if max_identity is not None:
                 if round(b6.identity, 1) >= round(max_identity, 1):
@@ -246,7 +290,107 @@ class LocalBLAST:
         b6.close()
         
         return results_dict
+
+
+    def get_fancy_results_dict(self, max_per_query = 10, defline_white_space_mask = None):
+        b6 = b6lib.B6Source(self.output)
+
+        input_fasta = u.SequenceSource(self.input)
+        target_db = u.SequenceSource(self.target)
+
+        query_counts = {}
+        fancy_results_dict = {}
+
+        while b6.next():
+            if not query_counts.has_key(b6.entry.query_id):
+                query_counts[b6.entry.query_id] = 1
+
+            if query_counts[b6.entry.query_id] - 1 == max_per_query:
+                continue
+            else:
+                query_counts[b6.entry.query_id] += 1
+
+            if not fancy_results_dict.has_key(b6.entry.query_id):
+                fancy_results_dict[b6.entry.query_id] = []
+
+            query_seq = input_fasta.get_seq_by_read_id(b6.entry.query_id).replace('-', '')
+            target_seq = target_db.get_seq_by_read_id(b6.entry.subject_id)
             
+            if defline_white_space_mask:
+                b6.entry = remove_white_space_mask_from_B6_entry(b6.entry, defline_white_space_mask)
+            
+            # parts that were aligned during the search are being aligned to each other to generate
+            # hsp_match data to include into results
+            query_aligned, target_aligned = nw_align(query_seq[int(b6.entry.q_start) - 1:int(b6.entry.q_end)],\
+                                                         target_seq[int(b6.entry.s_start) - 1:int(b6.entry.s_end)]) 
+
+            query_aligned, target_aligned = query_aligned.upper(), target_aligned.upper()
+
+            coverage = (b6.entry.q_end - b6.entry.q_start) * 100.0 / b6.entry.q_len
+            hsp_match = ''.join(['|' if query_aligned[i] == target_aligned[i] else ' ' for i in range(0, len(query_aligned))])
+            
+            entry = copy.deepcopy(b6.entry)
+            entry.coverage = coverage
+            entry.hsp_query = query_aligned
+            entry.hsp_subject = target_aligned
+            entry.hsp_match = hsp_match
+            
+            entry = remove_white_space_mask_from_B6_entry(entry)
+
+            fancy_results_dict[entry.query_id].append(entry)
+
+        return fancy_results_dict
+
+
+class RemoteBLAST:
+    def __init__(self):
+        pass
+
+    def search(self, sequence, output_file = None):
+        result_handle = NCBIWWW.qblast("blastn", "nt", sequence.replace('-', ''))
+        result = result_handle.read()
+
+        if output_file:
+           open(output_file, "w").write(result)
+ 
+        return cStringIO.StringIO(result)
+
+
+    def get_fancy_results_list(self, blast_results, num_results = 20):
+        blast_results_list = []
+    
+        blast_record = list(NCBIXML.parse(blast_results))[0]
+        num_results = len(blast_record.alignments) if len(blast_record.alignments) < num_results else num_results
+    
+        for i in range(0, num_results):
+            entry = b6lib.B6Entry()
+            entry.q_len = int(blast_record.query_length)
+            entry.query_length = entry.q_len
+            
+            alignment = blast_record.alignments[i]
+            hsp = alignment.hsps[0]
+         
+            entry.hit_def = alignment.hit_def   
+            entry.subject_id = entry.hit_def
+            entry.accession = alignment.accession
+            entry.ncbi_link = 'http://www.ncbi.nlm.nih.gov/nuccore/%s' % entry.accession
+            entry.hsp_query = hsp.query
+            entry.hsp_match = hsp.match
+            entry.hsp_subject = hsp.sbjct
+    
+            entry.identity = len([x for x in hsp.match if x == '|']) * 100.0 / len(entry.hsp_query)
+            entry.coverage = len(hsp.query) * 100.0 / entry.query_length
+    
+            blast_results_list.append(entry)
+    
+        try:
+            blast_results.close()
+        except:
+            pass
+    
+        return blast_results_list
+
+
 if __name__ == "__main__":
     try:
         u = LocalBLAST(None, None, None, None)
