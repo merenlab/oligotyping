@@ -39,6 +39,7 @@ from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import append_reads_to_FASTA
+from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import generate_MATRIX_files
 from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
@@ -83,6 +84,7 @@ class Oligotyping:
         self.cosine_similarity_threshold = 0.1
         self.sample_mapping = None
         self.log_file_path = None
+        self.skip_check_input_file = False
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -115,6 +117,7 @@ class Oligotyping:
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
             self.generate_sets = args.generate_sets
             self.sample_mapping = args.sample_mapping
+            self.skip_check_input_file = args.skip_check_input_file
         
         self.run = Run()
         self.progress = Progress()
@@ -134,7 +137,36 @@ class Oligotyping:
         self.figures_directory = None
 
 
-    def sanity_check(self):
+    def check_apps(self):
+        try:
+            blast.LocalBLAST(None, None, None)
+        except blast.ModuleVersionError:
+            raise ConfigError, blast.version_error_text
+        except blast.ModuleBinaryError:
+            raise ConfigError, blast.missing_binary_error_text
+
+        # FIXME: check R modules here.
+
+
+    def check_dirs(self):
+        # check output associated stuff
+        if not self.output_directory:
+            self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
+        
+        if not os.path.exists(self.output_directory):
+            try:
+                os.makedirs(self.output_directory)
+            except:
+                raise ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
+                                                                (self.output_directory)
+        if not os.access(self.output_directory, os.W_OK):
+            raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
+
+        self.tmp_directory = self.generate_output_destination('TMP', directory = True)
+        self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
+
+
+    def check_input(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
             raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
         
@@ -148,17 +180,52 @@ class Oligotyping:
         if self.sample_mapping:
             mapping_file_simple_check(self.sample_mapping)
 
+        if self.colors_list_file:
+            if not os.path.exists(self.colors_list_file):
+                raise ConfigError, "Colors list file does not exist: '%s'" % self.colors_list_file
+            first_characters = list(set([c.strip()[0] for c in open(self.colors_list_file)]))
+            if len(first_characters) != 1 or first_characters[0] != '#':
+                raise ConfigError, "Colors list file does not seem to be correctly formatted"
+
+        # set the alignment lentgh (it will be necessary to check certain params)
+        alignment = u.SequenceSource(self.alignment)
+        alignment.next()
+        self.alignment_length = len(alignment.seq)
+        alignment.close()
+
+        # now we know that input files are OK, lets check input params before we go any further.
+        self.check_params()
+
+        if not self.skip_check_input_file:
+            self.progress.new('Checking the input FASTA')
+            samples = check_input_alignment(self.alignment, self.dataset_name_from_defline, self.progress)
+            if not samples:
+                raise ConfigError, 'Exiting.'
+            self.progress.end()
+
+
+    def check_params(self):
         if self.number_of_auto_components != None and self.selected_components != None:
-            raise ConfigError, "Both 'auto components' (-c) and 'selected components' (-C) has been declared."
+            raise ConfigError, "You either have to declare 'auto components' (-c) or 'selected components' (-C)."
         
         if self.number_of_auto_components == None and self.selected_components == None:
-            raise ConfigError, "Either only 'auto components' (-c), or only 'selected components' (-C) can be declared."
+            raise ConfigError, "Both 'auto components' (-c), and 'selected components' (-C) were declared."
 
         if self.selected_components:
             try:
                 self.selected_components = [int(c) for c in self.selected_components.split(',')]
             except:
                 raise ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
+        
+        if max(self.selected_components) >= self.alignment_length:
+            raise ConfigError, "There is at least one component ('%d') that is bigger than the alignment length."\
+                                                         % max(self.selected_components) 
+        
+        if min(self.selected_components) < 0:
+            raise ConfigError, "Selected components can't be smaller than 0"
+
+        if len(self.selected_components) != len(set(self.selected_components)):
+            raise ConfigError, "You declared the same component more than once."
 
         if self.min_base_quality:
             try:
@@ -181,26 +248,6 @@ class Oligotyping:
             if len([n for n in ''.join(self.exclude_oligotypes) if n not in ['A', 'T', 'C', 'G', '-']]):
                 raise ConfigError, "Oligotypes defined by --exclude-oligotypes parameter seems to have ambiguous characters."
             
-        
-        if not self.output_directory:
-            self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
-        
-        if not os.path.exists(self.output_directory):
-            try:
-                os.makedirs(self.output_directory)
-            except:
-                raise ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
-                                                                (self.output_directory)
-        if not os.access(self.output_directory, os.W_OK):
-            raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
-
-        if self.colors_list_file:
-            if not os.path.exists(self.colors_list_file):
-                raise ConfigError, "Colors list file does not exist: '%s'" % self.colors_list_file
-            first_characters = list(set([c.strip()[0] for c in open(self.colors_list_file)]))
-            if len(first_characters) != 1 or first_characters[0] != '#':
-                raise ConfigError, "Colors list file does not seem to be correctly formatted"
-
         return True
 
 
@@ -255,22 +302,22 @@ class Oligotyping:
 
 
     def run_all(self):
-        self.sanity_check()
-        
-        # FIXME this should go into 'check dirs'.
-        self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
-        self.tmp_directory = self.generate_output_destination('TMP', directory = True)
-        
+        self.check_apps()
+        self.check_dirs()
+
+        # ready to init logging        
         self._init_logger()
         self.info_file_path = self.generate_output_destination('RUNINFO')
         self.run.init_info_file_obj(self.info_file_path)
 
-        self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
-        self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
+        self.check_input()
 
-        self.fasta.next()
-        self.alignment_length = len(self.fasta.seq)
-        self.fasta.reset()
+        self.progress.new('Initializing')
+        self.progress.update('Reading the input FASTA')
+        self.fasta = u.SequenceSource(self.alignment, lazy_init = False)
+        self.progress.end()
+
+        self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
 
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
