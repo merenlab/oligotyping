@@ -203,6 +203,8 @@ def oligotyping():
                                 visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--project', default = None, type=str,
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
+    parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
+                        help = 'When set, input FASTA will not be checked for potential errors')
 
     return parser
 
