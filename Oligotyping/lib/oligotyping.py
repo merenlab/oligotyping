@@ -217,15 +217,15 @@ class Oligotyping:
             except:
                 raise ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
         
-        if max(self.selected_components) >= self.alignment_length:
-            raise ConfigError, "There is at least one component ('%d') that is bigger than the alignment length."\
-                                                         % max(self.selected_components) 
+            if max(self.selected_components) >= self.alignment_length:
+                raise ConfigError, "There is at least one component ('%d') that is bigger than the alignment length."\
+                                                                        % max(self.selected_components) 
         
-        if min(self.selected_components) < 0:
-            raise ConfigError, "Selected components can't be smaller than 0"
+            if min(self.selected_components) < 0:
+                raise ConfigError, "Selected components can't be smaller than 0"
 
-        if len(self.selected_components) != len(set(self.selected_components)):
-            raise ConfigError, "You declared the same component more than once."
+            if len(self.selected_components) != len(set(self.selected_components)):
+                raise ConfigError, "You declared the same component more than once."
 
         if self.min_base_quality:
             try:
