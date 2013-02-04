@@ -86,4 +86,5 @@ pretty_names = {'output_directory': 'Output directory',
                 'relocate_outliers': 'Try to relocate outliers',
                 'read_distribution_table_path': 'Read distribution among datasets table',
                 'node_representatives_file_path': 'Representative sequences per node',
+                'sample_mapping': 'Mapping file'
                 }

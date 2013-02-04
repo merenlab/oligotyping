@@ -129,9 +129,12 @@
     {% else %}
     <tr><td id="l">{{pretty_names.representative_seqs_fasta_file_path}}</td><td id="r"><i>(representative sequences were not computed)</i></td></tr>
     {% endif %}
-    <tr><td id="l">{{pretty_names.read_distribution_table_path}}</td><td id="r"><a href="{{read_distribution_table_path}}">read_distribution.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.read_distribution_table_path}}</td><td id="r"><a href="{{read_distribution_table_path}}">read_distribution.txt</a></td></tr>
+    {% if sample_mapping %}
+    	<tr><td id="l">{{pretty_names.sample_mapping}}</td><td id="r"><a href="{{sample_mapping}}">sample_mapping.txt</a></td></tr>
+    {% endif %}
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>

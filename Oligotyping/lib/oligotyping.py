@@ -179,6 +179,9 @@ class Oligotyping:
 
         if self.sample_mapping:
             mapping_file_simple_check(self.sample_mapping)
+            sample_mapping_new_destination = self.generate_output_destination("SAMPLE-MAPPING.txt")
+            shutil.copy(self.sample_mapping, sample_mapping_new_destination)
+            self.sample_mapping = sample_mapping_new_destination
 
         if self.colors_list_file:
             if not os.path.exists(self.colors_list_file):
