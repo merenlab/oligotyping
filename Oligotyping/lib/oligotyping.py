@@ -283,7 +283,15 @@ class Oligotyping:
                                         self.min_substantive_abundance)
 
         if self.selected_components:
-            prefix = 'sc%d-%s' % (len(self.selected_components), prefix)
+           
+            # I don't have any desire to solve dependencies of the initialization steps properly, so
+            # please have a cup of ugly hack:
+            if type(self.selected_components) == type(''):
+                num_sc = len(self.selected_components.split(','))
+            else:
+                num_sc = len(self.selected_components)
+
+            prefix = 'sc%d-%s' % (num_sc, prefix)
         else:
             prefix = 'c%d-%s' % (self.number_of_auto_components, prefix)
         
