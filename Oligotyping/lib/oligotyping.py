@@ -348,6 +348,7 @@ class Oligotyping:
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.run.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.run.info('generate_sets', self.generate_sets)
+        self.run.info('skip_basic_analyses', self.skip_basic_analyses)
         if self.generate_sets:
             self.run.info('T', self.cosine_similarity_threshold)
         self.run.info('s', self.min_number_of_datasets)
