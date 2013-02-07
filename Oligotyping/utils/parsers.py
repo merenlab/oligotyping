@@ -86,6 +86,9 @@ def decomposer():
                         help = 'When set, decomposer will attempt to generate figures post analysis')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
                         help = 'When set, input FASTA will not be checked for potential errors')
+    parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
+                        help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
+                                skipped')
 
 
     return parser
@@ -205,6 +208,9 @@ def oligotyping():
                         help = 'When a project name is set, given name will be used in figures whenever possible.')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
                         help = 'When set, input FASTA will not be checked for potential errors')
+    parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
+                        help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
+                                skipped')
 
     return parser
 

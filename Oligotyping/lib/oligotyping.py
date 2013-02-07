@@ -85,6 +85,7 @@ class Oligotyping:
         self.sample_mapping = None
         self.log_file_path = None
         self.skip_check_input_file = False
+        self.skip_basic_analyses = False
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -118,6 +119,7 @@ class Oligotyping:
             self.generate_sets = args.generate_sets
             self.sample_mapping = args.sample_mapping
             self.skip_check_input_file = args.skip_check_input_file
+            self.skip_basic_analyses = args.skip_basic_analyses
         
         self.run = Run()
         self.progress = Progress()

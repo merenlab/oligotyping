@@ -77,6 +77,7 @@ class Decomposer:
         self.gen_figures = False
         self.skip_check_input_file = False
         self.sample_mapping = None
+        self.skip_basic_analyses = False
          
         if args:
             self.alignment = args.alignment
@@ -101,6 +102,7 @@ class Decomposer:
             self.skip_check_input_file = args.skip_check_input_file
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
+            self.skip_basic_analyses = args.skip_basic_analyses
 
         self.decomposition_depth = -1
 

@@ -58,32 +58,33 @@ def generate_default_figures(_object):
     #
     # basic analyses
     #
-    for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
-                                           ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
-        figures_dict['basic_analyses'][output_dir] = {}
-                    
-        target_dir = _object.generate_output_destination('%s/__default__/%s' \
-                                                            % (os.path.basename(_object.figures_directory), output_dir),
-                                                      directory = True)
+    if not _object.skip_basic_analyses:
+        for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
+                                               ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
+            figures_dict['basic_analyses'][output_dir] = {}
+                        
+            target_dir = _object.generate_output_destination('%s/__default__/%s' \
+                                                                % (os.path.basename(_object.figures_directory), output_dir),
+                                                          directory = True)
+                
+            for (distance_metric, matrix_file) in [("canberra", _object.matrix_percent_file_path),
+                                                   ("kulczynski", _object.matrix_percent_file_path),
+                                                   ("jaccard", _object.matrix_percent_file_path),
+                                                   ("horn", _object.matrix_percent_file_path),
+                                                   ("chao", _object.matrix_count_file_path)]:
+                output_prefix = os.path.join(target_dir, distance_metric)
+                cmd_line = ('%s "%s" %s "%s" "%s" >> "%s" 2>&1' % 
+                                        (os.path.join(scripts_dir_path, script),
+                                         matrix_file,
+                                         distance_metric,
+                                         _object.project,
+                                         output_prefix,
+                                         _object.log_file_path))
+                _object.progress.update('%s "%s" ...' % (analysis, distance_metric))
+                _object.logger.info('figure basic_analyses: %s' % (cmd_line))
+                run_command(cmd_line)
+                figures_dict['basic_analyses'][output_dir][distance_metric] = output_prefix
             
-        for (distance_metric, matrix_file) in [("canberra", _object.matrix_percent_file_path),
-                                               ("kulczynski", _object.matrix_percent_file_path),
-                                               ("jaccard", _object.matrix_percent_file_path),
-                                               ("horn", _object.matrix_percent_file_path),
-                                               ("chao", _object.matrix_count_file_path)]:
-            output_prefix = os.path.join(target_dir, distance_metric)
-            cmd_line = ('%s "%s" %s "%s" "%s" >> "%s" 2>&1' % 
-                                    (os.path.join(scripts_dir_path, script),
-                                     matrix_file,
-                                     distance_metric,
-                                     _object.project,
-                                     output_prefix,
-                                     _object.log_file_path))
-            _object.progress.update('%s "%s" ...' % (analysis, distance_metric))
-            _object.logger.info('figure basic_analyses: %s' % (cmd_line))
-            run_command(cmd_line)
-            figures_dict['basic_analyses'][output_dir][distance_metric] = output_prefix
-        
     return figures_dict
 
 
