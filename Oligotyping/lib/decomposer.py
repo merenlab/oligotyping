@@ -52,6 +52,7 @@ from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 class Decomposer:
     def __init__(self, args = None):
+        self.analysis = 'decomposition'
         self.alignment = None
         self.min_entropy = 0.3
         self.number_of_discriminants = 4
