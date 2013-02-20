@@ -668,7 +668,8 @@ class Oligotyping:
             
             self.run.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
             if len(self.abundant_oligos) == 0:
-                raise ConfigError, "Something is wrong; all oligotypes were eliminated with --limit-oligotypes. Quiting."
+                raise ConfigError, "\n\n\t--limit-oligotypes parameter eliminated all oligotypes.\
+                                    \n\tPlease make sure --limit-oligotypes matches with actual oligotypes.\n\n\tQuiting.\n"
 
         # if 'exclude_oligotypes' is defined, remove them from analysis if they are present
         if self.exclude_oligotypes:
@@ -686,6 +687,12 @@ class Oligotyping:
                                                         if self.datasets_dict[dataset].has_key(oligo)])
 
         self.progress.end()
+        
+        # in case no oligos left
+        if not len(self.abundant_oligos):
+            raise ConfigError, "\n\n\tAll oligotypes were discarded during the noise removal step.\
+                                \n\tPlease check your parameters.\n\n\tQuiting.\n"
+        
 
 
     def _refine_datasets_dict(self):
