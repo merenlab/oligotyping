@@ -731,6 +731,10 @@ class Oligotyping:
 
         if len(datasets_to_remove):
             self.run.info('datasets_removed_after_qc', datasets_to_remove)               
+            
+        if len(self.datasets) < 3:
+            self.skip_basic_analyses = True
+            self.run.info('skip_basic_analyses', self.skip_basic_analyses)
         
 
     def _generate_FASTA_file(self): 
