@@ -155,11 +155,20 @@
 <p class="smallheadtitle">» Entropy values that components were picked from
 <p class="content"><a href="{{ entropy_figure }}"><img src="{{ entropy_figure }}" style="max-width:1200px" border="0"></a>
 
+{% if figures_dict %}
+
 <div class="smallhead"><a name="Stackbar"></a>Stackbar</div>
 <p class="smallheadtitle">» Figure shows the oligotype distribution profiles among datasets. TAB separated files <a href="{{matrix_percent_file_path}}">matrix_percents.txt</a> and <a href="{{matrix_count_file_path}}">matrix_counts.txt</a> hold the information that were used to generate this figure.
-<p class="content"><a href="{{ stackbar_figure }}"><img src="{{ stackbar_figure }}" style="max-width:1200px" border="0"></a>
+	<div class="content">
+    		{% if figures_dict.basic_reports|lookup:"stackbar"|lookup:"stackbar" %}
+    		<a href="{{figures_dict.basic_reports|lookup:"stackbar"|lookup:"stackbar"}}.pdf" target="_blank" />
+    			<img src="{{figures_dict.basic_reports|lookup:"stackbar"|lookup:"stackbar"}}.png" border="0" />
+    		</a>
+    		{% else %}
+    			<img src="missing.png" style="width: 100px; border: 5px solid #EEE;" />
+    		{% endif %}
+	</div>
 
-{% if figures_dict %}
 <div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Dataset</div>
 <p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
 	<div class="content">

@@ -393,12 +393,10 @@ class Oligotyping:
              
         if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
             self._generate_dataset_oligotype_network_figures()
-        if not self.no_figures:
-            self._generate_stack_bar_figure()
-            if self.generate_sets:
-                self._generate_stack_bar_figure_with_agglomerated_oligos()
-                self._generate_oligos_across_datasets_figure()
-                self._generate_sets_across_datasets_figure()
+        if (not self.no_figures) and self.generate_sets:
+            self._generate_stack_bar_figure_with_agglomerated_oligos()
+            self._generate_oligos_across_datasets_figure()
+            self._generate_sets_across_datasets_figure()
 
         if not self.quick:
             self._generate_representative_sequences()
@@ -815,15 +813,15 @@ class Oligotyping:
  
     def _generate_ENVIRONMENT_file(self):
         self.progress.new('ENVIRONMENT File')
-        environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
+        self.environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         self.progress.update('Being generated')
         
         generate_ENVIRONMENT_file(self.datasets,
                                   self.datasets_dict,
-                                  environment_file_path)
+                                  self.environment_file_path)
 
         self.progress.end()
-        self.run.info('environment_file_path', environment_file_path)
+        self.run.info('environment_file_path', self.environment_file_path)
 
     def _generate_MATRIX_files(self):
         self.progress.new('Matrix Files')
@@ -882,7 +880,7 @@ class Oligotyping:
 
 
     def _generate_random_colors(self):
-        colors_file_path = self.generate_output_destination('COLORS')
+        self.colors_file_path = self.generate_output_destination('COLORS')
         if self.colors_list_file:
             # it means user provided a list of colors to be used for oligotypes
             colors = [c.strip() for c in open(self.colors_list_file).readlines()]
@@ -897,14 +895,14 @@ class Oligotyping:
             self.colors_dict = colors_dict
             
             # generate COLORS file derived from --colors-list-file
-            colors_file = open(colors_file_path, 'w')
+            colors_file = open(self.colors_file_path, 'w')
             for oligotype in self.abundant_oligos:
                 colors_file.write('%s\t%s\n' % (oligotype, self.colors_dict[oligotype]))
             colors_file.close()
 
         else:
-            self.colors_dict = random_colors(self.abundant_oligos, colors_file_path)
-        self.run.info('colors_file_path', colors_file_path)
+            self.colors_dict = random_colors(self.abundant_oligos, self.colors_file_path)
+        self.run.info('colors_file_path', self.colors_file_path)
 
 
     def _agglomerate_oligos_based_on_cosine_similarity(self):
@@ -1234,17 +1232,6 @@ class Oligotyping:
         self.run.info('output_directory_for_datasets', output_directory_for_datasets) 
  
 
-    def _generate_stack_bar_figure(self):
-        self.progress.new('Stackbar Figure')
-        stack_bar_file_path = self.generate_output_destination('STACKBAR.png')
-        self.progress.update('Generating')
-        oligos = copy.deepcopy(self.abundant_oligos)
-        oligotype_distribution_stack_bar(self.datasets_dict, self.colors_dict, stack_bar_file_path, oligos = oligos,\
-                                         project_title = self.project, display = ((not self.no_display) and self.quick))
-        self.progress.end()
-        self.run.info('stack_bar_file_path', stack_bar_file_path)
-
-
     def _generate_oligos_across_datasets_figure(self):
         self.progress.new('Oligotypes Across Datasets Figure')
         oligos_across_datasets_file_path = self.generate_output_destination('OLIGOS-ACROSS-DATASETS.png')
@@ -1281,8 +1268,6 @@ class Oligotyping:
 
 
     def _generate_default_figures(self):
-        if len(self.datasets) < 3:
-            return None
 
         self.progress.new('Figures')
 

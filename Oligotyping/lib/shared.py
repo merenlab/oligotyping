@@ -30,10 +30,33 @@ def generate_default_figures(_object):
     figures_dict = {}
     figures_dict['basic_analyses'] = {}
     figures_dict['basic_reports'] = {}
-        
+
     #
     # basic reports
     #
+
+    for (analysis, script, output_dir) in [('Stackbar', '../Scripts/R/stackbar.R', 'stackbar')]:
+        # generating a stackbar is only feasible for oligotyping:
+        if _object.analysis != 'oligotyping':
+            continue
+
+        figures_dict['basic_reports'][output_dir] = {}
+
+        target_dir = _object.generate_output_destination('%s/__default__/%s' \
+                                                            % (os.path.basename(_object.figures_directory), output_dir),
+                                                      directory = True)
+            
+        output_prefix = os.path.join(target_dir, output_dir)
+        cmd_line = ('%s "%s" "%s" "%s" "%s" >> "%s" 2>&1' % (os.path.join(scripts_dir_path, script),
+                                             _object.environment_file_path,
+                                             _object.project,
+                                             output_prefix,
+                                             _object.colors_file_path,
+                                             _object.log_file_path))
+        _object.progress.update('%s ...' % (analysis))
+        _object.logger.info('figure basic_reports: %s' % (cmd_line))
+        run_command(cmd_line)
+        figures_dict['basic_reports'][output_dir][output_dir] = output_prefix
 
 
     for (analysis, script, output_dir) in [('Read Distribution Lines', '../Scripts/R/lines-for-each-column.R', 'lines'),

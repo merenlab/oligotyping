@@ -184,7 +184,6 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     else:
         html_dict['sample_mapping'] = None
 
-    html_dict['stackbar_figure'] = copy_as(run_info_dict['stack_bar_file_path'], 'stackbar.png')
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
     html_dict['matrix_percent_file_path'] = copy_as(run_info_dict['matrix_percent_file_path'], 'matrix_percents.txt')
     html_dict['read_distribution_table_path'] = copy_as(run_info_dict['read_distribution_table_path'], 'read_distribution.txt')
