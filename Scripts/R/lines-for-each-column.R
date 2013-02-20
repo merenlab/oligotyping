@@ -37,8 +37,8 @@ P <- function(){
 
 num_samples <- length(row.names)
 pdf_w <- num_samples / 4
-if(num_samples < 16)
-    pdf_w <- 4
+if(num_samples < 32)
+    pdf_w <- 8
 
 png_w = pdf_w * 100
 
