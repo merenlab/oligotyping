@@ -692,8 +692,26 @@ def check_input_alignment(alignment_path, dataset_name_from_defline_func, progre
         if len(samples) > 10:
             sys.stderr.write('\t- (%s more)\n' % pretty_print(len(samples) - 10))
         sys.stderr.write("\n\n")
-        sys.stderr.write("If these sample names seem to be incorrect, please refer to the tutorial for the\n")
-        sys.stderr.write("proper formatting of FASTA deflines.")
+        sys.stderr.write("If there is a problem with the recovery of sample names, please refer\n")
+        sys.stderr.write("to the tutorial for the proper formatting of FASTA deflines.")
+        sys.stderr.write("\n\n")
+            
+        alignment.close()
+        if progress_func:
+            progress_func.end()
+        return None
+    if len(samples) == 1:
+        sys.stderr.write("\n\n")
+        sys.stderr.write("There is only one sample found in the alignment file during the initial check.\n")
+        sys.stderr.write("If this is expected, and the following sample is the only sample in the file,\n")
+        sys.stderr.write("please bypass this check by declaring --skip-check-input parameter:\n\n")
+                
+        for sample in samples:
+            sys.stderr.write('\t- %s\n' % sample)
+
+        sys.stderr.write("\n\n")
+        sys.stderr.write("If there is a problem with the recovery of sample names, please refer\n")
+        sys.stderr.write("to the tutorial for the proper formatting of FASTA deflines.")
         sys.stderr.write("\n\n")
             
         alignment.close()
