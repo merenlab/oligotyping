@@ -25,10 +25,22 @@ col.names <- colnames(data)
 df <- melt(data ,  id = 'samples', variable_name = 'bins')
 
 P <- function(){
-    ggplot(df,aes(x=factor(samples), y=value, factor(bins), color, fill = bins)) + geom_bar(position="fill", stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.position = 'bottom', axis.ticks.y = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + labs(x='', y='Ratio') + scale_y_continuous(breaks = NULL)
+    p = ggplot(df,aes(x=factor(samples), y=value, factor(bins), color, fill = bins))
+    p <- p + geom_bar(position="fill", stat = "identity", width=0.90)
+    p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.position = 'bottom', axis.ticks.y = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+    p <- p + labs(x='', y='Ratio')
+    p <- p + scale_y_continuous(breaks = NULL)
+    p <- p + theme(plot.title = element_text(hjust=0, vjust=1))
+    p <- p + coord_cartesian(ylim=c(-0.01, 1.01))
+
+    print(p)
 }
 
-pdf_w = 5 + (length(row.names) / 10)
+num_samples <- length(row.names)
+pdf_w <- num_samples / 4
+if(num_samples < 16)
+    pdf_w <- 4
+
 png_w = pdf_w * 100
 
 # PDF

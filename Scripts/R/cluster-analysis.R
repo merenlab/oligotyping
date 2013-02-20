@@ -35,7 +35,10 @@ rownames(csv) <- csv[,1]
 d <- vegdist(csv[,-1], method=distance) #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
 fit <- hclust(d, method="ward") # "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
 
-pdf_w = 5 + (length(rownames(csv)) / 10)
+num_samples <- length(row.names)
+pdf_w <- num_samples / 4
+if(num_samples < 16)
+    pdf_w <- 4
 png_w = pdf_w * 100
 
 P <- function(){

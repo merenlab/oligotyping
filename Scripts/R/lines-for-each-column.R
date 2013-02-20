@@ -25,10 +25,21 @@ col.names <- colnames(data)
 df <- melt(data ,  id = 'samples', variable_name = 'bins')
 
 P <- function(){
-    ggplot(df, aes(x = samples, y = value, colour = bins, group = bins)) + geom_line() + geom_point() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.position = 'top') + labs(x='', y='Number of Reads')
+    p = ggplot(df, aes(x = samples, y = value, colour = bins, group = bins))
+    p <- p + geom_line()
+    p <- p + geom_point()
+    p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.position = 'top')
+    p <- p + labs(x='', y='Number of Reads')
+    p <- p + theme(plot.title = element_text(hjust=0, vjust=1))
+
+    print(p)
 }
 
-pdf_w = 5 + (length(row.names) / 10)
+num_samples <- length(row.names)
+pdf_w <- num_samples / 4
+if(num_samples < 16)
+    pdf_w <- 4
+
 png_w = pdf_w * 100
 
 # PDF
