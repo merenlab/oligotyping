@@ -706,7 +706,11 @@ class Oligotyping:
         if not len(self.abundant_oligos):
             raise ConfigError, "\n\n\tAll oligotypes were discarded during the noise removal step.\
                                 \n\tPlease check your parameters.\n\n\tQuiting.\n"
-        
+
+        # if there is only one oligotype left, skip basic analyses
+        if len(self.abundant_oligos) == 1:
+            self.skip_basic_analyses = True
+            self.run.info('skip_basic_analyses', self.skip_basic_analyses)
 
 
     def _refine_datasets_dict(self):
@@ -1099,14 +1103,14 @@ class Oligotyping:
                 % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
             fasta_files_dict[oligo]['file'].close()
 
+
+            self.progress.update('Unique reads in FASTA ..') 
             fasta_file_path = fasta_files_dict[oligo]['path']
             fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
           
             # this dict is going to hold the information of how unique sequences within an oligotype
             # is distributed among datasets:
             distribution_among_datasets = {}
-
-            self.progress.update('Unique reads in FASTA ..') 
 
             fasta.next()
             # this is the first read in the unique reads list, which is the most abundant unique sequence
@@ -1139,116 +1143,149 @@ class Oligotyping:
             distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
             cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
 
-            if (not self.quick) and (not self.no_figures):
-                entropy_file_path = unique_fasta_path + '_entropy'
-                color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
+            self.progress.end()
 
-                # generate entropy output at 'entropy_file_path' along with the image
-                self.progress.update('Generating entropy figure')
-                vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
 
-                # use entropy output to generate a color shade for every columns in alignment
-                # for visualization purposes
-                entropy_values_per_column = [0] * self.alignment_length
-                for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
-                    entropy_values_per_column[int(column)] = float(entropy)
-                color_shade_dict = get_color_shade_dict_for_list_of_values(entropy_values_per_column)
-
-                color_per_column = [0] * self.alignment_length
-                for i in range(0, self.alignment_length):
-                    color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
-
-                cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
+        if (not self.quick) and (not self.no_figures):
+            self.progress.new('Generating Entropy Figures')
+            if self.no_threading:
+                for oligo in self.abundant_oligos:
+                    self.progress.update('%s (%d of %d)' % (oligo,
+                                                            self.abundant_oligos.index(oligo) + 1,
+                                                            len(self.abundant_oligos)))
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    self._generate_entropy_figure_for_abundant_oligotype(unique_fasta_path)
+            else:
+                mp = Multiprocessing(self._generate_entropy_figure_for_abundant_oligotype, self.number_of_threads)
+    
+                # arrange processes
+                processes_to_run = []
+                for oligo in self.abundant_oligos:
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    processes_to_run.append((unique_fasta_path,),)
+    
+                # start the main loop to run all processes
+                mp.run_processes(processes_to_run, self.progress)
+            self.progress.end()
 
 
 
         if (not self.quick) and (not self.skip_blast_search):
             self.progress.new('Performing %s BLAST search for representative sequences'\
-                                % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
-
-            
-            if self.blast_ref_db:
-                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
-                
-                representative_fasta_entries = []
-                for oligo in self.abundant_oligos:
-                    self.progress.update('Storing representative sequences for "%s" ...' % oligo)
-                    unique_fasta_path = unique_files_dict[oligo]['path']
-                    unique_fasta = u.SequenceSource(unique_fasta_path)
-                    unique_fasta.next()
-                    representative_fasta_entries.append((oligo, unique_fasta.seq),)
-                    unique_fasta.close()
-                append_reads_to_FASTA(representative_fasta_entries, query)
-
-
-                self.progress.update('Generating a copy of target BLAST db ...')
-                self.logger.info('copying blastdb from "%s" to %s' % (self.blast_ref_db, target))
-                shutil.copy(self.blast_ref_db, target)
-                mask_defline_whitespaces_in_FASTA(target, '<$!$>')
-                mask_defline_whitespaces_in_FASTA(query, '<$!$>')
-    
-                params = "-perc_identity 80"
-                job = 'reps'
-                s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
-                self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
-                                                       % (job, query, target, output, params))
-        
-        
-                self.progress.update('Running makeblastdb ...')
-                s.make_blast_db()
-                self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
-        
-                s.params = params
-                self.progress.update('Performing blastn ...')
-                s.search()
-                self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
-        
-                self.progress.update('Getting BLAST results ...')
-                fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
-
-                for oligo in self.abundant_oligos:
-                    self.progress.update('Storing BLAST results ...')
-                    unique_fasta_path = unique_files_dict[oligo]['path']
-                    fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
-                    cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
-
-            else:
-                # will perform remote BLAST
-                r = blast.RemoteBLAST()
-                for oligo in self.abundant_oligos:
-                    unique_fasta_path = unique_files_dict[oligo]['path']
-                    unique_fasta = u.SequenceSource(unique_fasta_path)
-                    unique_fasta.next()
-                    blast_output_xml = unique_fasta_path + '_BLAST.xml'
-                    blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
-
-                    # FIXME: this value should be paramaterized
-                    max_blast_attempt = 3
-
-                    def blast_search_wrapper(seq, xml_path, pickle_path):
-                        try:
-                            results = r.search(seq, xml_path)
-                            results_list = r.get_fancy_results_list(results)
-                            cPickle.dump(results_list, open(pickle_path, 'w'))
-                            return True
-                        except:
-                            return False
-
-                    for blast_attempt in range(0, max_blast_attempt):
-                        self.progress.update('searching for "%s" (%d of %d) (attempt #%d)' % (oligo,
-                                                                                              self.abundant_oligos.index(oligo) + 1,
-                                                                                              len(self.abundant_oligos), blast_attempt + 1))
-                            
-                        if blast_search_wrapper(unique_fasta.seq, blast_output_xml, blast_output_dict):
-                            break
-                        else:
-                            continue
-
-                    unique_fasta.close()
+                                            % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
+            for oligo in self.abundant_oligos:
+                self.progress.update('%s (%d of %d)' % (oligo,
+                                                        self.abundant_oligos.index(oligo) + 1,
+                                                        len(self.abundant_oligos)))
+                self._perform_BLAST_search_for_oligo_representative(oligo, unique_files_dict)
+            self.progress.end()
 
        
-        self.progress.end()
         self.run.info('output_directory_for_reps', output_directory_for_reps) 
+
+
+    def _perform_BLAST_search_for_oligo_representative(self, oligo, unique_files_dict):            
+        if self.blast_ref_db:
+            query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
+                
+            representative_fasta_entries = []
+            for oligo in self.abundant_oligos:
+                self.progress.update('Storing representative sequences for "%s" ...' % oligo)
+                unique_fasta_path = unique_files_dict[oligo]['path']
+                unique_fasta = u.SequenceSource(unique_fasta_path)
+                unique_fasta.next()
+                representative_fasta_entries.append((oligo, unique_fasta.seq),)
+                unique_fasta.close()
+            append_reads_to_FASTA(representative_fasta_entries, query)
+
+
+            self.progress.update('Generating a copy of target BLAST db ...')
+            self.logger.info('copying blastdb from "%s" to %s' % (self.blast_ref_db, target))
+            shutil.copy(self.blast_ref_db, target)
+            mask_defline_whitespaces_in_FASTA(target, '<$!$>')
+            mask_defline_whitespaces_in_FASTA(query, '<$!$>')
+    
+            params = "-perc_identity 80"
+            job = 'reps'
+            s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
+            self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
+                                                   % (job, query, target, output, params))
+        
+        
+            self.progress.update('Running makeblastdb ...')
+            s.make_blast_db()
+            self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
+        
+            s.params = params
+            self.progress.update('Performing blastn ...')
+            s.search()
+            self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
+        
+            self.progress.update('Getting BLAST results ...')
+            fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
+
+            for oligo in self.abundant_oligos:
+                self.progress.update('Storing BLAST results ...')
+                unique_fasta_path = unique_files_dict[oligo]['path']
+                fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
+                cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+
+        else:
+            # will perform remote BLAST
+            r = blast.RemoteBLAST()
+            for oligo in self.abundant_oligos:
+                unique_fasta_path = unique_files_dict[oligo]['path']
+                unique_fasta = u.SequenceSource(unique_fasta_path)
+                unique_fasta.next()
+                blast_output_xml = unique_fasta_path + '_BLAST.xml'
+                blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
+
+                # FIXME: this value should be paramaterized
+                max_blast_attempt = 3
+
+                def blast_search_wrapper(seq, xml_path, pickle_path):
+                    try:
+                        results = r.search(seq, xml_path)
+                        results_list = r.get_fancy_results_list(results)
+                        cPickle.dump(results_list, open(pickle_path, 'w'))
+                        return True
+                    except:
+                        return False
+
+                for blast_attempt in range(0, max_blast_attempt):
+                    self.progress.update('searching for "%s" (%d of %d) (attempt #%d)' % (oligo,
+                                                                                          self.abundant_oligos.index(oligo) + 1,
+                                                                                          len(self.abundant_oligos), blast_attempt + 1))
+                            
+                    if blast_search_wrapper(unique_fasta.seq, blast_output_xml, blast_output_dict):
+                        break
+                    else:
+                        continue
+
+                unique_fasta.close()
+
+
+
+    def _generate_entropy_figure_for_abundant_oligotype(self, unique_fasta_path):
+        entropy_file_path = unique_fasta_path + '_entropy'
+        color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
+
+        # generate entropy output at 'entropy_file_path' along with the image
+        vis_freq_curve(unique_fasta_path, output_file = unique_fasta_path + '.png', entropy_output_file = entropy_file_path)
+
+        # use entropy output to generate a color shade for every columns in alignment
+        # for visualization purposes
+        entropy_values_per_column = [0] * self.alignment_length
+        for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
+            entropy_values_per_column[int(column)] = float(entropy)
+        color_shade_dict = get_color_shade_dict_for_list_of_values(entropy_values_per_column)
+
+        color_per_column = [0] * self.alignment_length
+        for i in range(0, self.alignment_length):
+            color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
+
+        cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
+
 
 
     def _generate_dataset_oligotype_network_figures(self):
