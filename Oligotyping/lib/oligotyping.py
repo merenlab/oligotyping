@@ -1173,11 +1173,24 @@ class Oligotyping:
         if (not self.quick) and (not self.skip_blast_search):
             self.progress.new('Performing %s BLAST search for representative sequences'\
                                             % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
-            for oligo in self.abundant_oligos:
-                self.progress.update('%s (%d of %d)' % (oligo,
-                                                        self.abundant_oligos.index(oligo) + 1,
-                                                        len(self.abundant_oligos)))
-                self._perform_BLAST_search_for_oligo_representative(oligo, unique_files_dict)
+            
+            if self.no_threading:
+                for oligo in self.abundant_oligos:
+                    self.progress.update('%s (%d of %d)' % (oligo,
+                                                            self.abundant_oligos.index(oligo) + 1,
+                                                            len(self.abundant_oligos)))
+                    self._perform_BLAST_search_for_oligo_representative(oligo, unique_files_dict)
+            else:
+                mp = Multiprocessing(self._perform_BLAST_search_for_oligo_representative, self.number_of_threads)
+    
+                # arrange processes
+                processes_to_run = []
+                for oligo in self.abundant_oligos:
+                    unique_fasta_path = unique_files_dict[oligo]['path']
+                    processes_to_run.append((oligo, unique_files_dict,),)
+    
+                # start the main loop to run all processes
+                mp.run_processes(processes_to_run, self.progress)
             self.progress.end()
 
        
