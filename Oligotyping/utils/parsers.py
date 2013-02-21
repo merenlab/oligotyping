@@ -195,7 +195,7 @@ def oligotyping():
     parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
                         help = 'When set, directory with temporary results will not be deleted at the end of the\
                                 run. It may be necessary to debug the results')
-    parser.add_argument('-T', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
+    parser.add_argument('-S', '--cosine-similarity-threshold', default = 0.1, type=float, metavar='COS_SIM_TR',\
                         help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
                                 the threshold is, the more oligotypes will be pulled together. Cosine similarity\
                                 would return 0 for perfectly similar two vectors. Default is %(default)f.')
@@ -211,6 +211,13 @@ def oligotyping():
     parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
                         help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
                                 skipped')
+    parser.add_argument('-T', '--no-threading', action = 'store_true', default = False,
+                        help = 'When set, oligotyping will not spawn multiple threads. Default behavior is\
+                                multi-threaded whenever possible.')
+    parser.add_argument('-N', '--number-of-threads', type=int, default = None, metavar = "INTEGER",
+                        help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
+                                of CPU cores available. If not set, this number will be set to 90%% of available cores,\
+                                or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
 
     return parser
 

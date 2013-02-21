@@ -35,6 +35,7 @@ from Oligotyping.utils.cosine_similarity import get_oligotype_sets
 from Oligotyping.utils.utils import P
 from Oligotyping.utils.utils import Run
 from Oligotyping.utils.utils import Progress
+from Oligotyping.utils.utils import Multiprocessing
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
@@ -86,6 +87,8 @@ class Oligotyping:
         self.log_file_path = None
         self.skip_check_input_file = False
         self.skip_basic_analyses = False
+        self.no_threading = False
+        self.number_of_threads = None
 
         Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
 
@@ -120,6 +123,8 @@ class Oligotyping:
             self.sample_mapping = args.sample_mapping
             self.skip_check_input_file = args.skip_check_input_file
             self.skip_basic_analyses = args.skip_basic_analyses
+            self.no_threading = args.no_threading
+            self.number_of_threads = args.number_of_threads
         
         self.run = Run()
         self.progress = Progress()
@@ -137,6 +142,10 @@ class Oligotyping:
         self.final_oligo_counts_dict = {}
         self.colors_dict = None
         self.figures_directory = None
+
+        # be smart, turn the threading on if necessary.
+        if self.number_of_threads:
+            self.no_threading = False
 
 
     def check_apps(self):
@@ -335,6 +344,7 @@ class Oligotyping:
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
         self.run.info('version', __version__)
+        self.run.info('multi_threaded', not self.no_threading)
         self.run.info('alignment', self.alignment)
         self.run.info('entropy', self.entropy)
         self.run.info('sample_mapping', self.sample_mapping)
@@ -372,6 +382,10 @@ class Oligotyping:
 
         if self.blast_ref_db:
             self.run.info('blast_ref_db', self.blast_ref_db)
+
+        # set number of threads to be used
+        if not self.number_of_threads:
+            self.number_of_threads = Multiprocessing(None).num_thread
         
         self._construct_datasets_dict()
         self._contrive_abundant_oligos()
