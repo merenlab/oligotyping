@@ -86,6 +86,13 @@ def get_blast_hits(d, max_num = 8):
                                        entry.coverage)
     return ret_line
 
+@register.filter(name='as_percentage_of') 
+def as_percentage_of(part, whole):
+    try:
+        return "%.2f%%" % (float(part) / whole * 100.0)
+    except (ValueError, ZeroDivisionError):
+        return ""
+
 @register.filter(name='percentify') 
 def percentify(l):
     total = sum(l)
@@ -117,6 +124,10 @@ def values(d):
 @register.filter(name='mod') 
 def mod(value, arg):
     return value % arg 
+
+@register.filter(name='pretify') 
+def pretify(arg):
+    return pretty_print(arg) 
 
 @register.filter(name='multiply') 
 def multiply(value, arg):

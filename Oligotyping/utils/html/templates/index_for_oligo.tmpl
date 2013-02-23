@@ -29,7 +29,42 @@
 <div class="smallhead"><a name="General"></a>Overview</div>
 <p class="smallheadtitle">» A summary of what happened.
 <div class="info_table">
-<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">Oligotyping analysis was performed on {{total_seq}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta}} sample{{ num_datasets_in_fasta|pluralize }} for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using {% if number_of_auto_components %}{{number_of_auto_components}} component{{ number_of_auto_components|pluralize }} automatically selected form the highest entropy values{% else %}{{number_of_selected_components}} component{{ number_of_selected_components|pluralize }}{% endif %} following the initial entropy analysis. {% if quals_provided %}Additionally, machine reported PHRED scores were employed during the oligotyping analysis to make sure that any base used for oligotype formation was above quality score of Q{{q}}. {{num_reads_eliminated_due_to_min_base_quality}} reads that present a base call with a lower quality score than Q{{q}} at any of the {% if number_of_auto_components %}{{number_of_auto_components}}{% else %}{{number_of_selected_components}}{% endif %} locations of interest revealed by entropy analysis were discarded from the analysis. {% endif %}To reduce the noise, each oligotype required to (1) appear in at least {{s}} sample{{ s|pluralize }}, (2) occur in more than {{a}}% of the reads for at least one sample, (3) represent a minimum of {{A}} read{{ A|pluralize }} in all samples combined, and (4) have a most abundant unique sequence with a minimum abundance of {{M}}. Oligotypes that did not meet these criteria were removed from the analysis. The final number of quality controlled oligotypes revealed by the analysis was {{num_oligos_after_M_elim}} and they represented {{num_sequences_after_qc}} reads.{% if datasets_removed_after_qc %} {{datasets_removed_after_qc|length}} sample{{ datasets_removed_after_qc|length|pluralize }} were also removed from the analysis because all its reads were eliminated during the QC.{% endif %}
+<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">
+
+		Oligotyping analysis was performed on
+		{{total_seq|pretify}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta|pretify}} sample{{ num_datasets_in_fasta|pluralize }}
+		for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using
+			{% if number_of_auto_components %}
+				{{number_of_auto_components}} component{{ number_of_auto_components|pluralize }} automatically
+				selected form the highest entropy values
+			{% else %}
+				{{number_of_selected_components}} component{{ number_of_selected_components|pluralize }}
+			{% endif %}
+		following the initial entropy analysis.
+		
+		{% if quals_provided %}
+			Additionally, machine reported PHRED scores were employed during the
+			oligotyping analysis to make sure that any base used for oligotype formation was above quality score of Q{{q}}.
+			{{num_reads_eliminated_due_to_min_base_quality}} reads that present a base call with a lower quality score than Q{{q}}
+			at any of the locations of interest revealed by entropy analysis, were discarded from the analysis.
+		{% endif %}
+		
+		To reduce the noise, each oligotype required to
+			(1) appear in at least {{s}} sample{{ s|pluralize }},
+			(2) occur in more than {{a}}% of the reads for at least one sample,
+			(3) represent a minimum of {{A}} read{{ A|pluralize }} in all samples combined,
+			and (4) have a most abundant unique sequence with a minimum abundance of {{M}}.
+			Oligotypes that did not meet these criteria were removed from the analysis.
+		
+		The final number of quality controlled oligotypes revealed by the analysis was {{num_oligos_after_M_elim}},
+		and they represented {{num_sequences_after_qc}} reads, which was equivalent to {{ num_sequences_after_qc|as_percentage_of:total_seq }}
+		of all reads analyzed.
+		
+		{% if datasets_removed_after_qc %}
+			{{datasets_removed_after_qc|length}} sample{{ datasets_removed_after_qc|length|pluralize }} were removed
+			from the analysis because all its reads were eliminated during the QC.
+		{% endif %}
+</p>
 </div>
 
 
@@ -89,33 +124,34 @@
 <p class="smallheadtitle">» Quality filtering results
 <div class="info_table">
 <table width=90%>
-    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq|pretify}}</td></tr>
     {% if quals_provided %}
-    <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality|pretify}}</td></tr>
     {% endif %}
     <tr><td colspan=2>&nbsp;</td></tr>
-    <tr><td id="l">{{pretty_names.num_unique_oligos}}</td><td id="r"> {{num_unique_oligos}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_unique_oligos}}</td><td id="r"> {{num_unique_oligos|pretify}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_s_elim}}</td><td id="r"> {{num_oligos_after_s_elim|pretify}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_a_elim}}</td><td id="r"> {{num_oligos_after_a_elim|pretify}}</td></tr>
     {% if A %}
-    <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_A_elim}}</td><td id="r"> {{num_oligos_after_A_elim|pretify}}</td></tr>
     {% endif %}
     {% if M %}
-    <tr><td id="l">{{pretty_names.num_oligos_after_M_elim}}</td><td id="r"> {{num_oligos_after_M_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_M_elim}}</td><td id="r"> {{num_oligos_after_M_elim|pretify}}</td></tr>
     {% endif %}
     {% if limit_oligotypes_to %}
-    <tr><td id="l">{{pretty_names.num_oligos_after_l_elim}}</td><td id="r"> {{num_oligos_after_l_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_l_elim}}</td><td id="r"> {{num_oligos_after_l_elim|pretify}}</td></tr>
     {% endif %}
     {% if exclude_oligotypes %}
-    <tr><td id="l">{{pretty_names.num_oligos_after_e_elim}}</td><td id="r"> {{num_oligos_after_e_elim}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_oligos_after_e_elim}}</td><td id="r"> {{num_oligos_after_e_elim|pretify}}</td></tr>
     {% endif %}
     <tr><td colspan=2>&nbsp;</td></tr>
-    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc}}</td></tr>
+    <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq|pretify}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta|pretify}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc|pretify}}</td></tr>
     {% if datasets_removed_after_qc %} 
     <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
     {% endif %}
+    <tr><td id="l">Percentage of reads represented in results</td><td id="r">{{ num_sequences_after_qc|as_percentage_of:total_seq }}</td></tr>
 </table>
 </div>
 
