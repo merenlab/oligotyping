@@ -855,6 +855,8 @@ class Run:
 
     def info(self, key, value):
         self.info_dict[key] = value
+        if type(value) == int:
+            value = pretty_print(value)
 
         label = get_pretty_name(key)
 

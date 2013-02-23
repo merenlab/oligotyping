@@ -353,8 +353,8 @@ class Oligotyping:
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('quals_provided', True if self.quals_dict else False)
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
-        self.run.info('total_seq', pretty_print(self.fasta.total_seq))
-        self.run.info('alignment_length', pretty_print(self.alignment_length))
+        self.run.info('total_seq', self.fasta.total_seq)
+        self.run.info('alignment_length', self.alignment_length)
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
         self.run.info('number_of_selected_components', len(self.selected_components) if self.selected_components else 0)
         self.run.info('generate_sets', self.generate_sets)
@@ -487,10 +487,10 @@ class Oligotyping:
        
         self.datasets.sort()
         self.progress.reset()
-        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets_dict)))
+        self.run.info('num_datasets_in_fasta', len(self.datasets_dict))
 
         if self.quals_dict:
-            self.run.info('num_reads_eliminated_due_to_min_base_quality', pretty_print(num_reads_eliminated_due_to_min_base_quality))
+            self.run.info('num_reads_eliminated_due_to_min_base_quality', num_reads_eliminated_due_to_min_base_quality)
             if self.fasta.total_seq == num_reads_eliminated_due_to_min_base_quality:
                 raise ConfigError, "All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality
         
@@ -524,7 +524,7 @@ class Oligotyping:
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
         self.progress.reset()
-        self.run.info('num_unique_oligos', pretty_print(len(oligos_set)))
+        self.run.info('num_unique_oligos', len(oligos_set))
        
 
         # count oligo abundance
@@ -557,7 +557,7 @@ class Oligotyping:
                 self._register_removal(tpl[1], 'failed_s')
 
         self.progress.reset()
-        self.run.info('num_oligos_after_s_elim', pretty_print(len(non_singleton_oligos)))
+        self.run.info('num_oligos_after_s_elim', len(non_singleton_oligos))
 
 
         # dataset_sums keeps the actual number of oligos that are present in non_singleton_oligos list,
@@ -602,7 +602,7 @@ class Oligotyping:
                     self._register_removal(oligo, 'failed_a')
 
         self.progress.reset()
-        self.run.info('num_oligos_after_a_elim', pretty_print(len(self.abundant_oligos)))
+        self.run.info('num_oligos_after_a_elim', len(self.abundant_oligos))
         
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
@@ -627,7 +627,7 @@ class Oligotyping:
                 self._register_removal(oligo, 'failed_A')
 
             self.progress.reset()
-            self.run.info('num_oligos_after_A_elim', pretty_print(len(self.abundant_oligos)))
+            self.run.info('num_oligos_after_A_elim', len(self.abundant_oligos))
 
 
         # eliminate oligos based on -M / --min-substantive-abundance parameter.
@@ -671,7 +671,7 @@ class Oligotyping:
                 self.abundant_oligos.remove(oligo)
 
             self.progress.reset()
-            self.run.info('num_oligos_after_M_elim', pretty_print(len(self.abundant_oligos)))
+            self.run.info('num_oligos_after_M_elim', len(self.abundant_oligos))
 
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
@@ -681,7 +681,7 @@ class Oligotyping:
             for oligo in [oligo for oligo in self.abundant_oligos if not oligo in self.limit_oligotypes_to]:
                 self._register_removal(oligo, 'failed_limit')
             
-            self.run.info('num_oligos_after_l_elim', pretty_print(len(self.abundant_oligos)))
+            self.run.info('num_oligos_after_l_elim', len(self.abundant_oligos))
             if len(self.abundant_oligos) == 0:
                 raise ConfigError, "\n\n\t--limit-oligotypes parameter eliminated all oligotypes.\
                                     \n\tPlease make sure --limit-oligotypes matches with actual oligotypes.\n\n\tQuiting.\n"
@@ -693,7 +693,7 @@ class Oligotyping:
             for oligo in self.exclude_oligotypes:
                 self._register_removal(oligo, 'excluded')
             
-            self.run.info('num_oligos_after_e_elim', pretty_print(len(self.abundant_oligos)))
+            self.run.info('num_oligos_after_e_elim', len(self.abundant_oligos))
 
 
         # storing final counts
@@ -743,10 +743,7 @@ class Oligotyping:
         
         number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
-        self.run.info('num_sequences_after_qc', '%s of %s (%.2f%%)'\
-                            % (pretty_print(number_of_reads_in_datasets_dict),
-                               pretty_print(self.fasta.total_seq),
-                               number_of_reads_in_datasets_dict * 100.0 / self.fasta.total_seq))
+        self.run.info('num_sequences_after_qc', number_of_reads_in_datasets_dict)
 
         if len(datasets_to_remove):
             self.run.info('datasets_removed_after_qc', datasets_to_remove)               
