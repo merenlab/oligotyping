@@ -424,13 +424,14 @@ class Oligotyping:
         if ((not self.no_figures) and (not self.quick)) and self.sample_mapping:
             self._generate_exclusive_figures()
 
+        self.run.info('end_of_run', get_date())
+
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
 
         if (not self.keep_tmp):
             shutil.rmtree(self.tmp_directory)
 
-        self.run.info('end_of_run', get_date())
         self.run.quit()
 
         if self.gen_html:
