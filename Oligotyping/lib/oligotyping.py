@@ -430,6 +430,7 @@ class Oligotyping:
         if (not self.keep_tmp):
             shutil.rmtree(self.tmp_directory)
 
+        self.run.info('end_of_run', get_date())
         self.run.quit()
 
         if self.gen_html:
@@ -1098,13 +1099,15 @@ class Oligotyping:
         
         self.progress.end()
 
+        self.progress.new('Representative Sequences')
         for oligo in self.abundant_oligos:
-            self.progress.new('Representative Sequences | %s (%d of %d)'\
-                % (oligo, self.abundant_oligos.index(oligo) + 1, len(self.abundant_oligos)))
             fasta_files_dict[oligo]['file'].close()
 
 
-            self.progress.update('Unique reads in FASTA ..') 
+            self.progress.update('Unique reads for %s (%d of %d)' \
+                                        % (oligo,
+                                           self.abundant_oligos.index(oligo) + 1,
+                                           len(self.abundant_oligos)))
             fasta_file_path = fasta_files_dict[oligo]['path']
             fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
           
@@ -1143,7 +1146,7 @@ class Oligotyping:
             distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
             cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
 
-            self.progress.end()
+        self.progress.end()
 
 
         if (not self.quick) and (not self.no_figures):
@@ -1173,109 +1176,117 @@ class Oligotyping:
         if (not self.quick) and (not self.skip_blast_search):
             self.progress.new('Performing %s BLAST search for representative sequences'\
                                             % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
-            
-            if self.no_threading:
-                for oligo in self.abundant_oligos:
-                    self.progress.update('%s (%d of %d)' % (oligo,
-                                                            self.abundant_oligos.index(oligo) + 1,
-                                                            len(self.abundant_oligos)))
-                    self._perform_BLAST_search_for_oligo_representative(oligo, unique_files_dict)
+
+            if self.blast_ref_db:
+                # if there is a local db to search representative sequences against,
+                # just perform the blast search in one thread
+                self._perform_local_BLAST_search_for_oligo_representative(unique_files_dict)
             else:
-                mp = Multiprocessing(self._perform_BLAST_search_for_oligo_representative, self.number_of_threads)
-    
-                # arrange processes
-                processes_to_run = []
-                for oligo in self.abundant_oligos:
-                    unique_fasta_path = unique_files_dict[oligo]['path']
-                    processes_to_run.append((oligo, unique_files_dict,),)
-    
-                # start the main loop to run all processes
-                mp.run_processes(processes_to_run, self.progress)
+                # if the search is going to be on NCBI, parallelize it:
+                if self.no_threading:
+                    for oligo in self.abundant_oligos:
+                        self.progress.update('%s (%d of %d)' % (oligo,
+                                                                self.abundant_oligos.index(oligo) + 1,
+                                                                len(self.abundant_oligos)))
+                        self._perform_remote_BLAST_search_for_oligo_representative(oligo, unique_files_dict)
+                else:
+                    mp = Multiprocessing(self._perform_remote_BLAST_search_for_oligo_representative, self.number_of_threads)
+        
+                    # arrange processes
+                    processes_to_run = []
+                    for oligo in self.abundant_oligos:
+                        unique_fasta_path = unique_files_dict[oligo]['path']
+                        processes_to_run.append((oligo, unique_files_dict,),)
+        
+                    # start the main loop to run all processes
+                    mp.run_processes(processes_to_run, self.progress)
+            
             self.progress.end()
 
-       
         self.run.info('output_directory_for_reps', output_directory_for_reps) 
 
 
-    def _perform_BLAST_search_for_oligo_representative(self, oligo, unique_files_dict):            
-        if self.blast_ref_db:
-            query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
+    def _perform_local_BLAST_search_for_oligo_representative(self, unique_files_dict):            
+        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
                 
-            representative_fasta_entries = []
-            for oligo in self.abundant_oligos:
-                self.progress.update('Storing representative sequences for "%s" ...' % oligo)
-                unique_fasta_path = unique_files_dict[oligo]['path']
-                unique_fasta = u.SequenceSource(unique_fasta_path)
-                unique_fasta.next()
-                representative_fasta_entries.append((oligo, unique_fasta.seq),)
-                unique_fasta.close()
-            append_reads_to_FASTA(representative_fasta_entries, query)
+        representative_fasta_entries = []
+        for oligo in self.abundant_oligos:
+            self.progress.update('Storing representative sequences for "%s" ...' % oligo)
+            unique_fasta_path = unique_files_dict[oligo]['path']
+            unique_fasta = u.SequenceSource(unique_fasta_path)
+            unique_fasta.next()
+            representative_fasta_entries.append((oligo, unique_fasta.seq),)
+            unique_fasta.close()
+        append_reads_to_FASTA(representative_fasta_entries, query)
 
 
-            self.progress.update('Generating a copy of target BLAST db ...')
-            self.logger.info('copying blastdb from "%s" to %s' % (self.blast_ref_db, target))
-            shutil.copy(self.blast_ref_db, target)
-            mask_defline_whitespaces_in_FASTA(target, '<$!$>')
-            mask_defline_whitespaces_in_FASTA(query, '<$!$>')
+        self.progress.update('Generating a copy of target BLAST db ...')
+        self.logger.info('copying blastdb from "%s" to %s' % (self.blast_ref_db, target))
+        shutil.copy(self.blast_ref_db, target)
+        mask_defline_whitespaces_in_FASTA(target, '<$!$>')
+        mask_defline_whitespaces_in_FASTA(query, '<$!$>')
     
-            params = "-perc_identity 80"
-            job = 'reps'
-            s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
-            self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
-                                                   % (job, query, target, output, params))
+        params = "-perc_identity 80"
+        job = 'reps'
+        s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
+        self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
+                                               % (job, query, target, output, params))
         
         
-            self.progress.update('Running makeblastdb ...')
-            s.make_blast_db()
-            self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
+        self.progress.update('Running makeblastdb ...')
+        s.make_blast_db()
+        self.logger.info('makeblastdb for %s: %s' % (job, s.makeblastdb_cmd))
         
-            s.params = params
-            self.progress.update('Performing blastn ...')
-            s.search()
-            self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
+        s.params = params
+        self.progress.update('Performing blastn ...')
+        s.search()
+        self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
         
-            self.progress.update('Getting BLAST results ...')
-            fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
+        self.progress.update('Processing BLAST results ...')
+        fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
 
-            for oligo in self.abundant_oligos:
-                self.progress.update('Storing BLAST results ...')
-                unique_fasta_path = unique_files_dict[oligo]['path']
-                fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
-                cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+        for oligo in self.abundant_oligos:
+            self.progress.update('Storing BLAST results ...')
+            unique_fasta_path = unique_files_dict[oligo]['path']
+            fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
+            cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
 
-        else:
-            # will perform remote BLAST
-            r = blast.RemoteBLAST()
-            for oligo in self.abundant_oligos:
-                unique_fasta_path = unique_files_dict[oligo]['path']
-                unique_fasta = u.SequenceSource(unique_fasta_path)
-                unique_fasta.next()
-                blast_output_xml = unique_fasta_path + '_BLAST.xml'
-                blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
 
-                # FIXME: this value should be paramaterized
-                max_blast_attempt = 3
+    def _perform_remote_BLAST_search_for_oligo_representative(self, oligo, unique_files_dict):
+        # will perform remote BLAST
+        r = blast.RemoteBLAST()
+        
+        unique_fasta_path = unique_files_dict[oligo]['path']
+        unique_fasta = u.SequenceSource(unique_fasta_path)
+        unique_fasta.next()
+        blast_output_xml = unique_fasta_path + '_BLAST.xml'
+        blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
 
-                def blast_search_wrapper(seq, xml_path, pickle_path):
-                    try:
-                        results = r.search(seq, xml_path)
-                        results_list = r.get_fancy_results_list(results)
-                        cPickle.dump(results_list, open(pickle_path, 'w'))
-                        return True
-                    except:
-                        return False
+        # FIXME: this value should be paramaterized
+        max_blast_attempt = 3
 
-                for blast_attempt in range(0, max_blast_attempt):
-                    self.progress.update('searching for "%s" (%d of %d) (attempt #%d)' % (oligo,
-                                                                                          self.abundant_oligos.index(oligo) + 1,
-                                                                                          len(self.abundant_oligos), blast_attempt + 1))
+        def blast_search_wrapper(seq, xml_path, pickle_path):
+            try:
+                results = r.search(seq, xml_path)
+                results_list = r.get_fancy_results_list(results)
+                cPickle.dump(results_list, open(pickle_path, 'w'))
+                return True
+            except:
+                return False
+
+        for blast_attempt in range(0, max_blast_attempt):
+            self.progress.update('searching for "%s" (%d of %d) (attempt #%d)' % (oligo,
+                                                                                  self.abundant_oligos.index(oligo) + 1,
+                                                                                  len(self.abundant_oligos), blast_attempt + 1))
                             
-                    if blast_search_wrapper(unique_fasta.seq, blast_output_xml, blast_output_dict):
-                        break
-                    else:
-                        continue
+            if blast_search_wrapper(unique_fasta.seq, blast_output_xml, blast_output_dict):
+                break
+            else:
+                continue
 
-                unique_fasta.close()
+        unique_fasta.close()
+
+        return True
 
 
 
