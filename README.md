@@ -16,16 +16,6 @@ oligotyping:
 * http://oligotyping.org
 
 
-Oligotyping was first used in this study, which might give some extra insight:
-
-* http://www.plosone.org/article/info:doi/10.1371/journal.pone.0026732
-
-
-
-If you would like to try oligotyping on your datasets, or if you have questions
-to ask, please don't hesitate to contact me via meren / mbl.edu.
-
-
 
  Licence
 ===============================================================================
