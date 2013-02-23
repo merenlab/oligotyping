@@ -326,7 +326,7 @@ class LocalBLAST:
 
             query_aligned, target_aligned = query_aligned.upper(), target_aligned.upper()
 
-            coverage = (b6.entry.q_end - b6.entry.q_start) * 100.0 / b6.entry.q_len
+            coverage = (b6.entry.q_end - (b6.entry.q_start - 1)) * 100.0 / b6.entry.q_len
             hsp_match = ''.join(['|' if query_aligned[i] == target_aligned[i] else ' ' for i in range(0, len(query_aligned))])
             
             entry = copy.deepcopy(b6.entry)
