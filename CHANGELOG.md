@@ -7,25 +7,39 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 0.9
+    * Multithreading support. Oligotyping pipeline runs processes in parallel whenever it is possible.
+    * More comprehensible HTML output.
+    * RUNINFO.cPickle format has changed.
+
+* 0.8
+    * USEARCH is removed from the pipeline. NCBI's blastn is now the default search tool for relevant operations.
+    * Reads that are being discarded during the noise removal step are now tracked to avoid biases.
+    * New commandline parapmeter: `--sample-mapping` (which supports TAB delimited categorical mapping files for samples to be used for post-analysis visualizations; a relevant blog post: http://oligotyping.org/2013/02/04/basic-sample-mapping-with-oligotyping/).
+
+* 0.7
+    * Major performance improvements.
+    * All output matrices are transposed.
+
 * 0.6
-    * new commandline parameter: `--min-substantive-abundance` (a very important new parameter for better noise control, see http://oligotyping.org/2012/09/18/command-line-parameters-explained/ for details).
-    * new commandline parameter: `--gen-oligotype-sets` (oligotype sets are going to be generated only when requested).
-    * new commandline parameter: `--exclude-oligotypes`.
-    * naming convention for agglomerated oligotypes has been changed; now they are known as oligotype sets.
+    * New commandline parameter: `--min-substantive-abundance` (a very important new parameter for better noise control, see http://oligotyping.org/2012/09/18/command-line-parameters-explained/ for details).
+    * New commandline parameter: `--gen-oligotype-sets` (oligotype sets are going to be generated only when requested).
+    * New commandline parameter: `--exclude-oligotypes`.
+    * Naming convention for agglomerated oligotypes has been changed; now they are known as oligotype sets.
 
 * 0.5
-    * grouping oligotypes based on their frequency patterns across datasets has been added to the pipeline.
-    * code directory structure has been changed.
+    * Grouping oligotypes based on their frequency patterns across datasets has been added to the pipeline.
+    * Code directory structure has been changed.
 
 * 0.4
-	* visualization showing normalized oligotype distribution across datasets has been added to the pipeline.
+	* Visualization showing normalized oligotype distribution across datasets has been added to the pipeline.
 
 * 0.3
-	* new commandline parameter: `--colors-list-file`.
+	* New commandline parameter: `--colors-list-file`.
 
 * 0.2
-	* unittests implemented for various functions
-	* class structure was improved
+	* Unittests implemented for various functions
+	* Class structure was improved
 
 * 0.1
-	* initial oligotyping library
+	* Initial oligotyping library

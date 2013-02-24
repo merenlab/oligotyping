@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.8'
+__version__ = '0.9'
 
 import os
 import sys
