@@ -27,6 +27,10 @@ COLORS = {'A': 'red',
           'N': 'white', 
           'K': '#CACACA',
           'R': '#CACACA',
+          'Y': '#CACACA',
+          'W': '#CACACA',
+          'S': '#CACACA',
+          'M': '#CACACA',
           '-': '#CACACA'
         }
 
