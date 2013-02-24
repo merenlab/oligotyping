@@ -836,11 +836,23 @@ class Progress:
         self.reset()
         self.pid = None
 
+
 def get_pretty_name(key):
     if pretty_names.has_key(key):
         return pretty_names[key]
     else:
         return key
+
+    
+def get_cmd_line(argv):
+    c_argv = []
+    for i in argv:
+        if ' ' in i:
+            c_argv.append('"%s"' % i)
+        else:
+            c_argv.append(i)
+    return ' '.join(c_argv)
+
 
 class Run:
     """a class that keeps info about an oligotyping run, and deal with the console output"""
@@ -853,11 +865,17 @@ class Run:
         self.info_dict = {}
         self.verbose = verbose
 
+
     def init_info_file_obj(self, info_file_path):
             self.info_file_obj = open(info_file_path, 'w')
 
-    def info(self, key, value):
+
+    def info(self, key, value, quiet = False):
         self.info_dict[key] = value
+        
+        if quiet:
+            return True
+        
         if type(value) == int:
             value = pretty_print(value)
 
@@ -870,8 +888,10 @@ class Run:
         if self.verbose:
             sys.stderr.write(info_line)
 
+
     def store_info_dict(self, destination):
         cPickle.dump(self.info_dict, open(destination, 'w'))
+
 
     def quit(self):
         if self.info_file_obj:

@@ -39,6 +39,7 @@ from Oligotyping.utils.utils import Multiprocessing
 from Oligotyping.utils.utils import get_date
 from Oligotyping.utils.utils import ConfigError
 from Oligotyping.utils.utils import pretty_print
+from Oligotyping.utils.utils import get_cmd_line
 from Oligotyping.utils.utils import append_reads_to_FASTA
 from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import generate_MATRIX_files
@@ -139,7 +140,10 @@ class Oligotyping:
         self.oligotype_sets = None
         self.datasets = []
         self.abundant_oligos = []
+
         self.final_oligo_counts_dict = {}
+        self.final_oligo_entropy_distribution_dict = {}
+        self.final_oligo_unique_distribution_dict = {}
         self.colors_dict = None
         self.figures_directory = None
 
@@ -352,7 +356,7 @@ class Oligotyping:
         self.run.info('tmp_directory', self.tmp_directory)
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('quals_provided', True if self.quals_dict else False)
-        self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
+        self.run.info('cmd_line', get_cmd_line(sys.argv))
         self.run.info('total_seq', self.fasta.total_seq)
         self.run.info('alignment_length', self.alignment_length)
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
@@ -423,6 +427,12 @@ class Oligotyping:
 
         if ((not self.no_figures) and (not self.quick)) and self.sample_mapping:
             self._generate_exclusive_figures()
+
+        # store the final information about oligos
+        self.run.info('final_oligos', self.abundant_oligos, quiet = True)
+        self.run.info('final_oligo_counts_dict', self.final_oligo_counts_dict, quiet = True)
+        self.run.info('final_oligo_entropy_distribution_dict', self.final_oligo_entropy_distribution_dict, quiet = True)
+        self.run.info('final_oligo_unique_distribution_dict', self.final_oligo_unique_distribution_dict, quiet = True)
 
         self.run.info('end_of_run', get_date())
 
@@ -1018,11 +1028,13 @@ class Oligotyping:
 
     def _get_unique_sequence_distributions_within_abundant_oligos(self):
         # compute and return the unique sequence distribution within per oligo
-        # dictionary. see the explanation where the function is called.
+        # dictionary. see the explanation where the function is called. oligos
+        # listed in this dictionary MAY NOT be the final oligos once the noise
+        # filtering step has ended.
 
         self.progress.new('Unique Sequence Distributions Within Abundant Oligos')
 
-        self.unique_sequence_distribution_per_oligo = dict(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))]))
+        temp_unique_distributions = dict(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))]))
 
         self.fasta.reset()
         while self.fasta.next():
@@ -1032,16 +1044,16 @@ class Oligotyping:
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
                 try:
-                    self.unique_sequence_distribution_per_oligo[oligo][self.fasta.seq] += 1
+                    temp_unique_distributions[oligo][self.fasta.seq] += 1
                 except KeyError:
-                    self.unique_sequence_distribution_per_oligo[oligo][self.fasta.seq] = 1
+                    temp_unique_distributions[oligo][self.fasta.seq] = 1
 
         for oligo in self.abundant_oligos:
-            self.unique_sequence_distribution_per_oligo[oligo] = sorted(self.unique_sequence_distribution_per_oligo[oligo].values(), reverse = True)
+            temp_unique_distributions[oligo] = sorted(temp_unique_distributions[oligo].values(), reverse = True)
 
         self.progress.end()
 
-        return self.unique_sequence_distribution_per_oligo
+        return temp_unique_distributions
 
 
     def _generate_representative_sequences(self):
@@ -1120,12 +1132,20 @@ class Oligotyping:
             self.representative_sequences_per_oligotype[oligo] = fasta.seq
             fasta.reset()
 
+
+            # FIXME: I am going to come back to this and fix it at some point. Storing 'distribution_among_datasets'
+            # information in separate cPickle files per oligo is not the smartest thing to do.
+            self.final_oligo_unique_distribution_dict[oligo] = []
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
                                                                      % (oligo,
                                                                         fasta.pos,
                                                                         len(fasta.ids)))
                 unique_files_dict[oligo]['file'].write('%s\n' % fasta.seq)
+                
+                # store only the first 20
+                if not fasta.pos > 20:
+                    self.final_oligo_unique_distribution_dict[oligo].append(len(fasta.ids))
 
                 for dataset_id in fasta.ids:
                     dataset_name = self.dataset_name_from_defline(dataset_id)
@@ -1155,18 +1175,21 @@ class Oligotyping:
                                                             self.abundant_oligos.index(oligo) + 1,
                                                             len(self.abundant_oligos)))
                     unique_fasta_path = unique_files_dict[oligo]['path']
-                    self._generate_entropy_figure_for_abundant_oligotype(unique_fasta_path)
+                    self._generate_entropy_figure_for_abundant_oligotype(oligo, unique_fasta_path, self.final_oligo_entropy_distribution_dict)
             else:
                 mp = Multiprocessing(self._generate_entropy_figure_for_abundant_oligotype, self.number_of_threads)
-    
+                entropy_per_oligo_shared_dict = mp.get_empty_shared_dict()
+
                 # arrange processes
                 processes_to_run = []
                 for oligo in self.abundant_oligos:
                     unique_fasta_path = unique_files_dict[oligo]['path']
-                    processes_to_run.append((unique_fasta_path,),)
+                    processes_to_run.append((oligo, unique_fasta_path, entropy_per_oligo_shared_dict),)
     
                 # start the main loop to run all processes
                 mp.run_processes(processes_to_run, self.progress)
+                
+                self.final_oligo_entropy_distribution_dict = copy.deepcopy(entropy_per_oligo_shared_dict)
             self.progress.end()
 
 
@@ -1288,7 +1311,7 @@ class Oligotyping:
 
 
 
-    def _generate_entropy_figure_for_abundant_oligotype(self, unique_fasta_path):
+    def _generate_entropy_figure_for_abundant_oligotype(self, oligo, unique_fasta_path, final_oligo_entropy_distribution_dict):
         entropy_file_path = unique_fasta_path + '_entropy'
         color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
 
@@ -1300,6 +1323,9 @@ class Oligotyping:
         entropy_values_per_column = [0] * self.alignment_length
         for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
             entropy_values_per_column[int(column)] = float(entropy)
+        
+        final_oligo_entropy_distribution_dict[oligo] = entropy_values_per_column
+            
         color_shade_dict = get_color_shade_dict_for_list_of_values(entropy_values_per_column)
 
         color_per_column = [0] * self.alignment_length
