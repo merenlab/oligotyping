@@ -666,6 +666,8 @@ def check_command_output(cmdline):
 def check_input_alignment(alignment_path, dataset_name_from_defline_func, progress_func = None):
     alignment = u.SequenceSource(alignment_path)
     samples = set([])
+    previous_alignment_length = None
+
     while alignment.next():
         if progress_func and alignment.pos % 5000 == 0:
             progress_func.update('Reading input; %s, %s samples found'\
@@ -676,6 +678,13 @@ def check_input_alignment(alignment_path, dataset_name_from_defline_func, progre
         if sample not in samples:
             samples.add(sample)
     
+        # check the alignment lengths along the way:
+        if previous_alignment_length:
+            if previous_alignment_length != len(alignment.seq):
+                raise ConfigError, "Not all reads have the same length."
+
+        previous_alignment_length = len(alignment.seq)
+
     # if the number of samples we find in the alignment is more than half of the number of
     # reads in the alignment, we might be in trouble.
     if len(samples) * 2 > alignment.pos:
