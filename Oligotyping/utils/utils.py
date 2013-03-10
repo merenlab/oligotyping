@@ -288,15 +288,14 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None, min_abundance =
 
     abundant_oligos = []
     
-    SUM = lambda dataset: sum([datasets_dict[dataset][o] for o in oligos \
-                                                if datasets_dict[dataset].has_key(o)])
     for oligo in oligos:
         percent_abundances = []
 
         for dataset in datasets:
+            sum_dataset = sum(datasets_dict[dataset].values())
             if datasets_dict[dataset].has_key(oligo):
-                percent_abundances.append((datasets_dict[dataset][oligo] * 100.0 / SUM(dataset),\
-                                           datasets_dict[dataset][oligo], SUM(dataset), dataset))
+                percent_abundances.append((datasets_dict[dataset][oligo] * 100.0 / sum_dataset,\
+                                           datasets_dict[dataset][oligo], sum_dataset, dataset))
 
         percent_abundances.sort(reverse = True)
 
