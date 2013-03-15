@@ -126,15 +126,15 @@ def oligotyping():
                                 of random sequencing errors do not create artificial oligotypes. Any read that has\
                                 less quality score than the given value, will simply be discarded. This parameter\
                                 only in effect when --qual-scores-file or --qual-scores-dict parameters are used. \
-                                Defeault --min-base-quality is 15.')
+                                Defeault is %(default)d.')
     parser.add_argument('-C', '--selected-components', type=str, default=None,
                         help = 'Comma separated entropy components to be used during the oligotyping process.')
-    parser.add_argument('-s', '--min-number-of-datasets', type=int, required=True,
+    parser.add_argument('-s', '--min-number-of-datasets', type=int, default=1,
                         help = 'Minimum number of datasets oligotype expected to appear. The deafult is "5", which\
                                 is another completely arbitrary value. This parameter should be defined based\
                                 on the number of datasets included in the analysis. If there are 10 datasets,\
                                 3 might be a good choice, if there are 5 datasets, 1 would be a better one\
-                                depending on the study.')
+                                depending on the study. Default is %(default)d.')
     parser.add_argument('-a', '--min-percent-abundance', type=float, default=0.0,
                         help = 'Minimum percent abundance of an oligotype in at least one dataset. The default\
                                 is "0.0". Just like --min-number-of-datasets parameter, this parameter too is\
@@ -177,7 +177,7 @@ def oligotyping():
                         help = 'When set, no figures will be generated or displayed.')
     parser.add_argument('--blast-ref-db', default = None, type=str,
                         help = 'When set, BLAST search will be done locally against the ref db (local BLAST search\
-                                requires USEARCH)')
+                                requires NCBI+ tools)')
     parser.add_argument('--colors-list-file', default = None, type=str,
                         help = 'Optional file that contains HTML color codes in each line to color oligotypes. Number\
                                 of colors in the file has to be equal or greater than the number of abundant\
