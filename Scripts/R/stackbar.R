@@ -36,7 +36,7 @@ if(!invalid(colors_file)){
 
 P <- function(df){
     p <- ggplot(df, aes(x=factor(sample), y=abundance, fill = oligo))
-    p <- p + geom_bar(position="fill", stat = "identity", width=0.90)
+    p <- p + geom_bar(position="fill", stat = "identity", width=0.90, colour = 'black')
     p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10))
     p <- p + theme(axis.ticks.y = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
     p <- p + theme(legend.text = element_text(size = 8, family='mono'), legend.position = 'none')
