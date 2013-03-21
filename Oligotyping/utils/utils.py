@@ -757,7 +757,8 @@ def mapping_file_simple_check(mapping_file_path):
         num_entries += 1
         fields = line.strip('\n').split('\t')
         if len(fields) != len(header_fields):
-            raise ConfigError, "Not every line in the mapping file has the same number of fields"
+            raise ConfigError, "Not every line in the mapping file has the same number of fields " +\
+                                "(line %d has %d columns)" % (num_entries + 1, len(fields))
         for field in fields[1:]:
             if field == "":
                 continue
