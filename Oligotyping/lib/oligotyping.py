@@ -1112,7 +1112,7 @@ class Oligotyping:
         while self.fasta.next():
             if self.fasta.pos % 1000 == 0:
                 self.progress.update('Generating Individual FASTA Files: %.2f%%' \
-                                                % (self.fasta.pos * 100 / self.fasta.total_seq))
+                                                % (self.fasta.pos * 100.0 / self.fasta.total_seq))
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
                 fasta_files_dict[oligo]['file'].write('>%s\n' % (self.fasta.id))
