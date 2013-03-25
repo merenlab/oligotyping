@@ -48,13 +48,17 @@ def get_unit_counts_and_percents(units, datasets_dict):
     unit_percents = {}
     unit_counts = {}
 
+    dataset_totals = {}
+    for dataset in datasets_dict:
+        dataset_totals[dataset] = sum(datasets_dict[dataset].values())
+
     for dataset in datasets_dict:
         counts = []
         percents = []
         for unit in units:
             if datasets_dict[dataset].has_key(unit):
                 counts.append(datasets_dict[dataset][unit])
-                percents.append(datasets_dict[dataset][unit] * 100.0 / sum(datasets_dict[dataset].values()))
+                percents.append(datasets_dict[dataset][unit] * 100.0 / dataset_totals[dataset])
             else:
                 counts.append(0)
                 percents.append(0.0)
