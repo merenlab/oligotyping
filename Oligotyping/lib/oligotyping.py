@@ -1277,11 +1277,14 @@ class Oligotyping:
         self.progress.update('Processing BLAST results ...')
         fancy_results_dict = s.get_fancy_results_dict(defline_white_space_mask = '<$!$>')
 
+        self.progress.update('Storing BLAST results ...')
         for oligo in self.abundant_oligos:
-            self.progress.update('Storing BLAST results ...')
             unique_fasta_path = unique_files_dict[oligo]['path']
             fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
-            cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+            if fancy_results_dict.has_key(oligo):
+                cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+            else:
+                cPickle.dump([], open(fancy_blast_result_output_path, 'w'))
 
 
     def _perform_remote_BLAST_search_for_oligo_representative(self, oligo, unique_files_dict):

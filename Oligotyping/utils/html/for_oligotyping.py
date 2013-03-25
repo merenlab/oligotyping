@@ -57,7 +57,7 @@ def get_list_item(l, index):
 
 @register.filter(name='has_perfect_hit')
 def has_perfect_hit(b6_entry_list):
-    return b6_entry_list[0].identity == 100.0
+    return b6_entry_list[0].identity == 100.0 if len(b6_entry_list) else False
 
 @register.filter(name='get_blast_hits')
 def get_blast_hits(d, max_num = 8):
