@@ -1258,7 +1258,7 @@ class Oligotyping:
         mask_defline_whitespaces_in_FASTA(target, '<$!$>')
         mask_defline_whitespaces_in_FASTA(query, '<$!$>')
     
-        params = "-perc_identity 80"
+        params = "-perc_identity 90"
         job = 'reps'
         s = blast.LocalBLAST(query, target, output, log = self.generate_output_destination('BLAST.log'))
         self.logger.info('local blast request for job "%s": (q) %s (t) %s (o) %s (p) %s'\
