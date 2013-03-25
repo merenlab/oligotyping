@@ -171,6 +171,9 @@
     {% if sample_mapping %}
     	<tr><td id="l">{{pretty_names.sample_mapping}}</td><td id="r"><a href="{{sample_mapping}}">sample_mapping.txt</a></td></tr>
     {% endif %}
+    {% if gexf_network_file_path %}
+    	<tr><td id="l">{{pretty_names.gexf_network_file_path}}</td><td id="r"><a href="{{gexf_network_file_path}}">network.gexf</a></td></tr>
+    {% endif %}
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>

@@ -323,6 +323,71 @@ def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
     return (oligos, vectors)
 
 
+def generate_gexf_network_file(samples_dict, oligos, samples, across_datasets_sum_normalized, output_file, sample_mapping_dict = None, min_sum_normalized_percent = 0, project = None):
+    output = open(output_file, 'w')
+    
+    mapping_categories = sorted(sample_mapping_dict.keys()) if sample_mapping_dict else None
+    
+    output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
+    output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
+    output.write('''<meta lastmodifieddate="2010-01-01+23:42">\n''')
+    output.write('''    <creator>Oligotyping pipeline</creator>\n''')
+    if project:
+        output.write('''    <creator>Network description for %s</creator>\n''' % (project))
+    output.write('''</meta>\n''')
+    output.write('''<graph type="static">\n\n''')
+
+    if sample_mapping_dict:
+        output.write('''<attributes class="node" type="static">\n''')
+        
+        for i in range(0, len(mapping_categories)):
+            category = mapping_categories[i]
+            output.write('''    <attribute id="%d" title="%s" type="string"/>\n''' % (i, category))
+        output.write('''</attributes>\n\n''')
+
+    output.write('''<nodes>\n''')
+    for sample in samples:
+        output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
+        output.write('''        <viz:size value="40"/>\n''')
+
+        if sample_mapping_dict:
+            output.write('''        <attvalues>\n''')
+            for i in range(0, len(mapping_categories)):
+                category = mapping_categories[i]
+                output.write('''            <attvalue id="%d" value="%s"/>\n''' % (i, sample_mapping_dict[category][sample]))
+            output.write('''        </attvalues>\n''')
+
+        output.write('''    </node>\n''')
+
+    for oligo in oligos:
+        output.write('''    <node id="%s">\n''' % (oligo))
+        output.write('''        <viz:size value="5"/>\n''')
+
+        if sample_mapping_dict:
+            output.write('''        <attvalues>\n''')
+            for i in range(0, len(mapping_categories)):
+                output.write('''            <attvalue id="%d" value="__NA__"/>\n''' % (i))
+            output.write('''        </attvalues>\n''')
+
+        output.write('''    </node>\n''')
+
+    output.write('''</nodes>\n''')
+    
+    edge_id = 0
+    output.write('''<edges>\n''')
+    for i in range(len(samples)):
+        sample = samples[i]
+        for oligo in oligos:
+            if across_datasets_sum_normalized[oligo][i] > min_sum_normalized_percent:
+                output.write('''    <edge id="%d" source="%s" target="%s" weight="%f" />\n''' % (edge_id, oligo, sample, across_datasets_sum_normalized[oligo][i]))
+                edge_id += 1
+    output.write('''</edges>\n''')
+    output.write('''</graph>\n''')
+    output.write('''</gexf>\n''')
+    
+    output.close()
+
+
 def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     """This function takes quals dict (which can be obtained by calling the
        utils.utils.get_quals_dict function) and returns a dictionary that

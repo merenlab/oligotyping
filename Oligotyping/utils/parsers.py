@@ -211,6 +211,8 @@ def oligotyping():
     parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
                         help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
                                 skipped')
+    parser.add_argument('--skip-gexf-network-file', action = 'store_true', default = False,
+                        help = 'When set, GEXF network file will not be generated')
     parser.add_argument('-T', '--no-threading', action = 'store_true', default = False,
                         help = 'When set, oligotyping will not spawn multiple threads. Default behavior is\
                                 multi-threaded whenever possible.')

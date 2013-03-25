@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.9'
+__version__ = '0.95'
 
 import os
 import sys
@@ -43,8 +43,10 @@ from Oligotyping.utils.utils import get_cmd_line
 from Oligotyping.utils.utils import append_reads_to_FASTA
 from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import generate_MATRIX_files
+from Oligotyping.utils.utils import get_sample_mapping_dict
 from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
+from Oligotyping.utils.utils import generate_gexf_network_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
 from Oligotyping.utils.utils import mask_defline_whitespaces_in_FASTA
@@ -88,6 +90,7 @@ class Oligotyping:
         self.log_file_path = None
         self.skip_check_input_file = False
         self.skip_basic_analyses = False
+        self.skip_gexf_network_file = False
         self.no_threading = False
         self.number_of_threads = None
 
@@ -124,6 +127,7 @@ class Oligotyping:
             self.sample_mapping = args.sample_mapping
             self.skip_check_input_file = args.skip_check_input_file
             self.skip_basic_analyses = args.skip_basic_analyses
+            self.skip_gexf_network_file = args.skip_gexf_network_file
             self.no_threading = args.no_threading
             self.number_of_threads = args.number_of_threads
         
@@ -131,6 +135,7 @@ class Oligotyping:
         self.progress = Progress()
 
         self.datasets_dict = {}
+        self.sample_mapping_dict = {}
         self.excluded_read_ids_tracker = {}
         self.representative_sequences_per_oligotype = {}
         self.across_datasets_sum_normalized = {}
@@ -344,6 +349,9 @@ class Oligotyping:
         self.progress.end()
 
         self.column_entropy = [int(x.strip().split()[0]) for x in open(self.entropy).readlines()]
+        
+        if self.sample_mapping:
+            self.sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
 
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
@@ -395,6 +403,7 @@ class Oligotyping:
         self._contrive_abundant_oligos()
         self._refine_datasets_dict()
         self._get_unit_counts_and_percents()
+        self._get_units_across_datasets_dicts()
         self._generate_random_colors()
         
         self._generate_FASTA_file()
@@ -404,7 +413,6 @@ class Oligotyping:
         self._store_read_distribution_table()
         
         if self.generate_sets:
-            self._get_units_across_datasets_dicts()
             self._generate_MATRIX_files_for_units_across_datasets()
             self._agglomerate_oligos_based_on_cosine_similarity()
             self._generate_MATRIX_files_for_oligotype_sets()       
@@ -427,6 +435,9 @@ class Oligotyping:
 
         if ((not self.no_figures) and (not self.quick)) and self.sample_mapping:
             self._generate_exclusive_figures()
+            
+        if (not self.skip_gexf_network_file) and (not self.quick):
+            self._generate_gexf_network_file()
 
         # store the final information about oligos
         self.run.info('final_oligos', self.abundant_oligos, quiet = True)
@@ -752,9 +763,9 @@ class Oligotyping:
 
         self.progress.end()
         
-        number_of_reads_in_datasets_dict = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
+        self.num_sequences_after_qc = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
 
-        self.run.info('num_sequences_after_qc', number_of_reads_in_datasets_dict)
+        self.run.info('num_sequences_after_qc', self.num_sequences_after_qc)
 
         if len(datasets_to_remove):
             self.run.info('datasets_removed_after_qc', datasets_to_remove)               
@@ -1401,6 +1412,40 @@ class Oligotyping:
         cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
         self.progress.end()
         self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
+
+
+    def _generate_gexf_network_file(self):
+        self.gexf_network_file_path = self.generate_output_destination("NETWORK.gexf")
+
+        self.progress.new('GEXF Network File')
+       
+        oligos_for_network = []
+        oligo_abundance_threshold = self.num_sequences_after_qc / 10000.0
+        
+        for oligo in self.final_oligo_counts_dict:
+            if self.final_oligo_counts_dict[oligo] > oligo_abundance_threshold:
+                oligos_for_network.append(oligo)
+                
+        if not oligos_for_network:
+            self.logger.info('GEXF network file generation failed: all oligotypes were eliminated (oligo_abundance_threshold: %f)'\
+                                                             % (oligo_abundance_threshold))
+            self.progress.end()
+            return None
+        else:
+            self.logger.info('GEXF network file will be generated for %d oligos'\
+                                                             % (len(oligos_for_network)))
+        
+        generate_gexf_network_file(self.datasets_dict,
+                                   oligos_for_network,
+                                   self.datasets,
+                                   self.across_datasets_sum_normalized,
+                                   self.gexf_network_file_path,
+                                   sample_mapping_dict = self.sample_mapping_dict,
+                                   min_sum_normalized_percent = 0,
+                                   project = self.project)
+        
+        self.progress.end()
+        self.run.info('gexf_network_file_path', self.gexf_network_file_path)
 
 
     def _generate_html_output(self):

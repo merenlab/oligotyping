@@ -87,5 +87,6 @@ pretty_names = {'output_directory': 'Output directory',
                 'read_distribution_table_path': 'Read distribution among datasets table',
                 'node_representatives_file_path': 'Representative sequences per node',
                 'sample_mapping': 'Mapping file',
+                'gexf_network_file_path': 'GEXF file for network analysis',
                 'skip_basic_analyses': 'Skip performing basic analyses'
                 }

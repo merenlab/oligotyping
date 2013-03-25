@@ -7,6 +7,10 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 0.95
+    * GEXF support. Now oligotyping pipeline generates Gephi (https://gephi.org/) compatible XML file for network analysis.
+    * Bug fixes. 
+
 * 0.9
     * Multithreading support. Oligotyping pipeline runs processes in parallel whenever it is possible.
     * More comprehensible HTML output.

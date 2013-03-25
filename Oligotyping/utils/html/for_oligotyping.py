@@ -190,6 +190,9 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         except:
             html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'] + '.png'), 'entropy.png')
     
+    if run_info_dict['gexf_network_file_path']:
+        html_dict['gexf_network_file_path'] = copy_as(run_info_dict['gexf_network_file_path'], 'network.gexf')
+
     if run_info_dict['sample_mapping']:
         html_dict['sample_mapping'] = copy_as(run_info_dict['sample_mapping'], 'sample_mapping.txt')
     else:
