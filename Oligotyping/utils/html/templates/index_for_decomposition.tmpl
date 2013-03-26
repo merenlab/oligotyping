@@ -114,6 +114,12 @@
     <tr><td id="l">{{pretty_names.matrix_percent_file_path}}</td><td id="r"><a href="{{matrix_percent_file_path}}">matrix_percents.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_file_path}}</td><td id="r"><a href="{{matrix_count_file_path}}">matrix_counts.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.environment_file_path}}</td><td id="r"><a href="{{environment_file_path}}">environment.txt</a></td></tr>
+    {% if sample_mapping %}
+    	<tr><td id="l">{{pretty_names.sample_mapping}}</td><td id="r"><a href="{{sample_mapping}}">sample_mapping.txt</a></td></tr>
+    {% endif %}
+    {% if gexf_network_file_path %}
+    	<tr><td id="l">{{pretty_names.gexf_network_file_path}}</td><td id="r"><a href="{{gexf_network_file_path}}">network.gexf</a></td></tr>
+    {% endif %}
     {% if blast_ref_db and blast_ref_db_path %}
     <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
     {% endif %}

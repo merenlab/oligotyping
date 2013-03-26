@@ -89,6 +89,8 @@ def decomposer():
     parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
                         help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
                                 skipped')
+    parser.add_argument('--skip-gexf-network-file', action = 'store_true', default = False,
+                        help = 'When set, GEXF network file will not be generated')
 
 
     return parser

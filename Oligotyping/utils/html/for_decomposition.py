@@ -193,6 +193,14 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
 
+    if run_info_dict['sample_mapping']:
+        html_dict['sample_mapping'] = copy_as(run_info_dict['sample_mapping'], 'sample_mapping.txt')
+    else:
+        html_dict['sample_mapping'] = None
+
+    if run_info_dict['gexf_network_file_path']:
+        html_dict['gexf_network_file_path'] = copy_as(run_info_dict['gexf_network_file_path'], 'network.gexf')
+
     html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
     html_dict['blast_results_found'] = False

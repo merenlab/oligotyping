@@ -36,10 +36,12 @@ from Oligotyping.utils.utils import get_pretty_name
 from Oligotyping.utils.utils import check_input_alignment
 from Oligotyping.utils.utils import human_readable_number
 from Oligotyping.utils.utils import generate_MATRIX_files 
+from Oligotyping.utils.utils import get_sample_mapping_dict
 from Oligotyping.utils.utils import homopolymer_indel_exists
 from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
+from Oligotyping.utils.utils import generate_gexf_network_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.utils import get_units_across_datasets_dicts
 from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
@@ -79,6 +81,7 @@ class Decomposer:
         self.skip_check_input_file = False
         self.sample_mapping = None
         self.skip_basic_analyses = False
+        self.skip_gexf_network_file = False
          
         if args:
             self.alignment = args.alignment
@@ -104,6 +107,7 @@ class Decomposer:
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
             self.skip_basic_analyses = args.skip_basic_analyses
+            self.skip_gexf_network_file = args.skip_gexf_network_file
 
         self.decomposition_depth = -1
 
@@ -226,6 +230,7 @@ class Decomposer:
         self.node_ids_to_analyze = ['root']
 
         self.progress.end()
+
             
     def get_prefix(self):
         prefix = 'm%.2f-A%d-M%d-d%d' % (self.min_entropy,
@@ -258,6 +263,9 @@ class Decomposer:
 
         self.check_input_files()
         
+        if self.sample_mapping:
+            self.sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
+
         # we're in business.
         self.run.info('project', self.project)
         self.run.info('run_date', get_date())
@@ -337,6 +345,9 @@ class Decomposer:
                                                       self.topology.nodes[node_id].size))
 
         self.run.info('end_of_run', get_date())
+
+        if not self.skip_gexf_network_file:
+            self._generate_gexf_network_file()
 
         if self.gen_figures:
             self._generate_default_figures()
@@ -1329,6 +1340,7 @@ class Decomposer:
 
         return s
 
+
     def _generate_html_output(self):
         from Oligotyping.utils.html.error import HTMLError
         try:
@@ -1343,6 +1355,22 @@ class Decomposer:
         index_page = generate_html_output(self.run.info_dict, html_output_directory = output_directory_for_html)
         self.progress.end()
         sys.stdout.write('\n\n\tView results in your browser: "%s"\n\n' % index_page)
+
+
+    def _generate_gexf_network_file(self):
+        self.gexf_network_file_path = self.generate_output_destination("NETWORK.gexf")
+
+        self.progress.new('GEXF Network File')
+       
+        generate_gexf_network_file(self.topology.final_nodes,
+                                   self.datasets_dict,
+                                   self.unit_percents,
+                                   self.gexf_network_file_path,
+                                   sample_mapping_dict = self.sample_mapping_dict,
+                                   project = self.project)
+
+        self.progress.end()
+        self.run.info('gexf_network_file_path', self.gexf_network_file_path)
 
 
     def _generate_default_figures(self):
