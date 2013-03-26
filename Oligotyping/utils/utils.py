@@ -327,9 +327,10 @@ def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
     return (oligos, vectors)
 
 
-def generate_gexf_network_file(samples_dict, oligos, samples, across_datasets_sum_normalized, output_file, sample_mapping_dict = None, min_sum_normalized_percent = 0, project = None):
+def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None, project = None):
     output = open(output_file, 'w')
     
+    samples = sorted(samples_dict.keys())
     mapping_categories = sorted(sample_mapping_dict.keys()) if sample_mapping_dict else None
     
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
@@ -363,8 +364,8 @@ def generate_gexf_network_file(samples_dict, oligos, samples, across_datasets_su
 
         output.write('''    </node>\n''')
 
-    for oligo in oligos:
-        output.write('''    <node id="%s">\n''' % (oligo))
+    for unit in units:
+        output.write('''    <node id="%s">\n''' % (unit))
         output.write('''        <viz:size value="5"/>\n''')
 
         if sample_mapping_dict:
@@ -379,11 +380,11 @@ def generate_gexf_network_file(samples_dict, oligos, samples, across_datasets_su
     
     edge_id = 0
     output.write('''<edges>\n''')
-    for i in range(len(samples)):
-        sample = samples[i]
-        for oligo in oligos:
-            if across_datasets_sum_normalized[oligo][i] > min_sum_normalized_percent:
-                output.write('''    <edge id="%d" source="%s" target="%s" weight="%f" />\n''' % (edge_id, oligo, sample, across_datasets_sum_normalized[oligo][i]))
+    for sample in samples:
+        for i in range(0, len(units)):
+            unit = units[i]
+            if unit_percents[sample][i] > 0.0:
+                output.write('''    <edge id="%d" source="%s" target="%s" weight="%f" />\n''' % (edge_id, unit, sample, unit_percents[sample][i]))
                 edge_id += 1
     output.write('''</edges>\n''')
     output.write('''</graph>\n''')

@@ -1422,29 +1422,11 @@ class Oligotyping:
 
         self.progress.new('GEXF Network File')
        
-        oligos_for_network = []
-        oligo_abundance_threshold = self.num_sequences_after_qc / 10000.0
-        
-        for oligo in self.final_oligo_counts_dict:
-            if self.final_oligo_counts_dict[oligo] > oligo_abundance_threshold:
-                oligos_for_network.append(oligo)
-                
-        if not oligos_for_network:
-            self.logger.info('GEXF network file generation failed: all oligotypes were eliminated (oligo_abundance_threshold: %f)'\
-                                                             % (oligo_abundance_threshold))
-            self.progress.end()
-            return None
-        else:
-            self.logger.info('GEXF network file will be generated for %d oligos'\
-                                                             % (len(oligos_for_network)))
-        
-        generate_gexf_network_file(self.datasets_dict,
-                                   oligos_for_network,
-                                   self.datasets,
-                                   self.across_datasets_sum_normalized,
+        generate_gexf_network_file(self.abundant_oligos,
+                                   self.datasets_dict,
+                                   self.unit_percents,
                                    self.gexf_network_file_path,
                                    sample_mapping_dict = self.sample_mapping_dict,
-                                   min_sum_normalized_percent = 0,
                                    project = self.project)
         
         self.progress.end()
