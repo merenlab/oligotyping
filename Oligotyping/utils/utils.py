@@ -327,11 +327,12 @@ def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
     return (oligos, vectors)
 
 
-def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None, project = None):
+def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None, unit_mapping_dict = None, project = None):
     output = open(output_file, 'w')
     
     samples = sorted(samples_dict.keys())
-    mapping_categories = sorted(sample_mapping_dict.keys()) if sample_mapping_dict else None
+    sample_mapping_categories = sorted(sample_mapping_dict.keys()) if sample_mapping_dict else None
+    unit_mapping_categories = sorted(unit_mapping_dict.keys()) if unit_mapping_dict else None
     
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
@@ -344,21 +345,27 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
 
     if sample_mapping_dict:
         output.write('''<attributes class="node" type="static">\n''')
-        
-        for i in range(0, len(mapping_categories)):
-            category = mapping_categories[i]
-            output.write('''    <attribute id="%d" title="%s" type="string"/>\n''' % (i, category))
+        for i in range(0, len(sample_mapping_categories)):
+            category = sample_mapping_categories[i]
+            output.write('''    <attribute id="%d" title="%s" type="string" />\n''' % (i, category))
+        output.write('''</attributes>\n\n''')
+
+    if unit_mapping_dict:
+        output.write('''<attributes class="edge">\n''')
+        for i in range(0, len(unit_mapping_categories)):
+            category = unit_mapping_categories[i]
+            output.write('''    <attribute id="%d" title="%s" type="string" />\n''' % (i, category))
         output.write('''</attributes>\n\n''')
 
     output.write('''<nodes>\n''')
     for sample in samples:
         output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
-        output.write('''        <viz:size value="40"/>\n''')
+        output.write('''        <viz:size value="8"/>\n''')
 
         if sample_mapping_dict:
             output.write('''        <attvalues>\n''')
-            for i in range(0, len(mapping_categories)):
-                category = mapping_categories[i]
+            for i in range(0, len(sample_mapping_categories)):
+                category = sample_mapping_categories[i]
                 output.write('''            <attvalue id="%d" value="%s"/>\n''' % (i, sample_mapping_dict[category][sample]))
             output.write('''        </attvalues>\n''')
 
@@ -366,11 +373,11 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
 
     for unit in units:
         output.write('''    <node id="%s">\n''' % (unit))
-        output.write('''        <viz:size value="5"/>\n''')
+        output.write('''        <viz:size value="2" />\n''')
 
         if sample_mapping_dict:
             output.write('''        <attvalues>\n''')
-            for i in range(0, len(mapping_categories)):
+            for i in range(0, len(unit_mapping_categories)):
                 output.write('''            <attvalue id="%d" value="__NA__"/>\n''' % (i))
             output.write('''        </attvalues>\n''')
 
@@ -384,7 +391,18 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         for i in range(0, len(units)):
             unit = units[i]
             if unit_percents[sample][i] > 0.0:
-                output.write('''    <edge id="%d" source="%s" target="%s" weight="%f" />\n''' % (edge_id, unit, sample, unit_percents[sample][i]))
+                if unit_mapping_dict:
+                    output.write('''    <edge id="%d" source="%s" target="%s" weight="%f">\n''' % (edge_id, unit, sample, unit_percents[sample][i]))
+                    output.write('''        <attvalues>\n''')
+                    for i in range(0, len(unit_mapping_categories)):
+                        category = unit_mapping_categories[i]
+                        output.write('''            <attvalue id="%d" value="%s"/>\n''' % (i, unit_mapping_dict[category][unit]))
+                    output.write('''        </attvalues>\n''')
+                    output.write('''    </edge>\n''')
+                else:
+                    output.write('''    <edge id="%d" source="%s" target="%s" weight="%f" />\n''' % (edge_id, unit, sample, unit_percents[sample][i]))
+
+
                 edge_id += 1
     output.write('''</edges>\n''')
     output.write('''</graph>\n''')
