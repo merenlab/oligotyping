@@ -42,6 +42,8 @@ if(num_samples < 32)
     pdf_w <- 8
 
 png_w = pdf_w * 100
+if (png_w > 20000)
+	png_w <- 20000
 
 # PDF
 pdf_output <- paste(output_file_prefix,".pdf",sep="")
