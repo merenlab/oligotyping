@@ -340,7 +340,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     if project:
         output.write('''    <creator>Network description for %s</creator>\n''' % (project))
     output.write('''</meta>\n''')
-    output.write('''<graph type="static">\n\n''')
+    output.write('''<graph type="static" defaultedgetype="undirected">\n\n''')
 
     if sample_mapping_dict:
         output.write('''<attributes class="node" type="static">\n''')
