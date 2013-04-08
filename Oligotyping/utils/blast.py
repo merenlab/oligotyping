@@ -46,7 +46,7 @@ biopython_error_text = '''\n
             Exiting.\n'''
 
 version_error_text = '''\n
-            Certain steps of decomposition requires fast searching, and it seems NCBI's BLAST tools
+            Certain steps of decomposition require fast searching, and it seems NCBI's BLAST tools
             installed on your system do not have the expected version number.
             
             Please make sure you have BLAST tools version 2.2.26 or higher. You can download BLAST
