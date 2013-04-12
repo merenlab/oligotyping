@@ -824,7 +824,7 @@ def check_input_alignment(alignment_path, sample_name_from_defline_func, progres
         return samples
 
 
-def mapping_file_simple_check(mapping_file_path):
+def mapping_file_simple_check(mapping_file_path, samples_expected = None):
     mapping_file = open(mapping_file_path)
     header_line = mapping_file.readline()
     
@@ -840,10 +840,15 @@ def mapping_file_simple_check(mapping_file_path):
     if len(header_fields) != len(set(header_fields)):
         raise ConfigError, "In the mapping file, every category must be unique"
 
+    samples_found = []
     num_entries = 0
     for line in mapping_file.readlines():
         num_entries += 1
+        
         fields = line.strip('\n').split('\t')
+        
+        samples_found.append(fields[0])
+ 
         if len(fields) != len(header_fields):
             raise ConfigError, "Not every line in the mapping file has the same number of fields " +\
                                 "(line %d has %d columns)" % (num_entries + 1, len(fields))
@@ -852,6 +857,16 @@ def mapping_file_simple_check(mapping_file_path):
                 continue
             if field[0] in '0123456789':
                 raise ConfigError, "Categories in the mapping file cannot start with digits: '%s'" % field
+
+    if samples_expected:
+        samples_missing = [] 
+        for sample in samples_expected:
+            if not sample in samples_found:
+                samples_missing.append(sample)
+        
+        if samples_missing:
+            raise ConfigError, "Mapping file seems to be missing %d sample(s) that appear in the FASTA file:\n\n- %s\n\n"\
+                                      % (len(samples_missing), ', '.join(samples_missing))
 
     if num_entries < 3:
         raise ConfigError, "Mapping file seems to have less than three samples"
