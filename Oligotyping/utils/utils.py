@@ -40,83 +40,83 @@ class ConfigError(Exception):
     def __str__(self):
         return 'Config Error: %s' % self.e
 
-def get_unit_counts_and_percents(units, datasets_dict):
+def get_unit_counts_and_percents(units, samples_dict):
     # this function returns two dictionaries that contain unit counts and percents
-    # across datasets. that can be used for agglomeration, as well as generation of
+    # across samples. that can be used for agglomeration, as well as generation of
     # environment and matrix files.
 
     unit_percents = {}
     unit_counts = {}
 
-    dataset_totals = {}
-    for dataset in datasets_dict:
-        dataset_totals[dataset] = sum(datasets_dict[dataset].values())
+    sample_totals = {}
+    for sample in samples_dict:
+        sample_totals[sample] = sum(samples_dict[sample].values())
 
-    for dataset in datasets_dict:
+    for sample in samples_dict:
         counts = []
         percents = []
         for unit in units:
-            if datasets_dict[dataset].has_key(unit):
-                counts.append(datasets_dict[dataset][unit])
-                percents.append(datasets_dict[dataset][unit] * 100.0 / dataset_totals[dataset])
+            if samples_dict[sample].has_key(unit):
+                counts.append(samples_dict[sample][unit])
+                percents.append(samples_dict[sample][unit] * 100.0 / sample_totals[sample])
             else:
                 counts.append(0)
                 percents.append(0.0)
                 
-        unit_counts[dataset] = counts
-        unit_percents[dataset] = percents
+        unit_counts[sample] = counts
+        unit_percents[sample] = percents
 
     return (unit_counts, unit_percents)
 
-def generate_MATRIX_files(units, datasets, unit_counts, unit_percents, matrix_count_file_path, matrix_percent_file_path):
+def generate_MATRIX_files(units, samples, unit_counts, unit_percents, matrix_count_file_path, matrix_percent_file_path):
     count_file = open(matrix_count_file_path, 'w')
     percent_file = open(matrix_percent_file_path, 'w')       
     
     count_file.write('\t'.join(['samples'] + units) + '\n')
     percent_file.write('\t'.join(['samples'] + units) + '\n')
 
-    for dataset in datasets:
-        count_file.write('\t'.join([dataset] + [str(c) for c in unit_counts[dataset]]) + '\n')
-        percent_file.write('\t'.join([dataset] + [str(p) for p in unit_percents[dataset]]) + '\n')
+    for sample in samples:
+        count_file.write('\t'.join([sample] + [str(c) for c in unit_counts[sample]]) + '\n')
+        percent_file.write('\t'.join([sample] + [str(p) for p in unit_percents[sample]]) + '\n')
     
     count_file.close()
     percent_file.close()
 
 
-def get_units_across_datasets_dicts(units, datasets, unit_percents):
-    across_datasets_sum_normalized = {}
-    across_datasets_max_normalized = {}
+def get_units_across_samples_dicts(units, samples, unit_percents):
+    across_samples_sum_normalized = {}
+    across_samples_max_normalized = {}
   
     for unit in units:
-        across_datasets_sum_normalized[unit] = []
-        across_datasets_max_normalized[unit] = []
+        across_samples_sum_normalized[unit] = []
+        across_samples_max_normalized[unit] = []
 
     for i in range(0, len(units)):
         unit = units[i]
-        sum_across_datasets = sum([unit_percents[dataset][i] for dataset in datasets])
-        max_across_datasets = max([unit_percents[dataset][i] for dataset in datasets])
+        sum_across_samples = sum([unit_percents[sample][i] for sample in samples])
+        max_across_samples = max([unit_percents[sample][i] for sample in samples])
             
-        for dataset in datasets:
-            across_datasets_sum_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / sum_across_datasets)
-            across_datasets_max_normalized[unit].append(unit_percents[dataset][i]  * 100.0 / max_across_datasets)
+        for sample in samples:
+            across_samples_sum_normalized[unit].append(unit_percents[sample][i]  * 100.0 / sum_across_samples)
+            across_samples_max_normalized[unit].append(unit_percents[sample][i]  * 100.0 / max_across_samples)
 
-    return (across_datasets_sum_normalized, across_datasets_max_normalized)
+    return (across_samples_sum_normalized, across_samples_max_normalized)
 
 
-def generate_MATRIX_files_for_units_across_datasets(units, datasets, MN_fp, SN_fp, MN_dict, SN_dict):
-        across_datasets_MN_file = open(MN_fp, 'w')
-        across_datasets_SN_file = open(SN_fp, 'w')
+def generate_MATRIX_files_for_units_across_samples(units, samples, MN_fp, SN_fp, MN_dict, SN_dict):
+        across_samples_MN_file = open(MN_fp, 'w')
+        across_samples_SN_file = open(SN_fp, 'w')
 
-        across_datasets_MN_file.write('\t'.join(['sample'] + units) + '\n')
-        across_datasets_SN_file.write('\t'.join(['sample'] + units) + '\n')
+        across_samples_MN_file.write('\t'.join(['sample'] + units) + '\n')
+        across_samples_SN_file.write('\t'.join(['sample'] + units) + '\n')
 
-        for i in range(0, len(datasets)):
-            dataset = datasets[i]
-            across_datasets_MN_file.write('\t'.join([dataset] + [str(MN_dict[unit][i]) for unit in units]) + '\n')
-            across_datasets_SN_file.write('\t'.join([dataset] + [str(SN_dict[unit][i]) for unit in units]) + '\n')
+        for i in range(0, len(samples)):
+            sample = samples[i]
+            across_samples_MN_file.write('\t'.join([sample] + [str(MN_dict[unit][i]) for unit in units]) + '\n')
+            across_samples_SN_file.write('\t'.join([sample] + [str(SN_dict[unit][i]) for unit in units]) + '\n')
         
-        across_datasets_MN_file.close()
-        across_datasets_SN_file.close()
+        across_samples_MN_file.close()
+        across_samples_SN_file.close()
 
 def homopolymer_indel_exists(seq1, seq2):
     seq1, seq2 = trim_uninformative_gaps_from_sequences(seq1, seq2)
@@ -261,12 +261,12 @@ def generate_TAB_delim_file_from_dict(data_dict, output_file_path, order, first_
     f.close()
 
 
-def generate_ENVIRONMENT_file(datasets, datasets_dict, environment_file_path):
+def generate_ENVIRONMENT_file(samples, samples_dict, environment_file_path):
     # generate environment file
     f = open(environment_file_path, 'w')
-    for dataset in datasets:
-        for unit in datasets_dict[dataset]:
-            f.write("%s\t%s\t%d\n" % (unit, dataset, datasets_dict[dataset][unit]))
+    for sample in samples:
+        for unit in samples_dict[sample]:
+            f.write("%s\t%s\t%d\n" % (unit, sample, samples_dict[sample][unit]))
     f.close()
 
 
@@ -281,13 +281,13 @@ def get_unique_sequences_from_FASTA(alignment, limit = 10):
     return unique_sequences
 
 
-def get_oligos_sorted_by_abundance(datasets_dict, oligos = None, min_abundance = 0):
-    datasets = datasets_dict.keys()
-    datasets.sort()
+def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 0):
+    samples = samples_dict.keys()
+    samples.sort()
 
     if oligos == None:
         oligos = []
-        map(lambda o: oligos.extend(o), [v.keys() for v in datasets_dict.values()])
+        map(lambda o: oligos.extend(o), [v.keys() for v in samples_dict.values()])
         oligos = list(set(oligos))
 
     abundant_oligos = []
@@ -295,29 +295,29 @@ def get_oligos_sorted_by_abundance(datasets_dict, oligos = None, min_abundance =
     for oligo in oligos:
         percent_abundances = []
 
-        for dataset in datasets:
-            sum_dataset = sum(datasets_dict[dataset].values())
-            if datasets_dict[dataset].has_key(oligo):
-                percent_abundances.append((datasets_dict[dataset][oligo] * 100.0 / sum_dataset,\
-                                           datasets_dict[dataset][oligo], sum_dataset, dataset))
+        for sample in samples:
+            sum_sample = sum(samples_dict[sample].values())
+            if samples_dict[sample].has_key(oligo):
+                percent_abundances.append((samples_dict[sample][oligo] * 100.0 / sum_sample,\
+                                           samples_dict[sample][oligo], sum_sample, sample))
 
         percent_abundances.sort(reverse = True)
 
         # FIXME: excuse me, WTF is going on here?:
-        for abundance_percent, abundance_count, dataset_size, dataset in percent_abundances:
+        for abundance_percent, abundance_count, sample_size, sample in percent_abundances:
             abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
             break
 
     return [x[1] for x in sorted(abundant_oligos) if x[0] > min_abundance]
 
 
-def get_vectors_from_oligotypes_across_datasets_matrix(file_path):
-    oligotypes_across_datasets_file_obj = open(file_path)
+def get_vectors_from_oligotypes_across_samples_matrix(file_path):
+    oligotypes_across_samples_file_obj = open(file_path)
    
     oligos = []
     vectors = {}
 
-    for line in oligotypes_across_datasets_file_obj.readlines()[1:]:
+    for line in oligotypes_across_samples_file_obj.readlines()[1:]:
         fields = line.strip().split('\t')
         
         oligo = fields[0]
@@ -362,7 +362,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
         output.write('''        <viz:size value="8"/>\n''')
 
-        if sample_mapping_dict:
+        if sample_mapping_categories:
             output.write('''        <attvalues>\n''')
             for i in range(0, len(sample_mapping_categories)):
                 category = sample_mapping_categories[i]
@@ -375,7 +375,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         output.write('''    <node id="%s">\n''' % (unit))
         output.write('''        <viz:size value="2" />\n''')
 
-        if sample_mapping_dict:
+        if unit_mapping_categories:
             output.write('''        <attvalues>\n''')
             for i in range(0, len(unit_mapping_categories)):
                 output.write('''            <attvalue id="%d" value="__NA__"/>\n''' % (i))
@@ -540,26 +540,26 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
         return None
  
 
-def get_filtered_datasets_dict(units, datasets, datasets_dict):
-    filtered_datasets_dict = {}
+def get_filtered_samples_dict(units, samples, samples_dict):
+    filtered_samples_dict = {}
 
-    for dataset in datasets:
-        filtered_datasets_dict[dataset] = {}
+    for sample in samples:
+        filtered_samples_dict[sample] = {}
         for unit in units:
-            if datasets_dict[dataset].has_key(unit):
-                filtered_datasets_dict[dataset][unit] = datasets_dict[dataset][unit]
+            if samples_dict[sample].has_key(unit):
+                filtered_samples_dict[sample][unit] = samples_dict[sample][unit]
 
-    return filtered_datasets_dict
+    return filtered_samples_dict
 
 
-def get_datasets_dict_from_environment_file(environment_file_path):
-    datasets_dict = {}
-    for oligo, dataset, count in [l.strip().split('\t') for l in open(environment_file_path).readlines()]:
-        if datasets_dict.has_key(dataset):
-            datasets_dict[dataset][oligo] = int(count)
+def get_samples_dict_from_environment_file(environment_file_path):
+    samples_dict = {}
+    for oligo, sample, count in [l.strip().split('\t') for l in open(environment_file_path).readlines()]:
+        if samples_dict.has_key(sample):
+            samples_dict[sample][oligo] = int(count)
         else:
-            datasets_dict[dataset] = {oligo: int(count)}
-    return datasets_dict
+            samples_dict[sample] = {oligo: int(count)}
+    return samples_dict
 
 
 def human_readable_number(n):
@@ -750,7 +750,7 @@ def check_command_output(cmdline):
     return subprocess.check_output(cmdline.split())
 
 
-def check_input_alignment(alignment_path, dataset_name_from_defline_func, progress_func = None):
+def check_input_alignment(alignment_path, sample_name_from_defline_func, progress_func = None):
     alignment = u.SequenceSource(alignment_path)
     samples = set([])
     previous_alignment_length = None
@@ -761,7 +761,7 @@ def check_input_alignment(alignment_path, dataset_name_from_defline_func, progre
                                         % (pretty_print(alignment.pos),
                                            pretty_print(len(samples))))
 
-        sample = dataset_name_from_defline_func(alignment.id)
+        sample = sample_name_from_defline_func(alignment.id)
         if sample not in samples:
             samples.add(sample)
     
@@ -886,14 +886,14 @@ def get_sample_mapping_dict(mapping_file_path):
     mapping_file.close()
     return mapping_dict
 
-def store_filtered_matrix(old_matrix_path, new_matrix_path, datasets):
+def store_filtered_matrix(old_matrix_path, new_matrix_path, samples):
     new_matrix = open(new_matrix_path, 'w')
     old_matrix = open(old_matrix_path, 'r')
 
     num_lines_written = 0                
     new_matrix.write(old_matrix.readline())
     for line in old_matrix.readlines():
-        if line.split('\t')[0] in datasets:
+        if line.split('\t')[0] in samples:
             num_lines_written += 1
             new_matrix.write(line)
     

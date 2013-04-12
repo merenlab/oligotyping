@@ -28,7 +28,7 @@ from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
-from Oligotyping.visualization.oligotype_distribution_across_datasets import oligotype_distribution_across_datasets
+from Oligotyping.visualization.oligotype_distribution_across_samples import oligotype_distribution_across_samples
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.random_colors import get_color_shade_dict_for_list_of_values
 from Oligotyping.utils.cosine_similarity import get_oligotype_sets
@@ -48,12 +48,12 @@ from Oligotyping.utils.utils import mapping_file_simple_check
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 from Oligotyping.utils.utils import generate_gexf_network_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
-from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import get_units_across_samples_dicts
 from Oligotyping.utils.utils import mask_defline_whitespaces_in_FASTA
 from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
 from Oligotyping.utils.utils import process_command_line_args_for_quality_files
-from Oligotyping.utils.utils import generate_MATRIX_files_for_units_across_datasets
+from Oligotyping.utils.utils import generate_MATRIX_files_for_units_across_samples
 
 
 class Oligotyping:
@@ -67,13 +67,13 @@ class Oligotyping:
         self.selected_components = None
         self.limit_oligotypes_to = None
         self.exclude_oligotypes = None
-        self.min_number_of_datasets = 1
+        self.min_number_of_samples = 1
         self.min_percent_abundance = 0.0
         self.min_actual_abundance = 0
         self.min_substantive_abundance = 4
         self.project = None
         self.output_directory = None
-        self.dataset_name_separator = '_'
+        self.sample_name_separator = '_'
         self.limit_representative_sequences = sys.maxint
         self.quick = False
         self.no_figures = False
@@ -82,7 +82,7 @@ class Oligotyping:
         self.blast_ref_db = None
         self.skip_blast_search = False
         self.gen_html = False
-        self.gen_dataset_oligo_networks = False
+        self.gen_sample_oligo_networks = False
         self.colors_list_file = None
         self.generate_sets = False
         self.cosine_similarity_threshold = 0.1
@@ -105,13 +105,13 @@ class Oligotyping:
             self.selected_components = args.selected_components
             self.limit_oligotypes_to = args.limit_oligotypes_to
             self.exclude_oligotypes = args.exclude_oligotypes
-            self.min_number_of_datasets = args.min_number_of_datasets
+            self.min_number_of_samples = args.min_number_of_samples
             self.min_percent_abundance = args.min_percent_abundance
             self.min_actual_abundance = args.min_actual_abundance
             self.min_substantive_abundance = args.min_substantive_abundance
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.output_directory = args.output_directory
-            self.dataset_name_separator = args.dataset_name_separator
+            self.sample_name_separator = args.sample_name_separator
             self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
             self.quick = args.quick
             self.no_figures = args.no_figures
@@ -120,7 +120,7 @@ class Oligotyping:
             self.blast_ref_db = Absolute(args.blast_ref_db) if args.blast_ref_db else None
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
-            self.gen_dataset_oligo_networks = args.gen_dataset_oligo_networks
+            self.gen_sample_oligo_networks = args.gen_sample_oligo_networks
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
             self.generate_sets = args.generate_sets
@@ -134,16 +134,16 @@ class Oligotyping:
         self.run = Run()
         self.progress = Progress()
 
-        self.datasets_dict = {}
+        self.samples_dict = {}
         self.sample_mapping_dict = {}
         self.excluded_read_ids_tracker = {}
         self.representative_sequences_per_oligotype = {}
-        self.across_datasets_sum_normalized = {}
-        self.across_datasets_max_normalized = {}
+        self.across_samples_sum_normalized = {}
+        self.across_samples_max_normalized = {}
         self.unit_counts = None
         self.unit_percents = None
         self.oligotype_sets = None
-        self.datasets = []
+        self.samples = []
         self.abundant_oligos = []
 
         self.final_oligo_counts_dict = {}
@@ -221,7 +221,7 @@ class Oligotyping:
 
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
-            samples = check_input_alignment(self.alignment, self.dataset_name_from_defline, self.progress)
+            samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
             if not samples:
                 raise ConfigError, 'Exiting.'
             self.progress.end()
@@ -292,12 +292,12 @@ class Oligotyping:
         self.logger.setLevel(logging.DEBUG)
 
 
-    def dataset_name_from_defline(self, defline):
-        return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
+    def sample_name_from_defline(self, defline):
+        return self.sample_name_separator.join(defline.split('|')[0].split(self.sample_name_separator)[0:-1])
 
 
     def get_prefix(self):
-        prefix = 's%d-a%.1f-A%d-M%d' % (self.min_number_of_datasets,
+        prefix = 's%d-a%.1f-A%d-M%d' % (self.min_number_of_samples,
                                         self.min_percent_abundance,
                                         self.min_actual_abundance,
                                         self.min_substantive_abundance)
@@ -373,7 +373,7 @@ class Oligotyping:
         self.run.info('skip_basic_analyses', self.skip_basic_analyses)
         if self.generate_sets:
             self.run.info('T', self.cosine_similarity_threshold)
-        self.run.info('s', self.min_number_of_datasets)
+        self.run.info('s', self.min_number_of_samples)
         self.run.info('a', self.min_percent_abundance)
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
@@ -399,11 +399,11 @@ class Oligotyping:
         if not self.number_of_threads:
             self.number_of_threads = Multiprocessing(None).num_thread
         
-        self._construct_datasets_dict()
+        self._construct_samples_dict()
         self._contrive_abundant_oligos()
-        self._refine_datasets_dict()
+        self._refine_samples_dict()
         self._get_unit_counts_and_percents()
-        self._get_units_across_datasets_dicts()
+        self._get_units_across_samples_dicts()
         self._generate_random_colors()
         
         self._generate_FASTA_file()
@@ -413,16 +413,16 @@ class Oligotyping:
         self._store_read_distribution_table()
         
         if self.generate_sets:
-            self._generate_MATRIX_files_for_units_across_datasets()
+            self._generate_MATRIX_files_for_units_across_samples()
             self._agglomerate_oligos_based_on_cosine_similarity()
             self._generate_MATRIX_files_for_oligotype_sets()       
              
-        if ((not self.no_figures) and (not self.quick)) and self.gen_dataset_oligo_networks:
-            self._generate_dataset_oligotype_network_figures()
+        if ((not self.no_figures) and (not self.quick)) and self.gen_sample_oligo_networks:
+            self._generate_sample_oligotype_network_figures()
         if (not self.no_figures) and self.generate_sets:
             self._generate_stack_bar_figure_with_agglomerated_oligos()
-            self._generate_oligos_across_datasets_figure()
-            self._generate_sets_across_datasets_figure()
+            self._generate_oligos_across_samples_figure()
+            self._generate_sets_across_samples_figure()
 
         if not self.quick:
             self._generate_representative_sequences()
@@ -459,11 +459,11 @@ class Oligotyping:
             self._generate_html_output()
 
 
-    def _construct_datasets_dict(self):
+    def _construct_samples_dict(self):
         """This is where oligotypes are being genearted based on bases of each
            alignment at the location of interest"""
 
-        self.progress.new('Dataset Dict Construction')
+        self.progress.new('Sample Dict Construction')
 
         if self.quals_dict:
             num_reads_eliminated_due_to_min_base_quality = 0
@@ -474,11 +474,11 @@ class Oligotyping:
                 self.progress.update('Analyzing: %s' \
                                     % (pretty_print(self.fasta.pos)))
 
-            dataset = self.dataset_name_from_defline(self.fasta.id)
+            sample = self.sample_name_from_defline(self.fasta.id)
             
-            if not self.datasets_dict.has_key(dataset):
-                self.datasets_dict[dataset] = {}
-                self.datasets.append(dataset)
+            if not self.samples_dict.has_key(sample):
+                self.samples_dict[sample] = {}
+                self.samples.append(sample)
 
             if self.quals_dict:
                 # if qual_dicts is available, each base of interest will be tested
@@ -502,14 +502,14 @@ class Oligotyping:
                 # checking the base qualities
                 oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
         
-            if self.datasets_dict[dataset].has_key(oligo):
-                self.datasets_dict[dataset][oligo] += 1
+            if self.samples_dict[sample].has_key(oligo):
+                self.samples_dict[sample][oligo] += 1
             else:
-                self.datasets_dict[dataset][oligo] = 1
+                self.samples_dict[sample][oligo] = 1
        
-        self.datasets.sort()
+        self.samples.sort()
         self.progress.reset()
-        self.run.info('num_datasets_in_fasta', len(self.datasets_dict))
+        self.run.info('num_samples_in_fasta', len(self.samples_dict))
 
         if self.quals_dict:
             self.run.info('num_reads_eliminated_due_to_min_base_quality', num_reads_eliminated_due_to_min_base_quality)
@@ -521,12 +521,12 @@ class Oligotyping:
         if not self.excluded_read_ids_tracker.has_key(reason):
             self.excluded_read_ids_tracker[reason] = {}
             
-        for dataset in self.datasets:
-            if self.datasets_dict[dataset].has_key(oligo):
-                if not self.excluded_read_ids_tracker[reason].has_key(dataset):
-                    self.excluded_read_ids_tracker[reason][dataset] = self.datasets_dict[dataset][oligo]
+        for sample in self.samples:
+            if self.samples_dict[sample].has_key(oligo):
+                if not self.excluded_read_ids_tracker[reason].has_key(sample):
+                    self.excluded_read_ids_tracker[reason][sample] = self.samples_dict[sample][oligo]
                 else:
-                    self.excluded_read_ids_tracker[reason][dataset] += self.datasets_dict[dataset][oligo]
+                    self.excluded_read_ids_tracker[reason][sample] += self.samples_dict[sample][oligo]
 
         
     def _contrive_abundant_oligos(self):
@@ -534,15 +534,15 @@ class Oligotyping:
         self.progress.new('Contriving Abundant Oligos')
 
         # a performance optimization workaround in order to lessen the 
-        # number of expensive 'keys()' calls on datasets_dict to be made
-        oligos_in_datasets_dict = {}
-        for dataset in self.datasets:
-            oligos_in_datasets_dict[dataset] = set(self.datasets_dict[dataset].keys())
+        # number of expensive 'keys()' calls on samples_dict to be made
+        oligos_in_samples_dict = {}
+        for sample in self.samples:
+            oligos_in_samples_dict[sample] = set(self.samples_dict[sample].keys())
         
         oligos_set = []
-        for dataset in self.datasets:
-            self.progress.update('Unique Oligos: ' + P(self.datasets.index(dataset), len(self.datasets)))
-            for oligo in oligos_in_datasets_dict[dataset]:
+        for sample in self.samples:
+            self.progress.update('Unique Oligos: ' + P(self.samples.index(sample), len(self.samples)))
+            for oligo in oligos_in_samples_dict[sample]:
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
         self.progress.reset()
@@ -550,7 +550,7 @@ class Oligotyping:
        
 
         # count oligo abundance
-        oligo_dataset_abundance = []
+        oligo_sample_abundance = []
         for i in range(0, len(oligos_set)):
             oligo = oligos_set[i]
             
@@ -558,22 +558,22 @@ class Oligotyping:
                 self.progress.update('Counting oligo abundance: ' + P(i, len(oligos_set)))
             
             count = 0
-            for dataset in self.datasets:
-                if oligo in oligos_in_datasets_dict[dataset]:
+            for sample in self.samples:
+                if oligo in oligos_in_samples_dict[sample]:
                     count += 1
-            oligo_dataset_abundance.append((count, oligo),)
-        oligo_dataset_abundance.sort()
+            oligo_sample_abundance.append((count, oligo),)
+        oligo_sample_abundance.sort()
         self.progress.reset()
 
-        # eliminate oligos based on the number of datasets they appear
-        # (any oligo required to appear in at least 'self.min_number_of_datasets'
-        # datasets)
+        # eliminate oligos based on the number of samples they appear
+        # (any oligo required to appear in at least 'self.min_number_of_samples'
+        # samples)
         non_singleton_oligos = []
-        for i in range(0, len(oligo_dataset_abundance)):
-            if i % 100 == 0 or i == len(oligo_dataset_abundance) - 1:
-                self.progress.update('Eliminating singletons: ' + P(i, len(oligo_dataset_abundance)))
-            tpl = oligo_dataset_abundance[i]
-            if tpl[0] >= self.min_number_of_datasets:
+        for i in range(0, len(oligo_sample_abundance)):
+            if i % 100 == 0 or i == len(oligo_sample_abundance) - 1:
+                self.progress.update('Eliminating singletons: ' + P(i, len(oligo_sample_abundance)))
+            tpl = oligo_sample_abundance[i]
+            if tpl[0] >= self.min_number_of_samples:
                 non_singleton_oligos.append(tpl[1])
             else:
                 self._register_removal(tpl[1], 'failed_s')
@@ -582,40 +582,40 @@ class Oligotyping:
         self.run.info('num_oligos_after_s_elim', len(non_singleton_oligos))
 
 
-        # dataset_sums keeps the actual number of oligos that are present in non_singleton_oligos list,
-        # for each dataset. computing it here once is more optimized.
-        dataset_sums = {}
-        SUM = lambda dataset: sum([self.datasets_dict[dataset][o] for o in non_singleton_oligos \
-                                                                if self.datasets_dict[dataset].has_key(o)])
-        for dataset in self.datasets:
-            dataset_sums[dataset] = SUM(dataset)
+        # sample_sums keeps the actual number of oligos that are present in non_singleton_oligos list,
+        # for each sample. computing it here once is more optimized.
+        sample_sums = {}
+        SUM = lambda sample: sum([self.samples_dict[sample][o] for o in non_singleton_oligos \
+                                                                if self.samples_dict[sample].has_key(o)])
+        for sample in self.samples:
+            sample_sums[sample] = SUM(sample)
 
         # eliminate very rare oligos (the percent abundance of every oligo should be
-        # more than 'self.min_percent_abundance' percent in at least one dataset)
+        # more than 'self.min_percent_abundance' percent in at least one sample)
         for i in range(0, len(non_singleton_oligos)):
             oligo = non_singleton_oligos[i]
             if i % 100 == 0 or i == len(non_singleton_oligos) - 1:
                 self.progress.update('Applying -a parameter: ' + P(i, len(non_singleton_oligos)))
             
             percent_abundances = []
-            for dataset in self.datasets:
-                if self.datasets_dict[dataset].has_key(oligo):
-                    percent_abundances.append((self.datasets_dict[dataset][oligo] * 100.0 / dataset_sums[dataset],
-                                               self.datasets_dict[dataset][oligo],
-                                               dataset_sums[dataset],
-                                               dataset))
+            for sample in self.samples:
+                if self.samples_dict[sample].has_key(oligo):
+                    percent_abundances.append((self.samples_dict[sample][oligo] * 100.0 / sample_sums[sample],
+                                               self.samples_dict[sample][oligo],
+                                               sample_sums[sample],
+                                               sample))
 
             percent_abundances.sort(reverse = True)
 
-            # NOTE: if a dataset has less than 100 sequences, percent abundance doesn't mean much.
-            #       if user wants to eliminate oligotypes that doesn't appear in at least one dataset
-            #       more than 1% abundance, a singleton of that oligotype that appears in a dataset
+            # NOTE: if a sample has less than 100 sequences, percent abundance doesn't mean much.
+            #       if user wants to eliminate oligotypes that doesn't appear in at least one sample
+            #       more than 1% abundance, a singleton of that oligotype that appears in a sample
             #       which has 50 sequences would make that oligotype pass the filter. I think if an
-            #       oligotype passes the percent filter, dataset size and actual count of the oligotype
+            #       oligotype passes the percent filter, sample size and actual count of the oligotype
             #       should also be considered before considering it as an abundant oligotype:
-            for abundance_percent, abundance_count, dataset_size, dataset in percent_abundances:
+            for abundance_percent, abundance_count, sample_size, sample in percent_abundances:
                 PercentAbundance_OK = abundance_percent >= self.min_percent_abundance
-                DatesetSize_OK      = dataset_size > 100 or abundance_count > self.min_percent_abundance
+                DatesetSize_OK      = sample_size > 100 or abundance_count > self.min_percent_abundance
 
                 if PercentAbundance_OK and DatesetSize_OK:
                     self.abundant_oligos.append((sum([x[1] for x in percent_abundances]), oligo))
@@ -629,7 +629,7 @@ class Oligotyping:
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
 
 
-        # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all datasets
+        # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all samples
         # should should be more than 'self.min_actual_abundance'.
         if self.min_actual_abundance > 0:
             oligos_for_removal = []
@@ -639,8 +639,8 @@ class Oligotyping:
                 if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
                     self.progress.update('Applying -A parameter: ' + P(i, len(non_singleton_oligos)))
 
-                oligo_actual_abundance = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict\
-                                                        if self.datasets_dict[dataset].has_key(oligo)])
+                oligo_actual_abundance = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
+                                                        if self.samples_dict[sample].has_key(oligo)])
                 if self.min_actual_abundance > oligo_actual_abundance:
                     oligos_for_removal.append(oligo)
 
@@ -720,8 +720,8 @@ class Oligotyping:
 
         # storing final counts
         for oligo in self.abundant_oligos:
-            self.final_oligo_counts_dict[oligo] = sum([self.datasets_dict[dataset][oligo] for dataset in self.datasets_dict\
-                                                        if self.datasets_dict[dataset].has_key(oligo)])
+            self.final_oligo_counts_dict[oligo] = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
+                                                        if self.samples_dict[sample].has_key(oligo)])
 
         self.progress.end()
         
@@ -736,41 +736,41 @@ class Oligotyping:
             self.run.info('skip_basic_analyses', self.skip_basic_analyses)
 
 
-    def _refine_datasets_dict(self):
-        # removing oligos from datasets dictionary that didn't pass
+    def _refine_samples_dict(self):
+        # removing oligos from samples dictionary that didn't pass
         # MIN_PERCENT_ABUNDANCE_OF_OLIGOTYPE_IN_AT_LEAST_ONE_SAMPLE and
         # MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS filters.
-        self.progress.new('Refining Datasets Dict')
+        self.progress.new('Refining Samples Dict')
 
-        self.progress.update('Deepcopying datasets dict .. ')
-        datasets_dict_copy = copy.deepcopy(self.datasets_dict)
+        self.progress.update('Deepcopying samples dict .. ')
+        samples_dict_copy = copy.deepcopy(self.samples_dict)
         self.progress.append('done')
 
-        datasets_to_remove = []
-        for i in range(0, len(self.datasets)):
-            dataset = self.datasets[i]
+        samples_to_remove = []
+        for i in range(0, len(self.samples)):
+            sample = self.samples[i]
 
-            self.progress.update('Analyzing datasets: ' + P(i + 1, len(self.datasets)))
+            self.progress.update('Analyzing samples: ' + P(i + 1, len(self.samples)))
             
-            for oligo in datasets_dict_copy[dataset]:
+            for oligo in samples_dict_copy[sample]:
                 if oligo not in self.abundant_oligos:
-                    self.datasets_dict[dataset].pop(oligo)
-            if not self.datasets_dict[dataset]:
-                datasets_to_remove.append(dataset)
-        for dataset in datasets_to_remove:
-            self.datasets.remove(dataset)
-            self.datasets_dict.pop(dataset)
+                    self.samples_dict[sample].pop(oligo)
+            if not self.samples_dict[sample]:
+                samples_to_remove.append(sample)
+        for sample in samples_to_remove:
+            self.samples.remove(sample)
+            self.samples_dict.pop(sample)
 
         self.progress.end()
         
-        self.num_sequences_after_qc = sum([sum(self.datasets_dict[dataset].values()) for dataset in self.datasets_dict]) 
+        self.num_sequences_after_qc = sum([sum(self.samples_dict[sample].values()) for sample in self.samples_dict]) 
 
         self.run.info('num_sequences_after_qc', self.num_sequences_after_qc)
 
-        if len(datasets_to_remove):
-            self.run.info('datasets_removed_after_qc', datasets_to_remove)               
+        if len(samples_to_remove):
+            self.run.info('samples_removed_after_qc', samples_to_remove)               
             
-        if len(self.datasets) < 3:
+        if len(self.samples) < 3:
             self.skip_basic_analyses = True
             self.run.info('skip_basic_analyses', self.skip_basic_analyses)
         
@@ -826,36 +826,36 @@ class Oligotyping:
         self.progress.new('Unit counts and percents')
         self.progress.update('Data is being generated')
             
-        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.abundant_oligos, self.datasets_dict)
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.abundant_oligos, self.samples_dict)
             
         self.progress.end()
 
 
-    def _generate_MATRIX_files_for_units_across_datasets(self):
-        self.progress.new('Oligos across datasets')
+    def _generate_MATRIX_files_for_units_across_samples(self):
+        self.progress.new('Oligos across samples')
         self.progress.update('Matrix files are being generated')
 
-        across_datasets_MN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-MAX-NORM.txt")
-        across_datasets_SN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-SUM-NORM.txt")
+        across_samples_MN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-MAX-NORM.txt")
+        across_samples_SN_file_path = self.generate_output_destination("OLIGOS-ACROSS-DATASETS-SUM-NORM.txt")
              
-        generate_MATRIX_files_for_units_across_datasets(self.abundant_oligos,
-                                                        self.datasets,
-                                                        across_datasets_MN_file_path,
-                                                        across_datasets_SN_file_path,
-                                                        self.across_datasets_max_normalized,
-                                                        self.across_datasets_sum_normalized)
+        generate_MATRIX_files_for_units_across_samples(self.abundant_oligos,
+                                                        self.samples,
+                                                        across_samples_MN_file_path,
+                                                        across_samples_SN_file_path,
+                                                        self.across_samples_max_normalized,
+                                                        self.across_samples_sum_normalized)
 
         self.progress.end()
-        self.run.info('across_datasets_MN_file_path', across_datasets_MN_file_path)
-        self.run.info('across_datasets_SN_file_path', across_datasets_SN_file_path)
+        self.run.info('across_samples_MN_file_path', across_samples_MN_file_path)
+        self.run.info('across_samples_SN_file_path', across_samples_SN_file_path)
 
 
-    def _get_units_across_datasets_dicts(self):
-        self.progress.new('Oligos across datasets')
+    def _get_units_across_samples_dicts(self):
+        self.progress.new('Oligos across samples')
         self.progress.update('Data is being generated')
 
-        self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
-                get_units_across_datasets_dicts(self.abundant_oligos, self.datasets, self.unit_percents) 
+        self.across_samples_sum_normalized, self.across_samples_max_normalized =\
+                get_units_across_samples_dicts(self.abundant_oligos, self.samples, self.unit_percents) 
             
         self.progress.end()
 
@@ -865,8 +865,8 @@ class Oligotyping:
         self.environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         self.progress.update('Being generated')
         
-        generate_ENVIRONMENT_file(self.datasets,
-                                  self.datasets_dict,
+        generate_ENVIRONMENT_file(self.samples,
+                                  self.samples_dict,
                                   self.environment_file_path)
 
         self.progress.end()
@@ -880,7 +880,7 @@ class Oligotyping:
         self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
         generate_MATRIX_files(self.abundant_oligos,
-                              self.datasets,
+                              self.samples,
                               self.unit_counts,
                               self.unit_percents,
                               self.matrix_count_file_path,
@@ -904,19 +904,19 @@ class Oligotyping:
         read_distribution_dict = {}
         
         self.progress.update('Processing reads that were represented in results')
-        for dataset in self.datasets_dict:
-            if not read_distribution_dict.has_key(dataset):
-                read_distribution_dict[dataset] = get_dict_entry_tmpl()
+        for sample in self.samples_dict:
+            if not read_distribution_dict.has_key(sample):
+                read_distribution_dict[sample] = get_dict_entry_tmpl()
 
-            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
+            read_distribution_dict[sample]['represented_reads'] = sum(self.samples_dict[sample].values())
 
         for reason in self.excluded_read_ids_tracker:
             self.progress.update('Processing excluded oligos (%s)' % (reason))
-            for dataset in self.excluded_read_ids_tracker[reason]:
-                if not read_distribution_dict.has_key(dataset):
-                    read_distribution_dict[dataset] = get_dict_entry_tmpl()
+            for sample in self.excluded_read_ids_tracker[reason]:
+                if not read_distribution_dict.has_key(sample):
+                    read_distribution_dict[sample] = get_dict_entry_tmpl()
                         
-                read_distribution_dict[dataset][reason] = self.excluded_read_ids_tracker[reason][dataset]
+                read_distribution_dict[sample][reason] = self.excluded_read_ids_tracker[reason][sample]
 
     
         self.progress.update('Storing...')
@@ -959,7 +959,7 @@ class Oligotyping:
         oligotype_sets_file_path = self.generate_output_destination("OLIGOTYPE-SETS.txt")
         self.progress.update('Computing')
         self.oligotype_sets = get_oligotype_sets(self.abundant_oligos,
-                                                 self.across_datasets_sum_normalized,
+                                                 self.across_samples_sum_normalized,
                                                  self.cosine_similarity_threshold,
                                                  oligotype_sets_file_path)
         
@@ -977,18 +977,18 @@ class Oligotyping:
         for set_id in self.oligotype_set_ids:
             self.colors_dict_for_oligotype_sets[set_id] = self.colors_dict[self.oligotype_sets[set_id][0]]
 
-        self.progress.update('New Datasets Dict')
-        self.datasets_dict_with_agglomerated_oligos = {}
-        for dataset in self.datasets:
-            self.datasets_dict_with_agglomerated_oligos[dataset] = {}
+        self.progress.update('New Samples Dict')
+        self.samples_dict_with_agglomerated_oligos = {}
+        for sample in self.samples:
+            self.samples_dict_with_agglomerated_oligos[sample] = {}
 
         for set_id in self.oligotype_set_ids:
             oligotype_set = self.oligotype_sets[set_id]
-            for dataset in self.datasets:
-                self.datasets_dict_with_agglomerated_oligos[dataset][set_id] = 0
-                for oligo in self.datasets_dict[dataset]:
+            for sample in self.samples:
+                self.samples_dict_with_agglomerated_oligos[sample][set_id] = 0
+                for oligo in self.samples_dict[sample]:
                     if oligo in oligotype_set:
-                        self.datasets_dict_with_agglomerated_oligos[dataset][set_id] += self.datasets_dict[dataset][oligo]
+                        self.samples_dict_with_agglomerated_oligos[sample][set_id] += self.samples_dict[sample][oligo]
 
         self.progress.end()
 
@@ -998,7 +998,7 @@ class Oligotyping:
         counts_file_path = self.generate_output_destination("MATRIX-COUNT-OLIGO-SETS.txt")
         percents_file_path = self.generate_output_destination("MATRIX-PERCENT-OLIGO-SETS.txt")
         
-        d = self.datasets_dict_with_agglomerated_oligos
+        d = self.samples_dict_with_agglomerated_oligos
         oligotype_set_percents = {}
         oligotype_set_counts = {}
 
@@ -1007,10 +1007,10 @@ class Oligotyping:
         for oligotype_set_id in self.oligotype_set_ids:
             counts = []
             percents = []
-            for dataset in self.datasets:
-                if d[dataset].has_key(oligotype_set_id):
-                    counts.append(d[dataset][oligotype_set_id])
-                    percents.append(d[dataset][oligotype_set_id] * 100.0 / sum(d[dataset].values()))
+            for sample in self.samples:
+                if d[sample].has_key(oligotype_set_id):
+                    counts.append(d[sample][oligotype_set_id])
+                    percents.append(d[sample][oligotype_set_id] * 100.0 / sum(d[sample].values()))
                 else:
                     counts.append(0)
                     percents.append(0.0)
@@ -1022,8 +1022,8 @@ class Oligotyping:
         counts_file = open(counts_file_path, 'w')
         percents_file = open(percents_file_path, 'w')       
         
-        counts_file.write('\t'.join([''] + self.datasets) + '\n')
-        percents_file.write('\t'.join([''] + self.datasets) + '\n')
+        counts_file.write('\t'.join([''] + self.samples) + '\n')
+        percents_file.write('\t'.join([''] + self.samples) + '\n')
 
         for oligotype_set_id in self.oligotype_set_ids:
             counts_file.write('\t'.join(['Set_' + str(oligotype_set_id)] + [str(c) for c in oligotype_set_counts[oligotype_set_id]]) + '\n')
@@ -1133,8 +1133,8 @@ class Oligotyping:
             fasta = u.SequenceSource(fasta_file_path, lazy_init = False, unique = True)
           
             # this dict is going to hold the information of how unique sequences within an oligotype
-            # is distributed among datasets:
-            distribution_among_datasets = {}
+            # is distributed among samples:
+            distribution_among_samples = {}
 
             fasta.next()
             # this is the first read in the unique reads list, which is the most abundant unique sequence
@@ -1144,7 +1144,7 @@ class Oligotyping:
             fasta.reset()
 
 
-            # FIXME: I am going to come back to this and fix it at some point. Storing 'distribution_among_datasets'
+            # FIXME: I am going to come back to this and fix it at some point. Storing 'distribution_among_samples'
             # information in separate cPickle files per oligo is not the smartest thing to do.
             self.final_oligo_unique_distribution_dict[oligo] = []
             while fasta.next() and fasta.pos <= self.limit_representative_sequences:
@@ -1158,11 +1158,11 @@ class Oligotyping:
                 if not fasta.pos > 20:
                     self.final_oligo_unique_distribution_dict[oligo].append(len(fasta.ids))
 
-                for dataset_id in fasta.ids:
-                    dataset_name = self.dataset_name_from_defline(dataset_id)
-                    if not distribution_among_datasets.has_key(dataset_name):
-                        distribution_among_datasets[dataset_name] = {}
-                    d = distribution_among_datasets[dataset_name]
+                for sample_id in fasta.ids:
+                    sample_name = self.sample_name_from_defline(sample_id)
+                    if not distribution_among_samples.has_key(sample_name):
+                        distribution_among_samples[sample_name] = {}
+                    d = distribution_among_samples[sample_name]
                     if not d.has_key(fasta.pos):
                         d[fasta.pos] = 1
                     else:
@@ -1172,8 +1172,8 @@ class Oligotyping:
             unique_files_dict[oligo]['file'].close()
 
             unique_fasta_path = unique_files_dict[oligo]['path']
-            distribution_among_datasets_dict_path = unique_fasta_path + '_distribution.cPickle'
-            cPickle.dump(distribution_among_datasets, open(distribution_among_datasets_dict_path, 'w'))
+            distribution_among_samples_dict_path = unique_fasta_path + '_distribution.cPickle'
+            cPickle.dump(distribution_among_samples, open(distribution_among_samples_dict_path, 'w'))
 
         self.progress.end()
 
@@ -1350,33 +1350,33 @@ class Oligotyping:
 
 
 
-    def _generate_dataset_oligotype_network_figures(self):
-        output_directory_for_datasets = self.generate_output_destination("DATASETS", directory = True)
-        oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_datasets)
-        self.run.info('output_directory_for_datasets', output_directory_for_datasets) 
+    def _generate_sample_oligotype_network_figures(self):
+        output_directory_for_samples = self.generate_output_destination("DATASETS", directory = True)
+        oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_samples)
+        self.run.info('output_directory_for_samples', output_directory_for_samples) 
  
 
-    def _generate_oligos_across_datasets_figure(self):
-        self.progress.new('Oligotypes Across Datasets Figure')
-        oligos_across_datasets_file_path = self.generate_output_destination('OLIGOS-ACROSS-DATASETS.png')
+    def _generate_oligos_across_samples_figure(self):
+        self.progress.new('Oligotypes Across Samples Figure')
+        oligos_across_samples_file_path = self.generate_output_destination('OLIGOS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
         oligos = copy.deepcopy(self.abundant_oligos)
-        oligotype_distribution_across_datasets(self.datasets_dict, self.colors_dict, oligos_across_datasets_file_path,\
+        oligotype_distribution_across_samples(self.samples_dict, self.colors_dict, oligos_across_samples_file_path,\
                                                oligos = oligos, project_title = self.project, display = False)
         self.progress.end()
-        self.run.info('oligos_across_datasets_file_path', oligos_across_datasets_file_path)
+        self.run.info('oligos_across_samples_file_path', oligos_across_samples_file_path)
 
 
-    def _generate_sets_across_datasets_figure(self):
-        self.progress.new('Oligotype Sets Across Datasets Figure')
+    def _generate_sets_across_samples_figure(self):
+        self.progress.new('Oligotype Sets Across Samples Figure')
         figure_path = self.generate_output_destination('OLIGO-SETS-ACROSS-DATASETS.png')
         self.progress.update('Generating')
-        vis_oligotype_sets_distribution(self.oligotype_sets, self.across_datasets_sum_normalized, self.datasets,\
+        vis_oligotype_sets_distribution(self.oligotype_sets, self.across_samples_sum_normalized, self.samples,\
                                display = False, colors_dict = self.colors_dict, output_file = figure_path,\
-                               project_title = 'Oligotype Sets Across Datasets for "%s", at Cosine Similarity Threshold of %.4f'\
+                               project_title = 'Oligotype Sets Across Samples for "%s", at Cosine Similarity Threshold of %.4f'\
                                         % (self.project, self.cosine_similarity_threshold), legend = False)
         self.progress.end()
-        self.run.info('oligotype_sets_across_datasets_figure_path', figure_path)
+        self.run.info('oligotype_sets_across_samples_figure_path', figure_path)
 
 
     def _generate_stack_bar_figure_with_agglomerated_oligos(self):
@@ -1384,7 +1384,7 @@ class Oligotyping:
         stack_bar_file_path = self.generate_output_destination('STACKBAR-AGGLOMERATED-OLIGOS.png')
         self.progress.update('Generating')
 
-        oligotype_distribution_stack_bar(self.datasets_dict_with_agglomerated_oligos, self.colors_dict_for_oligotype_sets,\
+        oligotype_distribution_stack_bar(self.samples_dict_with_agglomerated_oligos, self.colors_dict_for_oligotype_sets,\
                                          stack_bar_file_path, oligos = self.oligotype_set_ids, project_title = self.project,\
                                          display = not self.no_display)
         self.progress.end()
@@ -1404,7 +1404,7 @@ class Oligotyping:
 
 
     def _generate_exclusive_figures(self):
-        if len(self.datasets) < 3:
+        if len(self.samples) < 3:
             return None
 
         self.progress.new('Exclusive Figures')
@@ -1423,7 +1423,7 @@ class Oligotyping:
         self.progress.new('GEXF Network File')
        
         generate_gexf_network_file(self.abundant_oligos,
-                                   self.datasets_dict,
+                                   self.samples_dict,
                                    self.unit_percents,
                                    self.gexf_network_file_path,
                                    sample_mapping_dict = self.sample_mapping_dict,

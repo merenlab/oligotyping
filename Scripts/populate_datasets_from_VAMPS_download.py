@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 
 import Oligotyping.lib.fastalib as u
@@ -14,8 +13,8 @@ while fasta.next():
     if fasta.id.find(taxon) > -1:
         acc = fasta.id.split('|')[0]
         project = fasta.id.split('|')[1].split('=')[1]
-        dataset = fasta.id.split('|')[2].split('=')[1]
-        new_id = project + '_' + dataset + '_' + acc
+        sample = fasta.id.split('|')[2].split('=')[1]
+        new_id = project + '_' + sample + '_' + acc
 
         abundance = int(fasta.id.split('|')[7].split('=')[1])
 

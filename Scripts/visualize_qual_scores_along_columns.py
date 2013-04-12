@@ -7,12 +7,10 @@
 #
 
 import sys
-import numpy
 import cPickle
 from scipy import log2 as log
 
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import Oligotyping.lib.fastalib as u
 
 from Oligotyping.utils.utils import get_qual_stats_dict

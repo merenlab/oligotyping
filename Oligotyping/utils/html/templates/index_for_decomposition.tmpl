@@ -20,7 +20,7 @@
 <div class="smallhead"><a name="General"></a>Overview</div>
 <p class="smallheadtitle">» A summary of what happened.
 <div class="info_table">
-<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">Minimum Entropy Decomposition analysis was performed on {{total_seq}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta}} sample{{ num_datasets_in_fasta|pluralize }} for "{{ project }}" with MED pipeline version {{version}} (available from http://oligotyping.org/MED).
+<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">Minimum Entropy Decomposition analysis was performed on {{total_seq}} read{{ total_seq|pluralize }} from {{num_samples_in_fasta}} sample{{ num_samples_in_fasta|pluralize }} for "{{ project }}" with MED pipeline version {{version}} (available from http://oligotyping.org/MED).
 </div>
 
 
@@ -58,7 +58,7 @@
 <div class="info_table">
 <table width=90%>
     <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_samples_in_fasta}}</td><td id="r"> {{num_samples_in_fasta}}</td></tr>
     <tr><td id="l">{{pretty_names.alignment_length}}</td><td id="r"> {{alignment_length}}</td></tr>
     <tr><td id="l">{{pretty_names.average_read_length}}</td><td id="r"> {{average_read_length}}</td></tr>    
 </table>
@@ -70,8 +70,8 @@
     {% if quals_provided %}
     <tr><td id="l">{{pretty_names.num_reads_eliminated_due_to_min_base_quality}} (Q{{q}})</td><td id="r"> {{num_reads_eliminated_due_to_min_base_quality}}</td></tr>
     {% endif %}
-    {% if datasets_removed_after_qc %} 
-    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
+    {% if samples_removed_after_qc %} 
+    <tr><td id="l">{{pretty_names.samples_removed_after_qc}}</td><td id="r"> {{samples_removed_after_qc|length}} ({{samples_removed_after_qc|join:", "}})</td></tr>
     {% endif %}
     
 	<tr><td colspan=2>&nbsp;</td></tr>
@@ -128,8 +128,8 @@
 
 
 {% if figures_dict %}
-<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Dataset</div>
-<p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
+<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Sample</div>
+<p class="smallheadtitle">» Total number of reads for each sample that were analyzed.
 	<div class="content">
     		{% if figures_dict.basic_reports|lookup:"lines"|lookup:"lines" %}
     		<a href="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.pdf" target="_blank" />

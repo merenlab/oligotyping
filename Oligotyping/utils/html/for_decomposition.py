@@ -17,7 +17,7 @@ import cPickle
 
 from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
 from error import HTMLError
 
@@ -201,14 +201,14 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     if run_info_dict['gexf_network_file_path']:
         html_dict['gexf_network_file_path'] = copy_as(run_info_dict['gexf_network_file_path'], 'network.gexf')
 
-    html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
-    html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
+    html_dict['samples_dict'] = get_samples_dict_from_environment_file(run_info_dict['environment_file_path'])
+    html_dict['samples'] = sorted(html_dict['samples_dict'].keys())
     html_dict['blast_results_found'] = False
 
     # include pretty names
     html_dict['pretty_names'] = pretty_names
 
-    # get javascript code for dataset pie-charts
+    # get javascript code for sample pie-charts
     html_dict['pie_charts_js'] = render_to_string('pie_charts_js.tmpl', html_dict)
 
 

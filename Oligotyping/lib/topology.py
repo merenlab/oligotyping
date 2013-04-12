@@ -74,7 +74,7 @@ class Topology:
             self.alignment_length = len(node.reads[0].seq)
             
             # compute and store the average read length
-            # FIXME: this is taking forever for large datasets. there must be a smarter way
+            # FIXME: this is taking forever for large samples. there must be a smarter way
             # to do this.
             read_lengths = []
             for read in node.reads:

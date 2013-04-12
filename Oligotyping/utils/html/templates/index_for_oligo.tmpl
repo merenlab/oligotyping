@@ -32,7 +32,7 @@
 <p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">
 
 		Oligotyping analysis was performed on
-		{{total_seq|pretify}} read{{ total_seq|pluralize }} from {{num_datasets_in_fasta|pretify}} sample{{ num_datasets_in_fasta|pluralize }}
+		{{total_seq|pretify}} read{{ total_seq|pluralize }} from {{num_samples_in_fasta|pretify}} sample{{ num_samples_in_fasta|pluralize }}
 		for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using
 			{% if number_of_auto_components %}
 				{{number_of_auto_components}} component{{ number_of_auto_components|pluralize }} automatically
@@ -60,8 +60,8 @@
 		and they represented {{num_sequences_after_qc}} reads, which was equivalent to {{ num_sequences_after_qc|as_percentage_of:total_seq }}
 		of all reads analyzed.
 		
-		{% if datasets_removed_after_qc %}
-			{{datasets_removed_after_qc|length}} sample{{ datasets_removed_after_qc|length|pluralize }} were removed
+		{% if samples_removed_after_qc %}
+			{{samples_removed_after_qc|length}} sample{{ samples_removed_after_qc|length|pluralize }} were removed
 			from the analysis because all its reads were eliminated during the QC.
 		{% endif %}
 </p>
@@ -146,10 +146,10 @@
     {% endif %}
     <tr><td colspan=2>&nbsp;</td></tr>
     <tr><td id="l">{{pretty_names.total_seq}}</td><td id="r"> {{total_seq|pretify}}</td></tr>
-    <tr><td id="l">{{pretty_names.num_datasets_in_fasta}}</td><td id="r"> {{num_datasets_in_fasta|pretify}}</td></tr>
+    <tr><td id="l">{{pretty_names.num_samples_in_fasta}}</td><td id="r"> {{num_samples_in_fasta|pretify}}</td></tr>
     <tr><td id="l">{{pretty_names.num_sequences_after_qc}}</td><td id="r"> {{num_sequences_after_qc|pretify}}</td></tr>
-    {% if datasets_removed_after_qc %} 
-    <tr><td id="l">{{pretty_names.datasets_removed_after_qc}}</td><td id="r"> {{datasets_removed_after_qc|length}} ({{datasets_removed_after_qc|join:", "}})</td></tr>
+    {% if samples_removed_after_qc %} 
+    <tr><td id="l">{{pretty_names.samples_removed_after_qc}}</td><td id="r"> {{samples_removed_after_qc|length}} ({{samples_removed_after_qc|join:", "}})</td></tr>
     {% endif %}
     <tr><td id="l">Percentage of reads represented in results</td><td id="r">{{ num_sequences_after_qc|as_percentage_of:total_seq }}</td></tr>
 </table>
@@ -178,8 +178,8 @@
     <tr><td id="l">{{pretty_names.oligos_fasta_file_path}}</td><td id="r"><a href="{{oligos_fasta_file_path}}">oligos.fa.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligos_nexus_file_path}}</td><td id="r"><a href="{{oligos_nexus_file_path}}">oligos.nex.txt</a></td></tr>
     {% if generate_sets %}
-    <tr><td id="l">{{pretty_names.across_datasets_MN_file_path}}</td><td id="r"><a href="{{across_datasets_MN_file_path}}">across_datasets_max_normalized.txt</a></td></tr>
-    <tr><td id="l">{{pretty_names.across_datasets_SN_file_path}}</td><td id="r"><a href="{{across_datasets_SN_file_path}}">across_datasets_sum_normalized.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.across_samples_MN_file_path}}</td><td id="r"><a href="{{across_samples_MN_file_path}}">across_samples_max_normalized.txt</a></td></tr>
+    <tr><td id="l">{{pretty_names.across_samples_SN_file_path}}</td><td id="r"><a href="{{across_samples_SN_file_path}}">across_samples_sum_normalized.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.oligotype_sets_file_path}}</td><td id="r"><a href="{{oligotype_sets_file}}">oligotype_sets.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_percent_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_percent_oligo_sets_file_path}}">matrix_percents_oligo_sets.txt</a></td></tr>
     <tr><td id="l">{{pretty_names.matrix_count_oligo_sets_file_path}}</td><td id="r"><a href="{{matrix_count_oligo_sets_file_path}}">matrix_counts_oligo_sets.txt</a></td></tr>
@@ -197,7 +197,7 @@
 {% if figures_dict %}
 
 <div class="smallhead"><a name="Stackbar"></a>Stackbar</div>
-<p class="smallheadtitle">» Figure shows the oligotype distribution profiles among datasets. TAB separated files <a href="{{matrix_percent_file_path}}">matrix_percents.txt</a> and <a href="{{matrix_count_file_path}}">matrix_counts.txt</a> hold the information that were used to generate this figure.
+<p class="smallheadtitle">» Figure shows the oligotype distribution profiles among samples. TAB separated files <a href="{{matrix_percent_file_path}}">matrix_percents.txt</a> and <a href="{{matrix_count_file_path}}">matrix_counts.txt</a> hold the information that were used to generate this figure.
 	<div class="content">
     		{% if figures_dict.basic_reports|lookup:"stackbar"|lookup:"stackbar" %}
     		<a href="{{figures_dict.basic_reports|lookup:"stackbar"|lookup:"stackbar"}}.pdf" target="_blank" />
@@ -208,8 +208,8 @@
     		{% endif %}
 	</div>
 
-<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Dataset</div>
-<p class="smallheadtitle">» Total number of reads for each dataset that were analyzed.
+<div class="smallhead"><a name="ReadCounts"></a>Read Distribution per Sample</div>
+<p class="smallheadtitle">» Total number of reads for each sample that were analyzed.
 	<div class="content">
     		{% if figures_dict.basic_reports|lookup:"lines"|lookup:"lines" %}
     		<a href="{{figures_dict.basic_reports|lookup:"lines"|lookup:"lines"}}.pdf" target="_blank" />
@@ -283,12 +283,12 @@
 
 {% if generate_sets %}
 
-<div class="smallhead"><a name="AcrossDatasets"></a>Oligotype Frequency Patterns Across Datasets</div>
-<p class="smallheadtitle">» Figures show the presence of oligotypes across datasets normalized by sum of the percent abundance of an oligotype in all datasets and normalized by max percent abundance of an oligotype in all datasets.
-<p class="content"><a href="{{ oligos_across_datasets_figure }}"><img src="{{ oligos_across_datasets_figure }}" style="max-width:1200px" border="0"></a>
+<div class="smallhead"><a name="AcrossSamples"></a>Oligotype Frequency Patterns Across Samples</div>
+<p class="smallheadtitle">» Figures show the presence of oligotypes across samples normalized by sum of the percent abundance of an oligotype in all samples and normalized by max percent abundance of an oligotype in all samples.
+<p class="content"><a href="{{ oligos_across_samples_figure }}"><img src="{{ oligos_across_samples_figure }}" style="max-width:1200px" border="0"></a>
 
 <div class="smallhead"><a name="Sets"></a>Oligotype Sets</div>
-<p class="smallheadtitle">» Figure below shows the sets of oligotypes that are agglomerated in distinct sets based on their frequency patterns across datasets. In this case cosine similarity threshold to consider two oligotypes to be in the same set was {{ T }}, and {{ oligotype_sets_info }}. It can be argued that if two oligotypes co-occur in all datasets with great similarity in frequency patterns, they can be considered functionally somewhat anologous.
+<p class="smallheadtitle">» Figure below shows the sets of oligotypes that are agglomerated in distinct sets based on their frequency patterns across samples. In this case cosine similarity threshold to consider two oligotypes to be in the same set was {{ T }}, and {{ oligotype_sets_info }}. It can be argued that if two oligotypes co-occur in all samples with great similarity in frequency patterns, they can be considered functionally somewhat anologous.
 <p class="content"><a href="{{ oligotype_sets_figure }}"><img src="{{ oligotype_sets_figure }}" style="max-width:1200px" border="0"></a>
 <p class="smallheadtitle">The oligotype content of each set is shown below. This table also serves as a legend for the figure above, as well as the stackbar figure below. This information is also available in <a href="{{oligotype_sets_file}}">oligotype_sets.txt</a> file.
 <p class="content">
@@ -321,9 +321,9 @@
 {% endif %}
 
 
-<div class="smallhead"><a name="Datasets"></a>Datasets</div>
-<p class="smallheadtitle">» Overview of datasets.
-{% for dataset in datasets %}
+<div class="smallhead"><a name="Samples"></a>Samples</div>
+<p class="smallheadtitle">» Overview of samples.
+{% for sample in samples %}
 {% if forloop.counter0|mod:3 == 0 %}
     <div id="p_container_{{forloop.counter0}}"></div>
 {% endif %}
@@ -388,7 +388,7 @@
 
 
 
-<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Datasets">Datasets</a> | {% if not skip_basic_analyses %}<a href="#BasicAnalyses"><b>Basic Analyses</b></a> {% else %} Basic Analyses {% endif %}| {% if exclusive_figures_dict %}<a href="#ExclusiveAnalyses"><b>Exclusive Analyses</b></a>{% else %}Exclusive Analyses <a href="http://oligotyping.org/2013/02/04/basic-sample-mapping-with-oligotyping/">?</a>{% endif %}</div>
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Samples">Samples</a> | {% if not skip_basic_analyses %}<a href="#BasicAnalyses"><b>Basic Analyses</b></a> {% else %} Basic Analyses {% endif %}| {% if exclusive_figures_dict %}<a href="#ExclusiveAnalyses"><b>Exclusive Analyses</b></a>{% else %}Exclusive Analyses <a href="http://oligotyping.org/2013/02/04/basic-sample-mapping-with-oligotyping/">?</a>{% endif %}</div>
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>

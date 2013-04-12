@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 
 import Oligotyping.lib.fastalib as u

@@ -15,7 +15,7 @@ import sys
 import cPickle
 
 from Oligotyping.lib.decomposer import Decomposer
-from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 
 runinfo = cPickle.load(open(sys.argv[1]))
 sample_mapping = sys.argv[2]
@@ -32,7 +32,7 @@ if not os.path.exists(decomposer.tmp_directory):
 
 decomposer.sample_mapping = sample_mapping
 decomposer._init_logger('exclusive_figures.log')
-decomposer.datasets_dict = get_datasets_dict_from_environment_file(runinfo['environment_file_path'])
-decomposer.datasets = sorted(decomposer.datasets_dict.keys())
+decomposer.samples_dict = get_samples_dict_from_environment_file(runinfo['environment_file_path'])
+decomposer.samples = sorted(decomposer.samples_dict.keys())
 
 decomposer._generate_exclusive_figures()

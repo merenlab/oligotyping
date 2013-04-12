@@ -9,12 +9,9 @@
 #
 # Please read the COPYING file.
 
-import os
-import sys
 import copy
 import random
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt
 
 #
 # all available colormaps in matplotlib can be seen via
@@ -40,7 +37,6 @@ def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
 
     colors = getColor(colormap, len(oligotypes_shuffled))
     for i in range(0, len(oligotypes_shuffled)):
-        rgba_color = colors(i)
         color_dict[oligotypes_shuffled[i]] = get_hex_color(colors(i))
 
     if output_file_path:

@@ -13,27 +13,27 @@
     <script>
         window.onload = function () {
 
-            var datasets = [
-                {% for dataset in datasets %}
-                {"abundance": "{{ dataset }}", "count": "{{datasets_dict|lookup:dataset|sumvals:"clean"}}"},
+            var samples = [
+                {% for sample in samples %}
+                {"abundance": "{{ sample }}", "count": "{{samples_dict|lookup:sample|sumvals:"clean"}}"},
                 {% endfor %}
             ];
             Morris.Line({
-              element: 'datasets',
-              data: datasets,
+              element: 'samples',
+              data: samples,
               xkey: 'abundance',
               ykeys: ['count'],
-              labels: [{% for dataset in datasets %}'Total Count',{% endfor %}],
+              labels: [{% for sample in samples %}'Total Count',{% endfor %}],
               parseTime: false,
             });
 
 
             var counts = [
-                {% for dataset in datasets %}
-                    {% if distribution|lookup:dataset|length == 0 %}
-                        {"abundance": "{{ dataset }}", {% for i in distribution|values|get_list_item:0|length|mklist %}"{{i}}": 0{%if not forloop.last %}, {% endif %}{%endfor%}},
+                {% for sample in samples %}
+                    {% if distribution|lookup:sample|length == 0 %}
+                        {"abundance": "{{ sample }}", {% for i in distribution|values|get_list_item:0|length|mklist %}"{{i}}": 0{%if not forloop.last %}, {% endif %}{%endfor%}},
                     {% else %}
-                        {"abundance": "{{ dataset }}", {% for i in distribution|lookup:dataset|length|mklist %}"{{i}}": {{distribution|lookup:dataset|get_list_item:i}}{%if not forloop.last %}, {% endif %}{%endfor%}},
+                        {"abundance": "{{ sample }}", {% for i in distribution|lookup:sample|length|mklist %}"{{i}}": {{distribution|lookup:sample|get_list_item:i}}{%if not forloop.last %}, {% endif %}{%endfor%}},
                     {% endif %}
                 {% endfor %}
             ];
@@ -48,11 +48,11 @@
             });
 
             var percents = [
-                {% for dataset in datasets %}
-                    {% if distribution|lookup:dataset|length == 0 %}
-                        {"abundance": "{{ dataset }}", {% for i in distribution|values|get_list_item:0|length|mklist %}"{{i}}": 0{%if not forloop.last %}, {% endif %}{%endfor%}},
+                {% for sample in samples %}
+                    {% if distribution|lookup:sample|length == 0 %}
+                        {"abundance": "{{ sample }}", {% for i in distribution|values|get_list_item:0|length|mklist %}"{{i}}": 0{%if not forloop.last %}, {% endif %}{%endfor%}},
                     {% else %}
-                        {"abundance": "{{ dataset }}", {% for i in distribution|lookup:dataset|length|mklist %}"{{i}}": {{distribution|lookup:dataset|percentify|get_list_item:i|presicion:1}}{%if not forloop.last %}, {% endif %}{%endfor%}},
+                        {"abundance": "{{ sample }}", {% for i in distribution|lookup:sample|length|mklist %}"{{i}}": {{distribution|lookup:sample|percentify|get_list_item:i|presicion:1}}{%if not forloop.last %}, {% endif %}{%endfor%}},
                     {% endif %}
                 {% endfor %}
             ];
@@ -82,13 +82,13 @@
 <p class="content"><a href="{{ oligo_reps_dict.imgs|lookup:oligo }}"><img src="{{ oligo_reps_dict.imgs|lookup:oligo }}" style="width:1200px" border="0"></a>
 
 
-<div class="smallhead">Distribution Among Datasets</div>
-<p class="smallheadtitle">» Graphs below aim to give an idea about the distribution of unique sequences within {{ oligo }} among all datasets.
-<p class="content">This graph is here to remind the total number of reads for each dataset that underwent the oligotyping analysis:
-<div id="datasets"></div>
+<div class="smallhead">Distribution Among Samples</div>
+<p class="smallheadtitle">» Graphs below aim to give an idea about the distribution of unique sequences within {{ oligo }} among all samples.
+<p class="content">This graph is here to remind the total number of reads for each sample that underwent the oligotyping analysis:
+<div id="samples"></div>
 <p class="content">This graph shows the actual counts and distribution of unique sequences concealed within {{ oligo }}. By hovering over dots on the graph you can see the distribution of the first 20 sequences. If there are cases where the number of unique read #1 is competing with the number of other unique reads, it would mean that there is too much diversity trapped in this oligotype and needs to be decomposed by increasing the number of components. Sequences section below might help you decide which components might be appropriate to include.
 <div id="counts"></div>
-<p class="content">This graph is similar to the one above, but normalized per dataset by percent. Again, this should give you an idea about the concealed diversity.
+<p class="content">This graph is similar to the one above, but normalized per sample by percent. Again, this should give you an idea about the concealed diversity.
 <div id="percents"></div>
 
 

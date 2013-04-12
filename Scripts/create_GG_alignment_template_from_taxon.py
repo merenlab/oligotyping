@@ -10,8 +10,6 @@
 #
 # Please read the COPYING file.
 
-import os
-import sys
 import argparse
 
 import Oligotyping.lib.fastalib as u

@@ -7,14 +7,8 @@
 
 import sys
 import cPickle
-from scipy import log2 as log
-
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import Oligotyping.lib.fastalib as u
 
 from Oligotyping.utils.utils import get_quals_dict
-from Oligotyping.utils.random_colors import get_list_of_colors
 
 alignment_file = sys.argv[1]
 quals_file = sys.argv[2]

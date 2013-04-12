@@ -9,49 +9,47 @@
 #
 # Please read the COPYING file.
 
-import os
 import sys
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle
 
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.utils import HTMLColorToRGB
 from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
-from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 
 
-def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = None, legend = False,\
+def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = None, legend = False,\
                                      colors_export = None, project_title = None, display = True, oligos = None):
-    datasets = datasets_dict.keys()
-    datasets.sort()
+    samples = samples_dict.keys()
+    samples.sort()
    
     if oligos == None:
-        oligos = get_oligos_sorted_by_abundance(datasets_dict, oligos)
+        oligos = get_oligos_sorted_by_abundance(samples_dict, oligos)
     else:
         oligos.reverse()
  
     if colors_dict == None:
         colors_dict = random_colors(copy.deepcopy(oligos))
 
-    datasets_oligo_vectors = {}
-    for dataset in datasets:
+    samples_oligo_vectors = {}
+    for sample in samples:
         vector = []
         for oligo in oligos:
-            if datasets_dict[dataset].has_key(oligo):
-                vector.append(datasets_dict[dataset][oligo])
+            if samples_dict[sample].has_key(oligo):
+                vector.append(samples_dict[sample][oligo])
             else:
                 vector.append(0)
-        datasets_oligo_vectors[dataset] = vector
+        samples_oligo_vectors[sample] = vector
     
-    datasets_oligo_vectors_percent_normalized = {}
-    for dataset in datasets:
-        total_oligos_in_dataset = sum(datasets_oligo_vectors[dataset])
+    samples_oligo_vectors_percent_normalized = {}
+    for sample in samples:
+        total_oligos_in_sample = sum(samples_oligo_vectors[sample])
         vector = []
-        for oligo_abundance in datasets_oligo_vectors[dataset]:
-            vector.append(oligo_abundance * 100.0 / total_oligos_in_dataset)
-        datasets_oligo_vectors_percent_normalized[dataset] = vector
+        for oligo_abundance in samples_oligo_vectors[sample]:
+            vector.append(oligo_abundance * 100.0 / total_oligos_in_sample)
+        samples_oligo_vectors_percent_normalized[sample] = vector
    
     # figure.. 
     fig = plt.figure(figsize=(20, 10))
@@ -62,7 +60,7 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
         plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.99)
     
     
-    N = len(datasets)
+    N = len(samples)
     ind = np.arange(N)
     width = 0.75
     
@@ -70,8 +68,8 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
     colors_list = []
 
     for i in range(0, len(oligos)):
-        values = [datasets_oligo_vectors_percent_normalized[dataset][i] for dataset in datasets]
-        bottom = [sum(datasets_oligo_vectors_percent_normalized[dataset][0:i]) for dataset in datasets]
+        values = [samples_oligo_vectors_percent_normalized[sample][i] for sample in samples]
+        bottom = [sum(samples_oligo_vectors_percent_normalized[sample][0:i]) for sample in samples]
         try:
             color = HTMLColorToRGB(colors_dict[oligos[i]])
             colors_list.append(colors_dict[oligos[i]])
@@ -94,10 +92,10 @@ def oligotype_distribution_stack_bar(datasets_dict, colors_dict, output_file = N
     plt.title('Stacked Bar Charts of Oligotype Distribution %s' \
                  % (('for "%s"' % project_title) if project_title else ''))
 
-    plt.xticks(ind+width/2., datasets, rotation=90, size='small')
+    plt.xticks(ind+width/2., samples, rotation=90, size='small')
     plt.yticks([])
     plt.ylim(ymax = 100)
-    plt.xlim(xmin = -(width) / 2, xmax = len(datasets))
+    plt.xlim(xmin = -(width) / 2, xmax = len(samples))
     
     if legend:
         plt.legend([b[0] for b in bars][::-1], oligos[::-1], bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0, shadow=True, fancybox=True)
@@ -124,7 +122,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Stack Bar Representation of Oligotype Distribution')
     parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE',\
-                        help = 'Oligotype distribution in datasets')
+                        help = 'Oligotype distribution in samples')
     parser.add_argument('--colors-file', metavar = 'COLORS_FILE', default = None,\
                         help = 'Two column file that contains colors for oligotypes')
     parser.add_argument('--color-list-file', metavar = 'COLORS_FILE', default = None,\
@@ -137,12 +135,12 @@ if __name__ == '__main__':
     parser.add_argument('--colors-export', metavar = 'COLORS_LIST_FILE',
                         help = 'Store the color list into a file')
     parser.add_argument('--project-title', default = None, metavar = 'PROJECT_TITLE',\
-                        help = 'Project name for the datasets.')
+                        help = 'Project name for the samples.')
 
 
     args = parser.parse_args()
 
-    datasets_dict = get_datasets_dict_from_environment_file(args.environment_file)
+    samples_dict = get_samples_dict_from_environment_file(args.environment_file)
 
     if args.colors_file:
         colors_dict = {}
@@ -151,7 +149,7 @@ if __name__ == '__main__':
     elif args.color_list_file:
         colors_dict = {}
         colors = [line.strip() for line in open(args.color_list_file).readlines()]
-        oligos = get_oligos_sorted_by_abundance(datasets_dict, None)
+        oligos = get_oligos_sorted_by_abundance(samples_dict, None)
         oligos.reverse()
         if len(oligos) > len(colors):
             sys.stderr.write('Error: number of colors in file is less than number of oligos. Quiting.\n')
@@ -161,7 +159,7 @@ if __name__ == '__main__':
     else:
         colors_dict = None
 
-    oligotype_distribution_stack_bar(datasets_dict,
+    oligotype_distribution_stack_bar(samples_dict,
                                      colors_dict,
                                      output_file = args.output_file,
                                      legend = args.legend,

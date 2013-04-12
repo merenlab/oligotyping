@@ -124,7 +124,7 @@ def generate_exclusive_figures(_object):
             
         # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
         # refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
-        samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in _object.datasets, samples))
+        samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in _object.samples, samples))
         samples.sort()
 
         mapping_file_path = get_temporary_file_name('%s-' % category, '-mapping.txt', _object.tmp_directory)
@@ -135,7 +135,7 @@ def generate_exclusive_figures(_object):
             mapping_file.write('%s\t%s\n' % (sample, sample_mapping_dict[category][sample]))
         mapping_file.close()
 
-        if samples == _object.datasets:
+        if samples == _object.samples:
             matrix_percent_path = _object.matrix_percent_file_path
             matrix_count_path = _object.matrix_count_file_path
         else:

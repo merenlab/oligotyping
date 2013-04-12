@@ -10,7 +10,6 @@
 #
 # Please read the COPYING file.
 
-import os
 import sys
 import argparse
 import numpy
@@ -21,7 +20,6 @@ import Oligotyping.lib.fastalib as u
 from Oligotyping.utils.utils import pretty_print
 
 def length_distribution(fasta, output = None, title = None):
-    length_abundance_dict = {}
     fasta = u.SequenceSource(fasta)
 
     sequence_lengths = []

@@ -43,7 +43,7 @@ from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import generate_gexf_network_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
-from Oligotyping.utils.utils import get_units_across_datasets_dicts
+from Oligotyping.utils.utils import get_units_across_samples_dicts
 from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
 from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
@@ -62,7 +62,7 @@ class Decomposer:
         self.min_substantive_abundance = 4
         self.output_directory = None
         self.project = None
-        self.dataset_name_separator = '_'
+        self.sample_name_separator = '_'
         self.generate_sets = False
         self.generate_frequency_curves = False
         self.skip_refining_topology = False # FIXME: ADD THIS IN PARSERS!
@@ -91,7 +91,7 @@ class Decomposer:
             self.min_substantive_abundance = args.min_substantive_abundance
             self.output_directory = args.output_directory
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
-            self.dataset_name_separator = args.dataset_name_separator
+            self.sample_name_separator = args.sample_name_separator
             self.generate_frequency_curves = args.generate_frequency_curves
             self.skip_removing_outliers = args.skip_removing_outliers
             self.skip_agglomerating_nodes = args.skip_agglomerating_nodes
@@ -126,7 +126,7 @@ class Decomposer:
         self.root = None
         self.topology = Topology()
         
-        # A recursive method could have solved the puzzle entirely in a dataset,
+        # A recursive method could have solved the puzzle entirely in a sample,
         # however there are a couple of reasons to not approach this problem with
         # recursion. This list is going to keep all leafs of the topology that needs
         # to be analyzed. Things will be added and removed to the list, while
@@ -134,12 +134,12 @@ class Decomposer:
         # every cycle.
         self.node_ids_to_analyze = None
 
-        self.datasets_dict = {}
-        self.datasets = []
+        self.samples_dict = {}
+        self.samples = []
         self.unit_counts = None
         self.unit_percents = None
-        self.across_datasets_sum_normalized = {}
-        self.across_datasets_max_normalized = {}
+        self.across_samples_sum_normalized = {}
+        self.across_samples_max_normalized = {}
 
         # be smart, turn the threading on if necessary.
         if self.number_of_threads:
@@ -191,7 +191,7 @@ class Decomposer:
             return 
 
         self.progress.new('Checking the input FASTA')
-        samples = check_input_alignment(self.alignment, self.dataset_name_from_defline, self.progress)
+        samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
         if not samples:
             raise ConfigError, 'Exiting.'
 
@@ -318,7 +318,7 @@ class Decomposer:
         if self.relocate_outliers:
             self._relocate_all_outliers()
 
-        self._generate_datasets_dict()
+        self._generate_samples_dict()
         self._get_unit_counts_and_percents()
 
         # all done.        
@@ -369,8 +369,8 @@ class Decomposer:
             self._generate_html_output()
 
 
-    def dataset_name_from_defline(self, defline):
-        return self.dataset_name_separator.join(defline.split('|')[0].split(self.dataset_name_separator)[0:-1])
+    def sample_name_from_defline(self, defline):
+        return self.sample_name_separator.join(defline.split('|')[0].split(self.sample_name_separator)[0:-1])
 
 
     def _generate_raw_topology(self):
@@ -636,7 +636,7 @@ class Decomposer:
                 # 'pure'. nice. but now there is another problem to fix: the frequency of some of the outlier
                 # read_objects, especially the ones that are coming from very large nodes may actually be larger
                 # than the minimum_subtantive_abundance criteria. so, they are the reads that were supposed to be
-                # a node, but were betrayed by the nature of the dataset or the sequencing platform. either due to
+                # a node, but were betrayed by the nature of the sample or the sequencing platform. either due to
                 # noise, or the identity to the representative of the node they were trapped in based on the
                 # discriminant that happened to be chosen to decompose that branch of the topology. now we are going
                 # to identify them, and move them out of the outliers bin just to attach them to the topology as a new node.
@@ -746,8 +746,8 @@ class Decomposer:
                             node_ids.remove(sibling.node_id)
 
         # reset temporary stuff
-        self.datasets = []
-        self.datasets_dict = {}
+        self.samples = []
+        self.samples_dict = {}
         self.unit_counts = {}
         self.unit_percents = {}
         
@@ -761,23 +761,23 @@ class Decomposer:
         # its own entropy peak to be selected among all other things. most of the time sequencing errors are
         # random (except some platform-dependent systematic errors, such as homopolymer region indels). so,
         # the errors should not change beta diversity, and frequency distribution patterns of error driven nodes
-        # should follow their parent node very tightly (because if a node is very abundant in a dataset, the erroneous
-        # node stemmed from the same parent will also be relatively abundant in the same dataset). a metric that
+        # should follow their parent node very tightly (because if a node is very abundant in a sample, the erroneous
+        # node stemmed from the same parent will also be relatively abundant in the same sample). a metric that
         # has the ability to describe similar patterns of frequency distribution, such as cosine similarity, can 
         # be used to agglomerate nodes that diverge from each other by one base and has almost the exact frequency
-        # distribution pattern across datasets. this type of process would agglomerate operons, and sometimes very
+        # distribution pattern across samples. this type of process would agglomerate operons, and sometimes very
         # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
         # in diversity much, I am not sure whether this is a bad thing.
 
 
-        # generating a temporary datasets dict.
-        self._generate_datasets_dict()
-        self.logger.info('temp datasets dict is ready; %d samples found' % (len(self.datasets)))
+        # generating a temporary samples dict.
+        self._generate_samples_dict()
+        self.logger.info('temp samples dict is ready; %d samples found' % (len(self.samples)))
         self._get_unit_counts_and_percents()
         self.logger.info('temp unit counts and percents dicts are ready')
         
-        self.across_datasets_sum_normalized, self.across_datasets_max_normalized =\
-                get_units_across_datasets_dicts(self.topology.final_nodes, self.datasets, self.unit_percents) 
+        self.across_samples_sum_normalized, self.across_samples_max_normalized =\
+                get_units_across_samples_dicts(self.topology.final_nodes, self.samples, self.unit_percents) 
         
         nz = pretty_print(len(self.topology.zombie_nodes))
         self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
@@ -823,7 +823,7 @@ class Decomposer:
                 
                 sibling = self.topology.nodes[sibling_id]
 
-                d = cosine_distance(self.across_datasets_max_normalized[node.node_id], self.across_datasets_max_normalized[sibling.node_id])
+                d = cosine_distance(self.across_samples_max_normalized[node.node_id], self.across_samples_max_normalized[sibling.node_id])
 
                 if d < 0.1:
                     if dealing_with_zombie_nodes:
@@ -843,8 +843,8 @@ class Decomposer:
 
 
         # reset temporary stuff
-        self.datasets = []
-        self.datasets_dict = {}
+        self.samples = []
+        self.samples_dict = {}
         self.unit_counts = {}
         self.unit_percents = {}
 
@@ -1095,22 +1095,22 @@ class Decomposer:
         read_distribution_dict = {}
         
         self.progress.update('Processing reads that were represented in results')
-        for dataset in self.datasets_dict:
-            if not read_distribution_dict.has_key(dataset):
-                read_distribution_dict[dataset] = get_dict_entry_tmpl()
+        for sample in self.samples_dict:
+            if not read_distribution_dict.has_key(sample):
+                read_distribution_dict[sample] = get_dict_entry_tmpl()
 
-            read_distribution_dict[dataset]['represented_reads'] = sum(self.datasets_dict[dataset].values())
+            read_distribution_dict[sample]['represented_reads'] = sum(self.samples_dict[sample].values())
             
         for reason in self.topology.outlier_reasons:
             self.progress.update('Processing outliers (%s)' % (reason))
             for read_object in self.topology.outliers[reason]:
                 for read_id in read_object.ids:
-                    dataset = self.dataset_name_from_defline(read_id)
+                    sample = self.sample_name_from_defline(read_id)
                     
-                    if not read_distribution_dict.has_key(dataset):
-                        read_distribution_dict[dataset] = get_dict_entry_tmpl()
+                    if not read_distribution_dict.has_key(sample):
+                        read_distribution_dict[sample] = get_dict_entry_tmpl()
                 
-                    read_distribution_dict[dataset][reason] += 1
+                    read_distribution_dict[sample][reason] += 1
         
         self.progress.update('Storing...')
         generate_TAB_delim_file_from_dict(read_distribution_dict,
@@ -1175,7 +1175,7 @@ class Decomposer:
             self._store_outliers(reason, output_file_path)
 
 
-    def _generate_datasets_dict(self):
+    def _generate_samples_dict(self):
         self.progress.new('Computing Samples Dict')
         
         for node_id in self.topology.final_nodes:
@@ -1185,18 +1185,18 @@ class Decomposer:
         
             for read in node.reads:
                 for read_id in read.ids:
-                    dataset = self.dataset_name_from_defline(read_id)
+                    sample = self.sample_name_from_defline(read_id)
             
-                    if not self.datasets_dict.has_key(dataset):
-                        self.datasets_dict[dataset] = {}
-                        self.datasets.append(dataset)
+                    if not self.samples_dict.has_key(sample):
+                        self.samples_dict[sample] = {}
+                        self.samples.append(sample)
     
-                    if self.datasets_dict[dataset].has_key(node_id):
-                        self.datasets_dict[dataset][node_id] += 1
+                    if self.samples_dict[sample].has_key(node_id):
+                        self.samples_dict[sample][node_id] += 1
                     else:
-                        self.datasets_dict[dataset][node_id] = 1
+                        self.samples_dict[sample][node_id] = 1
 
-        self.datasets.sort()
+        self.samples.sort()
         self.progress.end()
 
 
@@ -1205,8 +1205,8 @@ class Decomposer:
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         self.progress.update('Being generated')
         
-        generate_ENVIRONMENT_file(self.datasets,
-                                  self.datasets_dict,
+        generate_ENVIRONMENT_file(self.samples,
+                                  self.samples_dict,
                                   environment_file_path)
 
         self.progress.end()
@@ -1217,7 +1217,7 @@ class Decomposer:
         self.progress.new('Unit counts and percents')
         self.progress.update('Data is being generated')
             
-        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.datasets_dict)
+        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.samples_dict)
             
         self.progress.end()
 
@@ -1230,7 +1230,7 @@ class Decomposer:
         self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
         generate_MATRIX_files(self.topology.final_nodes,
-                              self.datasets,
+                              self.samples,
                               self.unit_counts,
                               self.unit_percents,
                               self.matrix_count_file_path,
@@ -1363,7 +1363,7 @@ class Decomposer:
         self.progress.new('GEXF Network File')
        
         generate_gexf_network_file(self.topology.final_nodes,
-                                   self.datasets_dict,
+                                   self.samples_dict,
                                    self.unit_percents,
                                    self.gexf_network_file_path,
                                    sample_mapping_dict = self.sample_mapping_dict,
@@ -1374,7 +1374,7 @@ class Decomposer:
 
 
     def _generate_default_figures(self):
-        if len(self.datasets) < 3:
+        if len(self.samples) < 3:
             return None
 
         self.progress.new('Figures')
@@ -1388,7 +1388,7 @@ class Decomposer:
 
 
     def _generate_exclusive_figures(self):
-        if len(self.datasets) < 3:
+        if len(self.samples) < 3:
             return None
 
         self.progress.new('Exclusive Figures')
@@ -1402,7 +1402,7 @@ class Decomposer:
 
             
     def _report_final_numbers(self):
-        self.run.info('num_datasets_in_fasta', pretty_print(len(self.datasets)))
+        self.run.info('num_samples_in_fasta', pretty_print(len(self.samples)))
         self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
         self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
 

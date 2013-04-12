@@ -15,7 +15,7 @@ import argparse
 def decomposer():
     parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
     parser.add_argument('alignment', metavar = 'FILEPATH',
-                        help = 'Alignment file that contains all datasets and sequences in FASTA format')
+                        help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('-m', '--min-entropy', type=float, default=0.3, metavar="FLOAT",
                         help = 'Minimum entropy for a component to have in order to be picked as a\
                                 discriminant. Defeault: %(default)f')
@@ -26,7 +26,7 @@ def decomposer():
                         help = 'Minimum number of reads in a node for decomposition to continue. Decomposition\
                                 will continue for any node that has more reads than this number as far as they\
                                 present an entropy that is larger than --min-entropy. This number should be\
-                                chosen carefully depending on the size of the dataset')
+                                chosen carefully depending on the size of the sample')
     parser.add_argument('-M', '--min-substantive-abundance', type=int, default=4, metavar = "INTEGER",
                         help = 'Unlike "actual" abundance, "substantive" abundance is interested in the abundance\
                                 of the most abundant read in a node. If the abundance of the most abundant\
@@ -38,9 +38,9 @@ def decomposer():
                                 read in a node is less than --maximum-variation-allowed than the representative\
                                 sequence of the node, it is identified as an outlier. If not set, this value is \
                                 being computed depenging on the average read length.')
-    parser.add_argument('-t', '--dataset-name-separator', type=str, default='_', metavar = "CHAR",
-                        help = 'Character that separates dataset name from unique info in the defline. For insatnce\
-                                if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
+    parser.add_argument('-t', '--sample-name-separator', type=str, default='_', metavar = "CHAR",
+                        help = 'Character that separates sample name from unique info in the defline. For insatnce\
+                                if the defline says >sample-1_GD7BRW402IVMZE, the separator should be set to "_"\
                                 (which is the default character).')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
     parser.add_argument('-p', '--project', default = None, type=str, metavar = "STR",
@@ -66,7 +66,7 @@ def decomposer():
                                 for details. This step might take a long time. Default: %(default)s')
     parser.add_argument('-F', '--store-full-topology', action = 'store_true', default = False,
                         help = 'When set, topology dict with read ids will be generated. This may take a very large\
-                                disk space and computation time for big datasets.')
+                                disk space and computation time for big samples.')
     parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
                         help = 'When set, directory with temporary BLAST results will not be deleted at the end of the\
                                 run. It may be necessary to debug the results')
@@ -98,7 +98,7 @@ def decomposer():
 def oligotyping():
     parser = argparse.ArgumentParser(description='Start an Oligotyping Process')
     parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
-                        help = 'Alignment file that contains all datasets and sequences in FASTA format')
+                        help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('entropy', metavar = 'ENTROPY',
                         help = 'File that contains the columns and the entropy values computer previously')
     parser.add_argument('-o', '--output-directory', help = 'Output directory', default = None)
@@ -131,18 +131,18 @@ def oligotyping():
                                 Defeault is %(default)d.')
     parser.add_argument('-C', '--selected-components', type=str, default=None,
                         help = 'Comma separated entropy components to be used during the oligotyping process.')
-    parser.add_argument('-s', '--min-number-of-datasets', type=int, default=1,
-                        help = 'Minimum number of datasets oligotype expected to appear. The deafult is "5", which\
+    parser.add_argument('-s', '--min-number-of-samples', type=int, default=1,
+                        help = 'Minimum number of samples oligotype expected to appear. The deafult is "5", which\
                                 is another completely arbitrary value. This parameter should be defined based\
-                                on the number of datasets included in the analysis. If there are 10 datasets,\
-                                3 might be a good choice, if there are 5 datasets, 1 would be a better one\
+                                on the number of samples included in the analysis. If there are 10 samples,\
+                                3 might be a good choice, if there are 5 samples, 1 would be a better one\
                                 depending on the study. Default is %(default)d.')
     parser.add_argument('-a', '--min-percent-abundance', type=float, default=0.0,
-                        help = 'Minimum percent abundance of an oligotype in at least one dataset. The default\
-                                is "0.0". Just like --min-number-of-datasets parameter, this parameter too is\
+                        help = 'Minimum percent abundance of an oligotype in at least one sample. The default\
+                                is "0.0". Just like --min-number-of-samples parameter, this parameter too is\
                                 to eliminate oligotypes that are formed by sequencing errors occured at the\
                                 component of interest. The value should be decided based on the average number\
-                                of sequences every dataset has.')
+                                of sequences every sample has.')
     parser.add_argument('-A', '--min-actual-abundance', type=int, default=0,
                         help = 'Minimum total abundance of an oligotype in all datastes. The default\
                                 is "0". If the total abundance of an oligotype is smaller than the number given\
@@ -154,16 +154,16 @@ def oligotyping():
                                 unique sequence in an oligotype smaller than the number given with this parameter\
                                 the oligotype will be eliminated and not included in downstream analyses. Default\
                                 is %(default)d.')
-    parser.add_argument('-t', '--dataset-name-separator', type=str, default='_',
-                        help = 'Character that separates dataset name from unique info in the defline. For insatnce\
-                                if the defline says >dataset-1_GD7BRW402IVMZE, the separator should be set to "_"\
+    parser.add_argument('-t', '--sample-name-separator', type=str, default='_',
+                        help = 'Character that separates sample name from unique info in the defline. For insatnce\
+                                if the defline says >sample-1_GD7BRW402IVMZE, the separator should be set to "_"\
                                 (which is the default character).')
     parser.add_argument('-l', '--limit-representative-sequences', type=int, default=None,
                         help = 'At the end of the oligotyping sequences that are being represented by the same\
                                 oligotype are being uniqued and stored in separate files. The number of sequences\
                                 to keep from the frequency ordered list can be defined with this parameter (e.g.\
                                 -l 10 would make it possible that only first 10 sequence would be stored). Default\
-                                is 0, which stores everything, but when the dataset size is too big, this could\
+                                is 0, which stores everything, but when the sample size is too big, this could\
                                 take up disk space.')
     parser.add_argument('--limit-oligotypes-to', type = str, default = None,
                         help = 'Comma separated list of oligotypes to be taken into account during the analysis.\
@@ -192,8 +192,8 @@ def oligotyping():
                         help = 'Generate static HTML output to browse analysis results.')
     parser.add_argument('--generate-sets', action = 'store_true', default = False,
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
-                        datasets are similar. Oligotype sets simply put oligotypes into the same set if they \
-                        co-occur in datasets consistenly.')
+                        samples are similar. Oligotype sets simply put oligotypes into the same set if they \
+                        co-occur in samples consistenly.')
     parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
                         help = 'When set, directory with temporary results will not be deleted at the end of the\
                                 run. It may be necessary to debug the results')
@@ -201,8 +201,8 @@ def oligotyping():
                         help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
                                 the threshold is, the more oligotypes will be pulled together. Cosine similarity\
                                 would return 0 for perfectly similar two vectors. Default is %(default)f.')
-    parser.add_argument('--gen-dataset-oligo-networks', action = 'store_true', default = False,
-                        help = 'Generate oligotype network structure figures for each dataset.')
+    parser.add_argument('--gen-sample-oligo-networks', action = 'store_true', default = False,
+                        help = 'Generate oligotype network structure figures for each sample.')
     parser.add_argument('-E', '--sample-mapping', metavar = 'FILEPATH', default = None,
                         help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
                                 visualizations. Refer to the tutorial for the file format')
@@ -229,7 +229,7 @@ def oligotyping():
 def entropy():
     parser = argparse.ArgumentParser(description='Entropy Analysis')
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
-                         that contains all datasets and sequences in FASTA format')
+                         that contains all samples and sequences in FASTA format')
     parser.add_argument('--qual-scores-file', metavar = 'QUAL SCORES FILE',
                         help = 'FASTA formatted file that contains PHRED base call values\
                          for each read in the alignment file')

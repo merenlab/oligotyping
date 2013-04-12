@@ -10,7 +10,7 @@
 # Please read the COPYING file.
 
 # This program helps to agglomorate oligotypes based on their frequency
-# patterns across datasets, assuming that most of them are co-occurring
+# patterns across samples, assuming that most of them are co-occurring
 # and don't functionally somewhat anologous.
 #
 # Here is an example input file:
@@ -30,7 +30,7 @@
 
 from scipy import spatial
 
-from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_datasets_matrix
+from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_samples_matrix
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 
 def cosine_distance(v1, v2):
@@ -89,9 +89,9 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Group Oligotypes Based on Cosine Similarity')
-    parser.add_argument('oligotypes_across_datasets', metavar = 'OLIGOTYPES_ACROSS_DATASETS',\
+    parser.add_argument('oligotypes_across_samples', metavar = 'OLIGOTYPES_ACROSS_DATASETS',\
                         help = 'A TAB-delimited matrix file that that contains normalized\
-                                oligotype frequencies across datasets. See the source code\
+                                oligotype frequencies across samples. See the source code\
                                 for an example format')
     parser.add_argument('-c', '--cosine-similarity-threshold', default = 0.1, type=float,\
                         metavar = 'COS_SIM_THRESHOLD', help = 'The higher the threshold is,\
@@ -104,14 +104,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
  
 
-    def get_datasets():
-        return [d.strip() for d in open(args.oligotypes_across_datasets).readline().split('\t')[1:]]
+    def get_samples():
+        return [d.strip() for d in open(args.oligotypes_across_samples).readline().split('\t')[1:]]
 
-    oligos, vectors = get_vectors_from_oligotypes_across_datasets_matrix(args.oligotypes_across_datasets)
+    oligos, vectors = get_vectors_from_oligotypes_across_samples_matrix(args.oligotypes_across_samples)
     
     partitions = get_oligotype_sets(oligos, vectors, args.cosine_similarity_threshold, args.output_file)
 
-    datasets = get_datasets()
+    samples = get_samples()
 
 
     print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n'\
@@ -120,5 +120,5 @@ if __name__ == '__main__':
     for partition in partitions:
         print '    - %s\n' % (', '.join(partition))
 
-    vis_oligotype_sets_distribution(partitions, vectors, datasets, legend = True,\
+    vis_oligotype_sets_distribution(partitions, vectors, samples, legend = True,\
         project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)

@@ -9,24 +9,21 @@
 #
 # Please read the COPYING file.
 
-import os
-import sys
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle
 
 from Oligotyping.utils.random_colors import random_colors
 from Oligotyping.utils.utils import HTMLColorToRGB
 from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 
 
-def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
-    datasets = datasets_dict.keys()
-    datasets.sort()
+def oligotype_distribution_across_samples(samples_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
+    samples = samples_dict.keys()
+    samples.sort()
    
     if oligos == None:
-        oligos = get_oligos_sorted_by_abundance(datasets_dict, oligos)
+        oligos = get_oligos_sorted_by_abundance(samples_dict, oligos)
     else:
         oligos.reverse()
  
@@ -35,22 +32,22 @@ def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_fi
 
 
     oligo_percents = {}
-    max_normalized_across_datasets_vectors = {}
-    sum_normalized_across_datasets_vectors = {}
+    max_normalized_across_samples_vectors = {}
+    sum_normalized_across_samples_vectors = {}
 
     for oligo in oligos:
         percents = []
-        for dataset in datasets:
-            if datasets_dict[dataset].has_key(oligo):
-                percents.append(datasets_dict[dataset][oligo] * 100.0 / sum(datasets_dict[dataset].values()))
+        for sample in samples:
+            if samples_dict[sample].has_key(oligo):
+                percents.append(samples_dict[sample][oligo] * 100.0 / sum(samples_dict[sample].values()))
             else:
                 percents.append(0.0)
 
         oligo_percents[oligo] = percents
 
     for oligo in oligos:
-        max_normalized_across_datasets_vectors[oligo] = [p * 100.0 / max(oligo_percents[oligo]) for p in oligo_percents[oligo]]
-        sum_normalized_across_datasets_vectors[oligo] = [p * 100.0 / sum(oligo_percents[oligo]) for p in oligo_percents[oligo]]
+        max_normalized_across_samples_vectors[oligo] = [p * 100.0 / max(oligo_percents[oligo]) for p in oligo_percents[oligo]]
+        sum_normalized_across_samples_vectors[oligo] = [p * 100.0 / sum(oligo_percents[oligo]) for p in oligo_percents[oligo]]
 
 
     # figure.. 
@@ -67,7 +64,7 @@ def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_fi
     plt.subplot(2, 1, 1)
     plt.grid(True) 
 
-    N = len(datasets)
+    N = len(samples)
     ind = np.arange(N)
     width = 0.75
     
@@ -81,19 +78,19 @@ def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_fi
             color = 'black'
 
         if len(oligos) < 50:
-            plt.plot(max_normalized_across_datasets_vectors[oligo], color=color, linewidth = 3, alpha = 0.3, zorder = i)
-            plt.plot(max_normalized_across_datasets_vectors[oligo], color=color, linewidth = 5, alpha = 0.2, zorder = i)
-        p = plt.plot(max_normalized_across_datasets_vectors[oligo], color=color, linewidth = 1, alpha = 0.9, zorder = i)
+            plt.plot(max_normalized_across_samples_vectors[oligo], color=color, linewidth = 3, alpha = 0.3, zorder = i)
+            plt.plot(max_normalized_across_samples_vectors[oligo], color=color, linewidth = 5, alpha = 0.2, zorder = i)
+        p = plt.plot(max_normalized_across_samples_vectors[oligo], color=color, linewidth = 1, alpha = 0.9, zorder = i)
         lines.append(p)
     
     plt.ylabel('MAX Normalized', size='large')
-    plt.title('Normalized Oligotype Distributions Across Datasets %s' \
+    plt.title('Normalized Oligotype Distributions Across Samples %s' \
                  % (('for "%s"' % project_title) if project_title else ''))
 
-    plt.xticks(ind, ['' for d in datasets], rotation=90, size='small')
+    plt.xticks(ind, ['' for d in samples], rotation=90, size='small')
     plt.yticks([])
     plt.ylim(ymax = 100)
-    plt.xlim(xmin = -(width) / 2, xmax = len(datasets) - 0.5)
+    plt.xlim(xmin = -(width) / 2, xmax = len(samples) - 0.5)
     
     if legend:
         plt.legend([b[0] for b in lines][::-1], oligos[::-1], bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0, shadow=True, fancybox=True)
@@ -126,16 +123,16 @@ def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_fi
             color = 'black'
 
         if len(oligos) < 50:
-            plt.plot(sum_normalized_across_datasets_vectors[oligo], color=color, linewidth = 3, alpha = 0.3, zorder = i)
-            plt.plot(sum_normalized_across_datasets_vectors[oligo], color=color, linewidth = 5, alpha = 0.2, zorder = i)
-        p = plt.plot(sum_normalized_across_datasets_vectors[oligo], color=color, linewidth = 1, alpha = 0.9, zorder = i)
+            plt.plot(sum_normalized_across_samples_vectors[oligo], color=color, linewidth = 3, alpha = 0.3, zorder = i)
+            plt.plot(sum_normalized_across_samples_vectors[oligo], color=color, linewidth = 5, alpha = 0.2, zorder = i)
+        p = plt.plot(sum_normalized_across_samples_vectors[oligo], color=color, linewidth = 1, alpha = 0.9, zorder = i)
     
     plt.ylabel('SUM Normalized', size='large')
 
-    plt.xticks(ind, datasets, rotation=90, size='small')
+    plt.xticks(ind, samples, rotation=90, size='small')
     plt.yticks([])
     plt.ylim(ymax = 100)
-    plt.xlim(xmin = -(width) / 2, xmax = len(datasets) - 0.5)
+    plt.xlim(xmin = -(width) / 2, xmax = len(samples) - 0.5)
  
     if output_file:
         plt.savefig(output_file)
@@ -148,9 +145,9 @@ def oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_fi
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Max Normalized Oligotype Distribution Across Datasets')
+    parser = argparse.ArgumentParser(description='Max Normalized Oligotype Distribution Across Samples')
     parser.add_argument('environment_file', metavar = 'ENVIRONMENT_FILE',\
-                        help = 'Oligotype distribution in datasets')
+                        help = 'Oligotype distribution in samples')
     parser.add_argument('--colors-file', metavar = 'COLORS_FILE', default = None,\
                         help = 'File that contains random colors for oligotypes')
     parser.add_argument('--output-file', default = None, metavar = 'OUTPUT_FILE',\
@@ -159,21 +156,21 @@ if __name__ == '__main__':
     parser.add_argument('--legend', action = 'store_true', default = False,
                         help = 'Turn on legend')
     parser.add_argument('--project-title', default = None, metavar = 'PROJECT_TITLE',\
-                        help = 'Project name for the datasets.')
+                        help = 'Project name for the samples.')
 
 
     args = parser.parse_args()
 
-    datasets_dict = {}
-    for oligotype, dataset, count in [line.strip().split('\t') for line in open(args.environment_file).readlines()]:
-        if datasets_dict.has_key(dataset):
-            if datasets_dict[dataset].has_key(oligotype):
-                datasets_dict[dataset][oligotype] += int(count)
+    samples_dict = {}
+    for oligotype, sample, count in [line.strip().split('\t') for line in open(args.environment_file).readlines()]:
+        if samples_dict.has_key(sample):
+            if samples_dict[sample].has_key(oligotype):
+                samples_dict[sample][oligotype] += int(count)
             else:
-                datasets_dict[dataset][oligotype] = int(count)
+                samples_dict[sample][oligotype] = int(count)
         else:
-            datasets_dict[dataset] = {}
-            datasets_dict[dataset][oligotype] = int(count)
+            samples_dict[sample] = {}
+            samples_dict[sample][oligotype] = int(count)
 
 
     if args.colors_file:
@@ -183,7 +180,7 @@ if __name__ == '__main__':
     else:
         colors_dict = None
 
-    oligotype_distribution_across_datasets(datasets_dict, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title)
+    oligotype_distribution_across_samples(samples_dict, colors_dict, output_file = args.output_file, legend = args.legend, project_title = args.project_title)
 
 
 

@@ -18,7 +18,7 @@ import cPickle
 from Oligotyping.lib import fastalib as u
 from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import get_datasets_dict_from_environment_file
+from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
 from error import HTMLError
 
@@ -229,11 +229,11 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
 
 
     if html_dict['generate_sets']:
-        html_dict['across_datasets_MN_file_path'] = copy_as(run_info_dict['across_datasets_MN_file_path'], 'across_datasets_max_normalized.txt')
-        html_dict['across_datasets_SN_file_path'] = copy_as(run_info_dict['across_datasets_SN_file_path'], 'across_datasets_sum_normalized.txt')
+        html_dict['across_samples_MN_file_path'] = copy_as(run_info_dict['across_samples_MN_file_path'], 'across_samples_max_normalized.txt')
+        html_dict['across_samples_SN_file_path'] = copy_as(run_info_dict['across_samples_SN_file_path'], 'across_samples_sum_normalized.txt')
         html_dict['oligo_sets_stackbar_figure'] = copy_as(run_info_dict['stack_bar_with_agglomerated_oligos_file_path'], 'stackbar_with_oligo_sets.png')
-        html_dict['oligos_across_datasets_figure'] = copy_as(run_info_dict['oligos_across_datasets_file_path'], 'oligos_across_datasets.png')
-        html_dict['oligotype_sets_figure'] = copy_as(run_info_dict['oligotype_sets_across_datasets_figure_path'], 'oligotype_sets.png')
+        html_dict['oligos_across_samples_figure'] = copy_as(run_info_dict['oligos_across_samples_file_path'], 'oligos_across_samples.png')
+        html_dict['oligotype_sets_figure'] = copy_as(run_info_dict['oligotype_sets_across_samples_figure_path'], 'oligotype_sets.png')
         html_dict['matrix_count_oligo_sets_file_path'] = copy_as(run_info_dict['matrix_count_oligo_sets_file_path'], 'matrix_counts_oligo_sets.txt')
         html_dict['matrix_percent_oligo_sets_file_path'] = copy_as(run_info_dict['matrix_percent_oligo_sets_file_path'], 'matrix_percents_oligo_sets.txt')
         html_dict['oligotype_sets_file'] = copy_as(run_info_dict['oligotype_sets_file_path'], 'oligotype_sets.txt')
@@ -246,8 +246,8 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
-    html_dict['datasets_dict'] = get_datasets_dict_from_environment_file(run_info_dict['environment_file_path'])
-    html_dict['datasets'] = sorted(html_dict['datasets_dict'].keys())
+    html_dict['samples_dict'] = get_samples_dict_from_environment_file(run_info_dict['environment_file_path'])
+    html_dict['samples'] = sorted(html_dict['samples_dict'].keys())
     html_dict['blast_results_found'] = False
 
     # get alignment length
@@ -261,14 +261,14 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     # get oligo frequencies
     html_dict['frequency'] = {}
     for oligo in html_dict['oligos']:
-        html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in html_dict['datasets_dict'].values() if d.has_key(oligo)]))
+        html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in html_dict['samples_dict'].values() if d.has_key(oligo)]))
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['rep_oligo_seqs_clean_dict'], html_dict['rep_oligo_seqs_fancy_dict'] = get_unique_sequences_dict(html_dict)
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
 
-    # get javascript code for dataset pie-charts
+    # get javascript code for sample pie-charts
     html_dict['pie_charts_js'] = render_to_string('pie_charts_js.tmpl', html_dict)
 
     # FIXME: code below is very inefficient and causes a huge
@@ -324,11 +324,11 @@ def get_oligo_distribution_dict(oligo, html_dict):
     
     ret_dict = {}
 
-    for dataset in oligo_distribution_dict:
-        ret_dict[dataset] = [0] * 20
+    for sample in oligo_distribution_dict:
+        ret_dict[sample] = [0] * 20
         for i in range(0, 20):
-            if oligo_distribution_dict[dataset].has_key(i + 1):
-                ret_dict[dataset][i] = oligo_distribution_dict[dataset][i + 1]
+            if oligo_distribution_dict[sample].has_key(i + 1):
+                ret_dict[sample][i] = oligo_distribution_dict[sample][i + 1]
 
     return ret_dict
 

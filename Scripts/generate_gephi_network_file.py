@@ -3,7 +3,7 @@ import Oligotyping.utils.utils as utils
 
 
 def main(environment_file, sample_mapping_file = None, unit_mapping_file = None, min_abundance = 0, min_sum_normalized_percent = 1):
-    samples_dict = utils.get_datasets_dict_from_environment_file(environment_file)
+    samples_dict = utils.get_samples_dict_from_environment_file(environment_file)
     oligos = utils.get_oligos_sorted_by_abundance(samples_dict, min_abundance = min_abundance)
     unit_counts, unit_percents = utils.get_unit_counts_and_percents(oligos, samples_dict)
     
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                 an oligotype or MED node, generates a vector from its percent occurence in all\
                                 samples, then normalizes the percent abundances so the total of the vector adds\
                                 up to 100%. The default is %(default)s, but it might be a good idea to set it\
-                                to 0 for datasets with a lot of samples (such as more than 100 samples).')
+                                to 0 for samples with a lot of samples (such as more than 100 samples).')
 
 
     args = parser.parse_args()
