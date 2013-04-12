@@ -197,12 +197,6 @@ class Oligotyping:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
                 raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
 
-        if self.sample_mapping:
-            mapping_file_simple_check(self.sample_mapping)
-            sample_mapping_new_destination = self.generate_output_destination("SAMPLE-MAPPING.txt")
-            shutil.copy(self.sample_mapping, sample_mapping_new_destination)
-            self.sample_mapping = sample_mapping_new_destination
-
         if self.colors_list_file:
             if not os.path.exists(self.colors_list_file):
                 raise ConfigError, "Colors list file does not exist: '%s'" % self.colors_list_file
@@ -219,12 +213,19 @@ class Oligotyping:
         # now we know that input files are OK, lets check input params before we go any further.
         self.check_params()
 
+        samples = None
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
             samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
             if not samples:
                 raise ConfigError, 'Exiting.'
             self.progress.end()
+
+        if self.sample_mapping:
+            mapping_file_simple_check(self.sample_mapping, samples)
+            sample_mapping_new_destination = self.generate_output_destination("SAMPLE-MAPPING.txt")
+            shutil.copy(self.sample_mapping, sample_mapping_new_destination)
+            self.sample_mapping = sample_mapping_new_destination
 
 
     def check_params(self):
