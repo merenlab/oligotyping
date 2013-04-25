@@ -20,6 +20,9 @@ description of files in this directory and their purpose:
   and 454 qual scores in FASTA format for reads in the alignment and 'aligns'
   qual scores to match with the alignment.
 
+- generate_matrix_files_from_ENVIRONMENT.py: this script can be used to generate
+  counts and percent abundance matrices from an environment file.
+
 - gen_stackbar_with_sets_from_ENVIRONMENT.py: this script is good to test 
   different cosine values to merge oligotypes and re-visualize them as a stackbar
   figure.
