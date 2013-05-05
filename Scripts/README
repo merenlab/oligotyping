@@ -27,6 +27,10 @@ description of files in this directory and their purpose:
   different cosine values to merge oligotypes and re-visualize them as a stackbar
   figure.
 
+- get_sample_info_from_fasta.py: takes FASTA with deflines formatted the way
+  oligotyping pipeline expects them to be formatted and prints out the number
+  of samples found and number of reads for each sample.
+
 - pad_with_gaps.py: when reads are not aligned, and not intended to be aligned
   this script can be used to pad shorter reads at the end with gaps to create
   equal lengths.
@@ -37,7 +41,6 @@ description of files in this directory and their purpose:
 - smart_trim_from_the_beginning.py: tell this script what percentage of reads
   you are willing to lose, and it will trim longest possible uniform length when
   untrimmed variable length reads aligned.
-
 
 - generate_consensus_from_alignment.py: a very crude way to generate a consensus
   from many aligned sequences. it is extremely likely to create chimeras with the
