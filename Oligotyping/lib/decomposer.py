@@ -265,6 +265,8 @@ class Decomposer:
         
         if self.sample_mapping:
             self.sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
+        else:
+            self.sample_mapping_dict = None
 
         # we're in business.
         self.run.info('project', self.project)
