@@ -184,16 +184,19 @@ class Decomposer:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
                 raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
 
+        samples = None
+        if not self.skip_check_input_file:
+            self.progress.new('Checking the input FASTA')
+            samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
+            if not samples:
+                raise ConfigError, 'Exiting.'
+
         if self.sample_mapping:
-            mapping_file_simple_check(self.sample_mapping)
+            mapping_file_simple_check(self.sample_mapping, samples)
+            sample_mapping_new_destination = self.generate_output_destination("SAMPLE-MAPPING.txt")
+            shutil.copy(self.sample_mapping, sample_mapping_new_destination)
+            self.sample_mapping = sample_mapping_new_destination
 
-        if self.skip_check_input_file:
-            return 
-
-        self.progress.new('Checking the input FASTA')
-        samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
-        if not samples:
-            raise ConfigError, 'Exiting.'
 
     def _init_logger(self, path = None):
         self.logger = logging.getLogger('decomposer')
