@@ -84,8 +84,8 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
     if colors_export:
         colors_list = reversed(colors_list)
         colors_file = open(colors_export, 'w')
-        for c in colors_list:
-            colors_file.write('%s\n' % c)
+        for oligo in oligos:
+            colors_file.write('%s\t%s\n' % (oligo, colors_dict[oligo]))
         colors_file.close()
 
     plt.ylabel('Oligotype Distribution', size='large')
