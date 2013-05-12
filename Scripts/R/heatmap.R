@@ -1,61 +1,96 @@
 #!/usr/bin/env Rscript
+#
+# generates heatmaps.
+#
 
-X11(width=12, height=10)
-library("vegan")
-library(tcltk)
-library(gtools)
-library(gplots)
+suppressPackageStartupMessages(library(vegan))
+suppressPackageStartupMessages(library(gtools))
+suppressPackageStartupMessages(library(pheatmap))
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(optparse))
 
-args <- commandArgs(trailingOnly = TRUE)
-csv_path <- args[1]
-output_file_prefix <- args[2]
-title_text <- args[3]
+# command line options
+option_list <- list(
+		make_option(c("-m", "--metadata"),
+				help = "Metadata file"),
+		make_option(c("-o", "--output_file_prefix"), default="unknown",
+				help = "Output file prefix for visualization files [default \"%default\"]"),
+		make_option(c("-d", "--distance_col"), default="horn",
+				help = "Distance metric for columns [default \"%default\"]"),
+		make_option(c("-r", "--distance_row"), default="horn",
+				help = "Distance metric for rows [default \"%default\"]"),
+		make_option(c("-c", "--clustering"), default="ward",
+				help = "Clistering method [default \"%default\"]"),
+		make_option(c("--pdf_height"), default=12,
+				help = "PDF output height [default \"%default\"]"),
+		make_option(c("--treeheight_col"), default=200,
+				help = "Dendrogram size for columns [default \"%default\"]"),
+		make_option(c("--treeheight_row"), default=100,
+				help = "Dendrogram size for rows (0 would make it disappear) [default \"%default\"]"),
+		make_option(c("--show_rownames"), default=F,
+				help = "Show row names [default \"%default\"]"),
+		make_option("--title", default="Distribution of the Number of Mismatches at the Overlapped Region",
+				help="Title for the output figure [default '%default']")
+)
 
+parser <- OptionParser(usage = "heatmap.R [options] input_file", option_list=option_list,
+		description="An interface to pheatmap")
 
-if(invalid(title_text))
-    title_text <- ""
+arguments <- parse_args(parser, positional_arguments = TRUE)
+options <- arguments$options
 
-if(invalid(output_file_prefix))
-    output_file_prefix <- "unknown"
+if(invalid(options$metadata))
+	options$metadata <- NA
 
-csv <- read.csv(csv_path, header=TRUE, sep="\t")
-rownames(csv) <- csv[,1]
-m = as.matrix(csv[,-1])
-
-
-hmap <- function(){
-    heatmap.2(t(m),
-              dendrogram="both",
-              scale="row",
-              trace="none",
-              cexRow=0.4,
-              cexCol=1.5,
-              distfun=function(m) vegdist(m,method="horn"), #"manhattan", "euclidean", "canberra", "bray", "kulczynski", "jaccard", "gower", "morisita", "horn", "mountford", "raup" , "binomial" or "chao"
-              symm=F,
-              symkey=T,
-              symbreaks=T, 
-              col=colorRampPalette(c("red","green","green4","violet","purple"))(100),
-              labRow=NA,
-              margins = c(10,10),
-              )
-
-    title(title_text, col.main = "gray")
+# check if the positional argument is set
+if(length(arguments$args) != 1) {
+	cat("Incorrect number of required positional arguments\n\n")
+	print_help(parser)
+	stop()
+} else {
+	input_file <- arguments$args
 }
 
-hmap()
-tk_messageBox(message="Press a key")
+# check if the input file is accessible
+if(file.access(input_file) == -1){
+	stop(sprintf("Specified file '%s' does not exist", input_file))
+}
 
-# PDF
-pdf_output <- paste(output_file_prefix,".pdf",sep="")
-pdf(pdf_output)
-hmap()
-sprintf("Heatmap result PDF: '%s'", pdf_output)
-dev.off()
+# set annotation
+if(is.na(options$metadata)){
+	annotation <- NA
+} else {
+	print(file.access(options$metadata))
+	if(file.access(options$metadata) == -1){
+		stop(sprintf("Mapping file '%s' does not exist", options$metadata))
+	}
+	annotation = as.data.frame(read.csv(options$metadata, header=TRUE, row.names = 1, sep="\t"))
+}
 
-# PNG
-png_output <- paste(output_file_prefix,".png",sep="")
-png(png_output, width = 1200, height = 1000, units = "px", pointsize = 12, bg = "transparent", type = c("cairo", "cairo-png", "Xlib", "quartz"))
-sprintf("Heatmap result PNG: '%s'", png_output)
-hmap()
+raw_data <- t(data.matrix(read.table(input_file, header = TRUE, row.names = 1,sep="\t")))
+scaled_data <- t(as.matrix(scale(t(raw_data), scale = T, center=F)))
+
+drows<-vegdist(raw_data, method=options$distance_row)
+dcols<-vegdist(t(raw_data), method=options$distance_col, na.rm=TRUE)
+
+pdf_width <- ncol(scaled_data) / 4
+if(pdf_width < 10)
+	pdf_width <- 10
+
+pdf_output <- paste(options$output_file_prefix,".pdf",sep="")
+pdf(pdf_output, width = pdf_width, height = options$pdf_height, pointsize = 6, family='Helvetica')
+pheatmap(scaled_data,
+		scale="none",
+		border_color = 'black',
+		clustering_distance_rows=drows,
+		clustering_distance_cols=dcols,
+		clustering_method=options$clustering,
+		fontsize_row=8,
+		main=options$title, 
+		annotation = annotation, 
+		treeheight_col = options$treeheight_col, 
+		treeheight_row = options$treeheight_row,
+		show_rownames = options$show_rownames)
+sprintf("PDF: '%s'", pdf_output)
 dev.off()
 
