@@ -21,9 +21,9 @@ option_list <- list(
 				help = "Distance metric for rows [default \"%default\"]"),
 		make_option(c("-c", "--clustering"), default="ward",
 				help = "Clistering method [default \"%default\"]"),
-		make_option(c("--pdf_height"), default=12,
+		make_option(c("--pdf_height"), default=9,
 				help = "PDF output height [default \"%default\"]"),
-		make_option(c("--treeheight_col"), default=200,
+		make_option(c("--treeheight_col"), default=100,
 				help = "Dendrogram size for columns [default \"%default\"]"),
 		make_option(c("--treeheight_row"), default=100,
 				help = "Dendrogram size for rows (0 would make it disappear) [default \"%default\"]"),
@@ -77,11 +77,14 @@ pdf_width <- ncol(scaled_data) / 4
 if(pdf_width < 10)
 	pdf_width <- 10
 
+if(options$show_rownames == F && nrow(scaled_data) < 70)
+	options$show_rownames <- T
+
 pdf_output <- paste(options$output_file_prefix,".pdf",sep="")
-pdf(pdf_output, width = pdf_width, height = options$pdf_height, pointsize = 6, family='Helvetica')
+pdf(pdf_output, width = pdf_width, height = options$pdf_height, pointsize = 6, family='mono')
 pheatmap(scaled_data,
 		scale="none",
-		border_color = 'black',
+		border_color = NA,
 		clustering_distance_rows=drows,
 		clustering_distance_cols=dcols,
 		clustering_method=options$clustering,
