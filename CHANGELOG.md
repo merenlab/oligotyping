@@ -7,6 +7,10 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 0.96
+    * Improved HTML output.
+    * Better error reporting.
+
 * 0.95
     * GEXF support. Now oligotyping pipeline generates Gephi (https://gephi.org/) compatible XML file for network analysis.
     * Bug fixes. 
