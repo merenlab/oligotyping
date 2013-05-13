@@ -36,7 +36,7 @@ def generate_default_figures(_object):
     #
 
     for (analysis, script, output_dir) in [('Stackbar', '../Scripts/R/stackbar.R', 'stackbar')]:
-        # generating a stackbar is only feasible for oligotyping:
+        #¬†generating a stackbar is only feasible for oligotyping:
         if _object.analysis != 'oligotyping':
             continue
 
@@ -123,7 +123,7 @@ def generate_exclusive_figures(_object):
         samples = sample_mapping_dict[category].keys()
             
         # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
-        # refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
+        #¬†refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
         samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in _object.samples, samples))
         samples.sort()
 
@@ -162,7 +162,7 @@ def generate_exclusive_figures(_object):
             target_dir = _object.generate_output_destination('%s/%s/%s' % (os.path.basename(_object.figures_directory),
                                                                         category,
                                                                         output_dir),
-                                                          directory = True)
+                                                                        directory = True)
                 
             for (distance_metric, matrix_file) in [("canberra", matrix_percent_path),
                                                    ("kulczynski", matrix_percent_path),
@@ -176,6 +176,35 @@ def generate_exclusive_figures(_object):
                                          mapping_file_path,
                                          distance_metric,
                                          category,
+                                         _object.project,
+                                         output_prefix,
+                                         _object.log_file_path))
+                _object.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
+                _object.logger.info('exclusive figure: %s' % (cmd_line))
+                run_command(cmd_line)
+                exclusive_figures_dict[category][output_dir][distance_metric] = output_prefix
+
+
+        # heatmap
+        for (analysis, script, output_dir) in [('Heatmap Analysis', '../Scripts/R/heatmap.R', 'heatmap_analysis')]:
+            exclusive_figures_dict[category][output_dir] = {}
+                        
+            target_dir = _object.generate_output_destination('%s/%s/%s' % (os.path.basename(_object.figures_directory),
+                                                                        category,
+                                                                        output_dir),
+                                                                        directory = True)
+                
+            for (distance_metric, matrix_file) in [("canberra", matrix_percent_path),
+                                                   ("kulczynski", matrix_percent_path),
+                                                   ("jaccard", matrix_percent_path),
+                                                   ("horn", matrix_percent_path),
+                                                   ("chao", matrix_count_path)]:
+                output_prefix = os.path.join(target_dir, distance_metric)
+                cmd_line = ('%s "%s" -m "%s" -d %s --title "%s" -o "%s" >> "%s" 2>&1' % 
+                                        (os.path.join(scripts_dir_path, script),
+                                         matrix_file,
+                                         mapping_file_path,
+                                         distance_metric,
                                          _object.project,
                                          output_prefix,
                                          _object.log_file_path))
