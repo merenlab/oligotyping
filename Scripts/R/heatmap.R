@@ -80,20 +80,31 @@ if(pdf_width < 10)
 if(options$show_rownames == F && nrow(scaled_data) < 70)
 	options$show_rownames <- T
 
+P <- function(){
+	pheatmap(scaled_data,
+			scale="none",
+			border_color = NA,
+			clustering_distance_rows=drows,
+			clustering_distance_cols=dcols,
+			clustering_method=options$clustering,
+			fontsize_row=8,
+			main=options$title, 
+			annotation = annotation, 
+			treeheight_col = options$treeheight_col, 
+			treeheight_row = options$treeheight_row,
+			show_rownames = options$show_rownames)
+}
+
 pdf_output <- paste(options$output_file_prefix,".pdf",sep="")
 pdf(pdf_output, width = pdf_width, height = options$pdf_height, pointsize = 6, family='mono')
-pheatmap(scaled_data,
-		scale="none",
-		border_color = NA,
-		clustering_distance_rows=drows,
-		clustering_distance_cols=dcols,
-		clustering_method=options$clustering,
-		fontsize_row=8,
-		main=options$title, 
-		annotation = annotation, 
-		treeheight_col = options$treeheight_col, 
-		treeheight_row = options$treeheight_row,
-		show_rownames = options$show_rownames)
+P()
 sprintf("PDF: '%s'", pdf_output)
 dev.off()
+
+png_output <- paste(options$output_file_prefix,".png",sep="")
+png(png_output, width = pdf_width * 100, height = options$pdf_height * 100, units = "px", pointsize = 12, bg = "transparent", type = c("cairo", "cairo-png", "Xlib", "quartz"))
+P()
+sprintf("PNG: '%s'", png_output)
+dev.off()
+
 
