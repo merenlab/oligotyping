@@ -169,6 +169,12 @@ class Oligotyping:
 
 
     def check_dirs(self):
+        if self.number_of_auto_components != None and self.selected_components != None:
+            raise ConfigError, "You either have to declare 'auto components' (-c) or 'selected components' (-C)."
+
+        if self.number_of_auto_components == None and self.selected_components == None:
+            raise ConfigError, "Both 'auto components' (-c), and 'selected components' (-C) were declared."
+
         # check output associated stuff
         if not self.output_directory:
             self.output_directory = os.path.join(os.getcwd(), '-'.join([self.project.replace(' ', '_'), self.get_prefix()]))
@@ -229,12 +235,6 @@ class Oligotyping:
 
 
     def check_params(self):
-        if self.number_of_auto_components != None and self.selected_components != None:
-            raise ConfigError, "You either have to declare 'auto components' (-c) or 'selected components' (-C)."
-        
-        if self.number_of_auto_components == None and self.selected_components == None:
-            raise ConfigError, "Both 'auto components' (-c), and 'selected components' (-C) were declared."
-
         if self.selected_components:
             try:
                 self.selected_components = [int(c) for c in self.selected_components.split(',')]
