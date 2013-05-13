@@ -68,6 +68,24 @@ def get_unit_counts_and_percents(units, samples_dict):
 
     return (unit_counts, unit_percents)
 
+
+def import_error(e):
+    print '''
+    Sorry. It seems you are missing a module that is required by
+    the oligotyping pipeline. Here is the original import error:
+
+        "%s"
+
+    Please make sure you have all the requirements installed. This
+    post may be useful to set up the right environment for the
+    oligotyping pipeline:
+
+    http://oligotyping.org/2012/05/11/oligotyping-pipeline-explained/
+
+    \n''' % e
+    sys.exit()
+
+
 def generate_MATRIX_files(units, samples, unit_counts, unit_percents, matrix_count_file_path, matrix_percent_file_path):
     count_file = open(matrix_count_file_path, 'w')
     percent_file = open(matrix_percent_file_path, 'w')       
@@ -747,7 +765,18 @@ def run_command(cmdline):
 
 
 def check_command_output(cmdline):
-    return subprocess.check_output(cmdline.split())
+    try:
+        return subprocess.check_output(cmdline.split())
+    except AttributeError:
+    	# python 2.6 workaround:
+        p = subprocess.Popen(cmdline.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output=''
+        while(True):
+            retcode = p.poll()
+            output += p.stdout.readline() + '\n'
+            if(retcode is not None):
+                break
+        return output
 
 
 def check_input_alignment(alignment_path, sample_name_from_defline_func, progress_func = None):
