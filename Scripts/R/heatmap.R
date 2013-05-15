@@ -29,7 +29,7 @@ option_list <- list(
 				help = "Dendrogram size for rows (0 would make it disappear) [default \"%default\"]"),
 		make_option(c("--show_rownames"), default=F,
 				help = "Show row names [default \"%default\"]"),
-		make_option("--title", default="Distribution of the Number of Mismatches at the Overlapped Region",
+		make_option("--title", default="(unknown title)",
 				help="Title for the output figure [default '%default']")
 )
 
