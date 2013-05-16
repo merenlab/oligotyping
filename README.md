@@ -1,7 +1,7 @@
 Oligotyping
 ===============================================================================
 
-Oligotyping is a novel computational method to decompose very closely related 
+Oligotyping is a novel supervised computational method to decompose very closely related 
 taxa within microbial communities by utilizing very subtle nucleotide variation
 among 16S Ribosomal RNA gene amplicon reads. It can reveal previously unobserved
 ecological patterns, and hidden diversity concealed within environmental datasets.
