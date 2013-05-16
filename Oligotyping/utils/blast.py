@@ -351,7 +351,7 @@ class RemoteBLAST:
         result = result_handle.read()
 
         if output_file:
-           open(output_file, "w").write(result)
+            open(output_file, "w").write(result)
  
         return cStringIO.StringIO(result)
 
