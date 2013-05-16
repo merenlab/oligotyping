@@ -30,7 +30,7 @@ from Oligotyping.utils.utils import import_error
 
 try:
     from Oligotyping.lib.oligotyping import Oligotyping
-    from Oligotyping.lib.oligotyping import ConfigError
+    from Oligotyping.utils.utils import ConfigError
     from Oligotyping.utils import parsers
 except ImportError, e:
     import_error(e)
