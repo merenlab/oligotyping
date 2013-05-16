@@ -1,5 +1,4 @@
 import sys
-import Oligotyping.utils.utils as utils
 
 
 def main(matrix_file, cols_to_remove = None, rows_to_remove = None, output_file = None):
