@@ -94,7 +94,7 @@ def generate_default_figures(_object):
                                                    ("kulczynski", _object.matrix_percent_file_path),
                                                    ("jaccard", _object.matrix_percent_file_path),
                                                    ("horn", _object.matrix_percent_file_path),
-                                                   ("chao", _object.matrix_count_file_path)]:
+                                                   ("bray", _object.matrix_percent_file_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s "%s" %s "%s" "%s" >> "%s" 2>&1' % 
                                         (os.path.join(scripts_dir_path, script),
@@ -168,7 +168,7 @@ def generate_exclusive_figures(_object):
                                                    ("kulczynski", matrix_percent_path),
                                                    ("jaccard", matrix_percent_path),
                                                    ("horn", matrix_percent_path),
-                                                   ("chao", matrix_count_path)]:
+                                                   ("bray", matrix_percent_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s "%s" "%s" %s "%s" "%s" "%s" >> "%s" 2>&1' % 
                                         (os.path.join(scripts_dir_path, script),
@@ -198,7 +198,7 @@ def generate_exclusive_figures(_object):
                                                    ("kulczynski", matrix_percent_path),
                                                    ("jaccard", matrix_percent_path),
                                                    ("horn", matrix_percent_path),
-                                                   ("chao", matrix_count_path)]:
+                                                   ("bray", matrix_percent_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s "%s" -m "%s" -d %s --title "%s" -o "%s" >> "%s" 2>&1' % 
                                         (os.path.join(scripts_dir_path, script),
