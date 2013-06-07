@@ -28,6 +28,7 @@
 #     TACTTAGAACTT-GGTAT	18.9421855944	1.3822243641	10.3208847966	14.7093902734	0.650727124538	8.22547255033	19.0420299574	12.9040938859	13.8229914534
 #     TATAGTGGACCT-AGTAT	12.1090224002	0.26665440018	19.3617011303	15.1000904089	0.459966563452	20.2927274957	12.8589434862	4.85846741089	14.6924267042
 
+import sys
 from scipy import spatial
 
 from Oligotyping.utils.utils import get_vectors_from_oligotypes_across_samples_matrix
@@ -41,6 +42,52 @@ def cosine_distance(v1, v2):
 
     return spatial.distance.cosine(v1_abs, v2_abs)
 
+def get_oligotype_sets_greedy(oligos, vectors, cosine_similarity_threshold, output_file = None):
+    next_set_id = 0
+    set_representatives = {}
+    set_ids = {}
+    len_oligos = len(oligos)
+    
+    for i in range(0, len_oligos):
+        if i % 10 == 0 or i == len_oligos - 1:
+            sys.stderr.write('\rOligo %d of %d :: num sets: %d' % (i, len_oligos, len(set_ids)))
+            sys.stderr.flush()
+        oligo = oligos[i]
+        vector = vectors[oligo]
+        
+        shortest_distance_set_ID = None
+        shortest_distance = sys.maxint
+        for set_representative in set_representatives:
+            distance = cosine_distance(set_representatives[set_representative], vector)
+            
+            # this is a terrible thing to do, but when there are 1 million units
+            # you really need to speed things up.
+            if distance < 0.01:
+                set_ids[set_representative].add(oligo)
+                break
+    
+            if distance < shortest_distance:
+                shortest_distance = distance
+                shortest_distance_set_ID = set_representative
+        
+        if not shortest_distance_set_ID or not (shortest_distance < cosine_similarity_threshold):
+            set_representatives['Set_%d' % next_set_id] = vector
+            set_ids['Set_%d' % next_set_id] = set([oligo])
+            next_set_id += 1
+        else:
+            set_ids[shortest_distance_set_ID].add(oligo)
+        
+    sys.stderr.write('\n')
+
+    if output_file:
+        f = open(output_file, 'w')
+        for set_id in set_ids:
+            f.write('%s\t%s\n' % (set_id, ','.join(set_ids[set_id])))
+    f.close()
+
+    return set_ids
+ 
+ 
 def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file = None):
     oligotype_sets = []
     distances = {}
