@@ -10,6 +10,7 @@ from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 from Oligotyping.utils.utils import get_units_across_samples_dicts
 from Oligotyping.utils.utils import get_unit_counts_and_percents
 from Oligotyping.utils.cosine_similarity import get_oligotype_sets
+from Oligotyping.utils.cosine_similarity import get_oligotype_sets_greedy
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from Oligotyping.utils.utils import generate_ENVIRONMENT_file 
 
@@ -25,14 +26,12 @@ unit_counts, unit_percents = get_unit_counts_and_percents(oligos, samples_dict)
 samples = samples_dict.keys()
 
 across_samples_sum_normalized, across_samples_max_normalized = get_units_across_samples_dicts(oligos, samples_dict.keys(), unit_percents) 
-oligotype_sets = get_oligotype_sets(oligos,
+oligotype_sets = get_oligotype_sets_greedy(oligos,
                                     across_samples_sum_normalized,
                                     cosine_similarity_value,
                                     sets_output_file_name)
 
 print '%d sets from %d units' % (len(oligotype_sets), len(oligos))
-
-oligotype_set_ids = range(0, len(oligotype_sets))
 
 samples_dict_with_agglomerated_oligos = {}
 
@@ -40,7 +39,7 @@ for sample in samples:
     samples_dict_with_agglomerated_oligos[sample] = {}
 
 
-for set_id in oligotype_set_ids:
+for set_id in oligotype_sets:
     oligotype_set = oligotype_sets[set_id]
     for sample in samples:
         samples_dict_with_agglomerated_oligos[sample][set_id] = 0
