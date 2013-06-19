@@ -10,7 +10,7 @@ from Oligotyping.utils.utils import pretty_print as pp
 
 fasta = u.SequenceSource(sys.argv[1])
 output = u.FastaOutput(sys.argv[1] + '-SAMPLES-REMOVED.fa')
-samples_to_be_removed = sys.argv[2].split(',')
+samples_to_be_removed = [s.strip() for s in sys.argv[2].split(',')]
 
 while fasta.next():
     if fasta.pos % 1000 == 0:
