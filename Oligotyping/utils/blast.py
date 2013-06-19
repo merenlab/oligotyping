@@ -203,7 +203,7 @@ class LocalBLAST:
                 time.sleep(5)
                 break
 
-            time.sleep(1)
+            time.sleep(5)
         
         if os.path.exists(self.output):
             os.remove(self.output)
