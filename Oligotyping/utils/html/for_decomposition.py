@@ -155,7 +155,12 @@ def generate_html_output(run_info_dict, html_output_directory = None):
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
-        shutil.copy2(source, dest)
+        try:
+            shutil.copy2(source, dest)
+        except:
+            if source.endswith('png'):
+                shutil.copy2(os.path.join(absolute, 'static/missing_image.png'), dest)
+                
         return os.path.basename(dest)
 
     html_dict['matrix_count_file_path'] = copy_as(run_info_dict['matrix_count_file_path'], 'matrix_counts.txt')
@@ -170,9 +175,9 @@ def generate_html_output(run_info_dict, html_output_directory = None):
             for _map in figures_dict:
                 for _func in figures_dict[_map]:
                     for _op in figures_dict[_map][_func]:
-                        if os.path.exists(figures_dict[_map][_func][_op] + '.pdf') and os.path.exists(figures_dict[_map][_func][_op] + '.png'):
-                            prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
+                        if os.path.exists(figures_dict[_map][_func][_op] + '.pdf') or os.path.exists(figures_dict[_map][_func][_op] + '.png'):
                             prefix = copy_as(figures_dict[_map][_func][_op] + '.png', '%s.png' % '-'.join([_map, _func, _op]))
+                            prefix = copy_as(figures_dict[_map][_func][_op] + '.pdf', '%s.pdf' % '-'.join([_map, _func, _op]))
                             figures_dict[_map][_func][_op] = '.'.join(prefix.split('.')[:-1])
                         else:
                             figures_dict[_map][_func][_op] = None
