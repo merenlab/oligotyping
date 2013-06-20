@@ -48,7 +48,6 @@ from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
 from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
 from Oligotyping.utils.utils import get_percent_identity_for_N_base_difference
-from Oligotyping.utils.cosine_similarity import cosine_distance
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
@@ -774,6 +773,7 @@ class Decomposer:
         # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
         # in diversity much, I am not sure whether this is a bad thing.
 
+        from Oligotyping.utils.cosine_similarity import cosine_distance
 
         # generating a temporary samples dict.
         self._generate_samples_dict()

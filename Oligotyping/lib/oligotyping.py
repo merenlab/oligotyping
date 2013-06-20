@@ -22,7 +22,6 @@ import logging
 from Oligotyping.utils import utils
 from Oligotyping.utils import blast
 from Oligotyping.utils.random_colors import random_colors
-from Oligotyping.utils.cosine_similarity import get_oligotype_sets
 from Oligotyping.utils.random_colors import get_color_shade_dict_for_list_of_values
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.shared import generate_default_figures
@@ -934,6 +933,7 @@ class Oligotyping:
 
 
     def _agglomerate_oligos_based_on_cosine_similarity(self):
+        from Oligotyping.utils.cosine_similarity import get_oligotype_sets
         self.progress.new('Agglomerating Oligotypes into Sets')
         oligotype_sets_file_path = self.generate_output_destination("OLIGOTYPE-SETS.txt")
         self.progress.update('Computing')
