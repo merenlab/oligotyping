@@ -15,6 +15,9 @@ oligotyping:
 
 * http://oligotyping.org
 
+For installation and usage instructions, please see the tutorial:
+
+* http://oligotyping.org/2012/05/11/oligotyping-pipeline-explained/
 
 
 Licence
