@@ -768,7 +768,7 @@ def check_command_output(cmdline):
     try:
         return subprocess.check_output(cmdline.split())
     except AttributeError:
-    	# python 2.6 workaround:
+        # python 2.6 workaround:
         p = subprocess.Popen(cmdline.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output=''
         while(True):
@@ -779,7 +779,14 @@ def check_command_output(cmdline):
         return output
 
 
-def check_input_alignment(alignment_path, sample_name_from_defline_func, progress_func = None):
+def get_sample_name_from_defline(defline, sample_name_separator = '_'):
+    if sample_name_separator != '|':
+        return sample_name_separator.join(defline.split('|')[0].split(sample_name_separator)[0:-1])
+    else:
+        return sample_name_separator.join(defline.split(sample_name_separator)[0:-1])
+
+
+def check_input_alignment(alignment_path, sample_name_separator, progress_func = None):
     alignment = u.SequenceSource(alignment_path)
     samples = set([])
     previous_alignment_length = None
@@ -790,7 +797,7 @@ def check_input_alignment(alignment_path, sample_name_from_defline_func, progres
                                         % (pretty_print(alignment.pos),
                                            pretty_print(len(samples))))
 
-        sample = sample_name_from_defline_func(alignment.id)
+        sample = get_sample_name_from_defline(alignment.id, sample_name_separator)
         if sample not in samples:
             samples.add(sample)
     

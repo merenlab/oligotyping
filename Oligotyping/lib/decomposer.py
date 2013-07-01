@@ -43,6 +43,7 @@ from Oligotyping.utils.utils import generate_ENVIRONMENT_file
 from Oligotyping.utils.utils import get_read_objects_from_file
 from Oligotyping.utils.utils import generate_gexf_network_file
 from Oligotyping.utils.utils import get_unit_counts_and_percents
+from Oligotyping.utils.utils import get_sample_name_from_defline
 from Oligotyping.utils.utils import get_units_across_samples_dicts
 from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
 from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
@@ -186,7 +187,7 @@ class Decomposer:
         samples = None
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
-            samples = check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
+            samples = check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
                 raise ConfigError, 'Exiting.'
 
@@ -371,10 +372,6 @@ class Decomposer:
         # finally:
         if self.gen_html:
             self._generate_html_output()
-
-
-    def sample_name_from_defline(self, defline):
-        return self.sample_name_separator.join(defline.split('|')[0].split(self.sample_name_separator)[0:-1])
 
 
     def _generate_raw_topology(self):
@@ -1110,7 +1107,7 @@ class Decomposer:
             self.progress.update('Processing outliers (%s)' % (reason))
             for read_object in self.topology.outliers[reason]:
                 for read_id in read_object.ids:
-                    sample = self.sample_name_from_defline(read_id)
+                    sample = get_sample_name_from_defline(read_id, self.sample_name_separator)
                     
                     if not read_distribution_dict.has_key(sample):
                         read_distribution_dict[sample] = get_dict_entry_tmpl()
@@ -1190,7 +1187,7 @@ class Decomposer:
         
             for read in node.reads:
                 for read_id in read.ids:
-                    sample = self.sample_name_from_defline(read_id)
+                    sample = get_sample_name_from_defline(read_id, self.sample_name_separator)
             
                     if not self.samples_dict.has_key(sample):
                         self.samples_dict[sample] = {}

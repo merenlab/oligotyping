@@ -199,7 +199,7 @@ class Oligotyping:
         samples = None
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
-            samples = utils.check_input_alignment(self.alignment, self.sample_name_from_defline, self.progress)
+            samples = utils.check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
                 raise utils.ConfigError, 'Exiting.'
             self.progress.end()
@@ -268,10 +268,6 @@ class Oligotyping:
         hdlr.setFormatter(formatter)
         self.logger.addHandler(hdlr) 
         self.logger.setLevel(logging.DEBUG)
-
-
-    def sample_name_from_defline(self, defline):
-        return self.sample_name_separator.join(defline.split('|')[0].split(self.sample_name_separator)[0:-1])
 
 
     def get_prefix(self):
@@ -452,7 +448,7 @@ class Oligotyping:
                 self.progress.update('Analyzing: %s' \
                                     % (utils.pretty_print(self.fasta.pos)))
 
-            sample = self.sample_name_from_defline(self.fasta.id)
+            sample = utils.get_sample_name_from_defline(self.fasta.id, self.sample_name_separator)
             
             if not self.samples_dict.has_key(sample):
                 self.samples_dict[sample] = {}
@@ -1138,7 +1134,7 @@ class Oligotyping:
                     self.final_oligo_unique_distribution_dict[oligo].append(len(fasta.ids))
 
                 for sample_id in fasta.ids:
-                    sample_name = self.sample_name_from_defline(sample_id)
+                    sample_name = utils.get_sample_name_from_defline(sample_id, self.sample_name_separator)
                     if not distribution_among_samples.has_key(sample_name):
                         distribution_among_samples[sample_name] = {}
                     d = distribution_among_samples[sample_name]
