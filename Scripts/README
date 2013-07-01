@@ -50,6 +50,10 @@ description of files in this directory and their purpose:
   taxon and populates the datasets from a FASTA file that was obtained through
   VAMPS.
 
+- subsample_fasta_file.py: subsamples a FASTA file (deflines of which properly
+  formatted for oligotyping) so every sample in this FASTA file has maximum of
+  X number of reads (where X is an integer defined by the command line).
+
 - treat_homopolymer_regions.py: this was a very bad idea, but worked magically
   well (worst ideas are the ones that work despite the fact that they were bad
   ideas from the get go). one should never treat their sequences to ameliorate
