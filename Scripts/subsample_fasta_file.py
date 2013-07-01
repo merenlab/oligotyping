@@ -1,0 +1,71 @@
+import sys
+import random
+
+from Oligotyping.utils.utils import get_sample_name_from_defline
+import Oligotyping.lib.fastalib as u
+
+
+def main(input_fasta, subsample_to, output_fasta):
+    fasta = u.SequenceSource(input_fasta)
+
+    fasta_content = {}
+
+    while fasta.next():
+        if fasta.pos % 1000 == 0:
+            sys.stderr.write('\r[Reading FASTA into memory] reads processed so far: %d' % (fasta.pos))
+            sys.stderr.flush()
+
+        sample_name = get_sample_name_from_defline(fasta.id)
+        
+        if not fasta_content.has_key(sample_name):
+            fasta_content[sample_name] = []
+
+        fasta_content[sample_name].append((fasta.id, fasta.seq),)
+
+    samples = sorted(fasta_content.keys())
+    sys.stderr.write('\n%d samples found in the FASTA file: %s%s\n' % (len(samples),
+                                                                       ', '.join(samples[0:3] if len(samples) > 3 else ', '.join(samples)),
+                                                                       ' (...)' if len(samples) > 3 else '.'))
+
+    sample_counter = 0
+    for sample in samples:
+        sample_counter += 1
+        sys.stderr.write('\r[Shuffling] Sample %d of %d' % (sample_counter, len(samples)))
+        sys.stderr.flush()
+
+        random.shuffle(fasta_content[sample])
+
+
+    output = u.FastaOutput(output_fasta)
+
+    sample_counter = 0
+    for sample in samples:
+        sample_counter += 1
+        sys.stderr.write('\r[Writing Output] Sample %d of %d' % (sample_counter, len(samples)))
+        sys.stderr.flush()
+        
+        for e in fasta_content[sample][0:subsample_to]:
+            output.write_id(e[0])
+            output.write_seq(e[1], split = False)
+
+
+    sys.stderr.write('\n')
+    sys.stderr.flush()
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Subsamples each sample found in FASTA file')
+    parser.add_argument('input_fasta', metavar = 'FILE',
+                        help = 'FASTA file to subsample')
+    parser.add_argument('subsample_to', metavar = 'INTEGER', type = int,
+                        help = 'Number of random reads to keep for each sample in the new FASTA file')
+    parser.add_argument('output_fasta', metavar = 'FILE',
+                        help = 'Output file name')
+
+    args = parser.parse_args()
+
+
+    sys.exit(main(args.input_fasta, args.subsample_to, args.output_fasta))
+
