@@ -31,6 +31,9 @@ from Oligotyping.utils.constants import pretty_names
 
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 
+NUCL_COLORS = {'A': 'red', 'T': 'blue',  'C': 'green', 'G': 'purple', 
+               'N': 'white', '-': '#CACACA', 'K': '#CACACA', 'R': '#CACACA',
+               'Y': '#CACACA', 'W': '#CACACA', 'S': '#CACACA', 'M': '#CACACA'}
 
 class ConfigError(Exception):
     def __init__(self, e = None):

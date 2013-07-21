@@ -18,21 +18,8 @@ from Oligotyping.utils.random_colors import get_list_of_colors
 from Oligotyping.utils.utils import get_unique_sequences_from_FASTA
 from Oligotyping.utils.utils import Progress
 from Oligotyping.utils.utils import Run
+from Oligotyping.utils.utils import NUCL_COLORS
 
-
-COLORS = {'A': 'red',
-          'T': 'blue', 
-          'C': 'green', 
-          'G': 'purple', 
-          'N': 'white', 
-          'K': '#CACACA',
-          'R': '#CACACA',
-          'Y': '#CACACA',
-          'W': '#CACACA',
-          'S': '#CACACA',
-          'M': '#CACACA',
-          '-': '#CACACA'
-        }
 
 run = Run()
 progress = Progress()
@@ -51,8 +38,24 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     if alignment == None:
         quick = True
 
+    colors_dict = {}
     if not quick:
         unique_sequences = get_unique_sequences_from_FASTA(alignment, limit = number_of_uniques_to_show)
+        
+        chars = []
+        for seq in unique_sequences:
+            chars += seq[0]
+        chars = set(chars)
+      
+        colors_dict = NUCL_COLORS
+        
+        missing_chars = [char for char in chars if char not in NUCL_COLORS.keys()]
+            
+        if missing_chars:
+            colors_for_missing_chars = get_list_of_colors(len(missing_chars), colormap="RdYlGn")
+            for i in range(0, len(missing_chars)):
+                char = missing_chars[i]
+                colors_dict[char] = colors_for_missing_chars[i]
     else:
         unique_sequences = None
 
@@ -75,7 +78,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
             frequency = unique_sequences[current][2]
             for i in range(0, len(unique_sequence)):
                 plt.text(i, y / 100.0, unique_sequence[i],\
-                                    fontsize = 5, color = COLORS[unique_sequence[i]])
+                                    fontsize = 5, color = colors_dict[unique_sequence[i]])
 
             percent = int(round(frequency * len(unique_sequence))) or 1
             plt.fill_between(range(0, percent), (y + 1.15) / 100.0, (y - 0.85) / 100.0, color="green", alpha = 0.2)

@@ -71,7 +71,8 @@ if __name__ == '__main__':
                                          output_file = output_text_path,
                                           uniqued = args.uniqued,
                                           weighted = args.weighted,
-                                          qual_stats_dict = qual_stats_dict)
+                                          qual_stats_dict = qual_stats_dict,
+                                          amino_acid_sequences = args.amino_acid_sequences)
     except EntropyError, e:
         print "Something went wrong. Here is what we know:\n\n\t%s\n\n" % e
         sys.exit()

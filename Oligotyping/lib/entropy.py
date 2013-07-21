@@ -32,17 +32,20 @@ class EntropyError(Exception):
         return 'Error: %s' % self.e
 
 
-VALID_CHARS = set(['A', 'T', 'C', 'G', '-'])
+VALID_CHARS = {'nucleotide': set(['A', 'T', 'C', 'G', '-']),
+               'amino_acid': set(['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', '-'])}
 
 run = Run()
 progress = Progress()
 
 
-def entropy(l, l_qual = None, expected_qual_score = 40):
+def entropy(l, l_qual = None, expected_qual_score = 40, amino_acid_sequences = False):
     l = l.upper()
     
+    valid_chars = VALID_CHARS['amino_acid'] if amino_acid_sequences else VALID_CHARS['nucleotide']
+
     E_Cs = []
-    for char in VALID_CHARS:
+    for char in valid_chars:
         P_C = (l.count(char) * 1.0 / len(l)) + 0.0000000000000000001
         E_Cs.append(P_C * log(P_C))
    
@@ -54,7 +57,7 @@ def entropy(l, l_qual = None, expected_qual_score = 40):
         return -(sum(E_Cs))
 
 
-def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None, weighted = False, qual_stats_dict = None):
+def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued = False, freq_from_defline = None, weighted = False, qual_stats_dict = None, amino_acid_sequences = False):
     if freq_from_defline == None:
         freq_from_defline = lambda x: int([t.split(':')[1] for t in x.split('|') if t.startswith('freq')][0])
 
@@ -113,9 +116,9 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
             if weighted:
                 if not qual_stats_dict: 
                     raise EntropyError, "Weighted entropy is selected, but no qual stats are provided"
-                e = entropy(column, l_qual = qual_stats_dict[position])
+                e = entropy(column, l_qual = qual_stats_dict[position], amino_acid_sequences = amino_acid_sequences)
             else:
-                e = entropy(column)
+                e = entropy(column, amino_acid_sequences = amino_acid_sequences)
 
             if e < 0.00001:
                 entropy_tpls.append((position, 0.0),)
@@ -144,7 +147,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     return [x[1] for x in entropy_tpls]
 
 
-def quick_entropy(l):
+def quick_entropy(l, amino_acid_sequences = False):
     if len(set([len(x) for x in l])) != 1:
         raise EntropyError, "Not all vectors have the same length."
     
@@ -155,7 +158,7 @@ def quick_entropy(l):
         else:
             column = "".join([x[position] for x in l])
 
-            e = entropy(column)
+            e = entropy(column, amino_acid_sequences = amino_acid_sequences)
 
             if e < 0.00001:
                 entropy_tpls.append((position, 0.0),)

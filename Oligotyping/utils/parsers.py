@@ -254,6 +254,9 @@ def entropy():
     parser.add_argument('--weighted', action = 'store_true', default = False,
                         help = 'When set, entropy computation per column will use\
                         mean quality score for each column.')
+    parser.add_argument('--amino-acid-sequences', action = 'store_true', default = False,
+                        help = 'If sequences are composed of amino acids, instead of\
+                                nucleotides.')
     parser.add_argument('--quick', action = 'store_true', default = False,
                         help = 'When set, entropy values will be shown as fast as\
                                 possible (some visualization steps will be skipped).')
