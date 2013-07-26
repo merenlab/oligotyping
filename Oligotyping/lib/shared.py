@@ -47,7 +47,8 @@ def generate_default_figures(_object):
                                                       directory = True)
             
         output_prefix = os.path.join(target_dir, output_dir)
-        cmd_line = ('%s "%s" "%s" "%s" "%s" >> "%s" 2>&1' % (os.path.join(scripts_dir_path, script),
+        cmd_line = ('%s "%s" --title "%s" -o "%s" --colors_file "%s" >> "%s" 2>&1' \
+                                          % (os.path.join(scripts_dir_path, script),
                                              _object.environment_file_path,
                                              _object.project,
                                              output_prefix,
