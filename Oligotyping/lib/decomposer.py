@@ -16,6 +16,7 @@ import os
 import sys
 import copy
 import time
+import numpy
 import shutil
 import cPickle
 import logging
@@ -963,9 +964,11 @@ class Decomposer:
                     node.dirty = True
                     shared_dirty_nodes_list.append(node)
                 
-                    self.logger.info('%d outliers removed from node: %s'\
+                    self.logger.info('%d outliers removed from node: %s (max frequency: %d; mean frequency: %.2f)'\
                         % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
-                           node_id))
+                           node_id,
+                           max([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
+                           numpy.mean([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),))
 
             mp = Multiprocessing(worker, self.number_of_threads)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
