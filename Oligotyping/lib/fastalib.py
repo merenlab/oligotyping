@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.130201
+# v.130804
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -247,7 +247,7 @@ class SequenceSource():
             dest = self.fasta_file_path
 
         try:
-            plt.savefig(dest + '.tiff')
+            plt.savefig(dest + '.pdf')
         except:
             plt.savefig(dest + '.png')
     
