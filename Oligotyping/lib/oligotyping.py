@@ -1412,6 +1412,10 @@ class Oligotyping:
         if self.no_figures:
             sys.stdout.write('\n\n\t"--no-figures" parameter is given, skipping HTML output...\n\n')
             return
+        
+        if self.quick:
+            sys.stdout.write('\n\n\t"--quick" parameter is given, skipping HTML output...\n\n')
+            return
 
         from Oligotyping.utils.html.error import HTMLError
         try:
