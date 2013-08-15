@@ -51,9 +51,9 @@ def decomposer():
                                 be a time consuming step.')
     parser.add_argument('-S', '--skip-removing-outliers', action = 'store_true', default = False,
                         help = 'When set, outliers will not be removed from nodes.')
-    parser.add_argument('-G', '--skip-agglomerating-nodes', action = 'store_true', default = False,
-                        help = 'When set, agglomeration of nodes step will be skipped. See documentation for\
-                                details.')
+    parser.add_argument('-G', '--agglomerate-nodes', action = 'store_true', default = False,
+                        help = 'When set, nodes with similar co-occurence patterns and slightly different representative\
+                                sequences are merged. See documentation for details.')
     parser.add_argument('-H', '--merge-homopolymer-splits', action = 'store_true', default = False,
                         help = 'When set, nodes that differ from each other by only one nucleotide that happens\
                                 to be observed as an insertion at the upstream or downstream of a homopolymer\

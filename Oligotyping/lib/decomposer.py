@@ -68,7 +68,7 @@ class Decomposer:
         self.generate_frequency_curves = False
         self.skip_refining_topology = False # FIXME: ADD THIS IN PARSERS!
         self.skip_removing_outliers = False
-        self.skip_agglomerating_nodes = False
+        self.agglomerate_nodes = False
         self.relocate_outliers = False
         self.maximum_variation_allowed = None
         self.store_full_topology = False
@@ -95,7 +95,7 @@ class Decomposer:
             self.sample_name_separator = args.sample_name_separator
             self.generate_frequency_curves = args.generate_frequency_curves
             self.skip_removing_outliers = args.skip_removing_outliers
-            self.skip_agglomerating_nodes = args.skip_agglomerating_nodes
+            self.agglomerate_nodes = args.agglomerate_nodes
             self.relocate_outliers = args.relocate_outliers
             self.store_full_topology = args.store_full_topology
             self.merge_homopolymer_splits = args.merge_homopolymer_splits
@@ -282,7 +282,7 @@ class Decomposer:
         self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
         self.run.info('sample_mapping', self.sample_mapping)
-        self.run.info('skip_agglomerating_nodes', self.skip_agglomerating_nodes)
+        self.run.info('agglomerate_nodes', self.agglomerate_nodes)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
@@ -613,7 +613,7 @@ class Decomposer:
 
                 break
 
-            if not self.skip_agglomerating_nodes:
+            if self.agglomerate_nodes:
                 if it_is_OK_to_pass_this():
                     pass
                 else:
