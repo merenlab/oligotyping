@@ -15,7 +15,9 @@ option_list <- list(
 		make_option(c("--colors_file"),
 				help = "Colors file"),
 		make_option("--title", default="(unknown title)",
-				help="Title for the output figure [default '%default']")
+				help="Title for the output figure [default '%default']"),
+		make_option("--legend_pos", default="none",
+				help="Legend pos [default '%default']")
 
 )
 
@@ -66,7 +68,7 @@ P <- function(df){
     p <- p + geom_bar(position="fill", stat = "identity", width=0.90, colour = 'black')
     p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10))
     p <- p + theme(axis.ticks.y = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-    p <- p + theme(legend.text = element_text(size = 8, family='mono'), legend.position = 'none')
+    p <- p + theme(legend.text = element_text(size = 8, family='mono'), legend.position = options$legend_pos)
     p <- p + labs(x='', y='Oligotypes', title=paste('Distribution of Oligotypes Among Samples for', options$title, sep=' '))
     p <- p + scale_y_continuous(breaks = NULL)
     p <- p + guides(fill = guide_legend(nrow = 25))
