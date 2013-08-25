@@ -577,7 +577,10 @@ def get_samples_dict_from_environment_file(environment_file_path):
     samples_dict = {}
     for oligo, sample, count in [l.strip().split('\t') for l in open(environment_file_path).readlines()]:
         if samples_dict.has_key(sample):
-            samples_dict[sample][oligo] = int(count)
+            if samples_dict[sample].has_key(oligo):
+                samples_dict[sample][oligo] += int(count)
+            else:
+                samples_dict[sample][oligo] = int(count)
         else:
             samples_dict[sample] = {oligo: int(count)}
     return samples_dict
