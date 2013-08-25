@@ -1,7 +1,7 @@
 import sys
 
 
-def main(matrix_file, cols_to_remove = None, rows_to_remove = None, output_file = None):
+def remove(matrix_file, cols_to_remove = None, rows_to_remove = None, output_file = None):
     if cols_to_remove == None and rows_to_remove == None:
         print 'Error: both cols and rows to remove are empty. Exiting.'
         sys.exit()
@@ -35,6 +35,41 @@ def main(matrix_file, cols_to_remove = None, rows_to_remove = None, output_file 
     output.close()
 
 
+def keep(matrix_file, cols_to_keep = None, rows_to_keep = None, output_file = None):
+    if cols_to_keep == None and rows_to_keep == None:
+        print 'Error: both cols and rows to keep are empty. Exiting.'
+        sys.exit()
+    
+    matrix = open(matrix_file)
+    header = matrix.readline().strip().split('\t')
+    rows = []
+
+    for line in matrix.readlines():
+        rows.append(line.strip().split('\t'))
+   
+    col_ids_to_keep = range(0, len(header))
+    row_ids_to_keep = range(0, len(rows))
+    
+    if cols_to_keep:
+        for i in range(0, len(header)):
+            if header[i] not in cols_to_keep:
+                col_ids_to_keep.remove(i)
+
+    if rows_to_keep:
+        for i in range(0, len(rows)):
+            if rows[i][0] not in rows_to_keep:
+                row_ids_to_keep.remove(i)
+
+    output = open(output_file, 'w')
+    
+    output.write('%s\n' % '\t'.join([header[0]] + [header[i] for i in col_ids_to_keep]))
+    for i in range(0, len(row_ids_to_keep)):
+        output.write('%s\n' % '\t'.join([rows[row_ids_to_keep[i]][0]] + [rows[row_ids_to_keep[i]][c] for c in col_ids_to_keep]))
+    
+    output.close()
+
+
+
 if __name__ == '__main__':
     import argparse
 
@@ -45,6 +80,10 @@ if __name__ == '__main__':
                         help = 'Columns to be removed from the matrix (one column id in each line)')
     parser.add_argument('-r', '--rows-to-remove', metavar = 'FILE', default = None,
                         help = 'Rows to be removed from the matrix (one row id in each line)')
+    parser.add_argument('-C', '--cols-to-keep', metavar = 'FILE', default = None,
+                        help = 'Columns to be kept in the subsampled matrix (one column id in each line)')
+    parser.add_argument('-R', '--rows-to-keep', metavar = 'FILE', default = None,
+                        help = 'Rows to be kept in the subsampled matrix (one row id in each line)')
     parser.add_argument('-o', '--output-file', default = None,
                         help = 'Output file name')
 
@@ -63,8 +102,21 @@ if __name__ == '__main__':
     else:
         output_file = args.output_file
 
-    cols_to_remove = get_content(args.cols_to_remove)
-    rows_to_remove = get_content(args.rows_to_remove)
-  
-    sys.exit(main(args.matrix_file, cols_to_remove, rows_to_remove, output_file))
+    mode = ''
+    if args.cols_to_remove or args.rows_to_remove:
+        mode = 'remove'
+    if args.cols_to_keep or args.rows_to_keep:
+        mode = 'keep'
+    if (args.cols_to_keep or args.rows_to_keep) and (args.cols_to_remove or args.rows_to_remove):
+        print "Sorry, you can't mix -c and -r with -C and -R parameters..."
+        sys.exit()
+        
+    if mode == 'remove':
+        cols_to_remove = get_content(args.cols_to_remove)
+        rows_to_remove = get_content(args.rows_to_remove)
+        sys.exit(remove(args.matrix_file, cols_to_remove, rows_to_remove, output_file))
+    if mode == 'keep':
+        cols_to_keep = get_content(args.cols_to_keep)
+        rows_to_keep = get_content(args.rows_to_keep)
+        sys.exit(keep(args.matrix_file, cols_to_keep, rows_to_keep, output_file))
 
