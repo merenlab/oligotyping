@@ -29,6 +29,8 @@ option_list <- list(
 				help = "Dendrogram size for rows (0 would make it disappear) [default \"%default\"]"),
 		make_option(c("--show_rownames"), default=F,
 				help = "Show row names [default \"%default\"]"),
+		make_option(c("-s", "--scale_the_other_way"), default=F,
+				help = "Scale based on columns [default \"%default\"]"),
 		make_option("--title", default="(unknown title)",
 				help="Title for the output figure [default '%default']")
 )
@@ -68,7 +70,12 @@ if(is.na(options$metadata)){
 }
 
 raw_data <- t(data.matrix(read.table(input_file, header = TRUE, row.names = 1,sep="\t")))
-scaled_data <- t(as.matrix(scale(t(raw_data), scale = T, center=F)))
+
+if(options$scale_the_other_way){
+    scaled_data <- as.matrix(scale(raw_data), scale = T, center=F)
+} else {
+    scaled_data <- t(as.matrix(scale(t(raw_data), scale = T, center=F)))
+}
 
 drows<-vegdist(raw_data, method=options$distance_row)
 dcols<-vegdist(t(raw_data), method=options$distance_col, na.rm=TRUE)
