@@ -7,9 +7,11 @@ import Oligotyping.lib.fastalib as u
 # eh..
 fasta = u.SequenceSource(sys.argv[1], lazy_init = False)
 fasta.next()
-invalid_columns = range(0, len(fasta.seq))
 
+len_fasta_entry = len(fasta.seq)
 fasta.reset()
+
+invalid_columns = range(0, len_fasta_entry)
 
 while fasta.next():
     if fasta.pos % 100 == 0:
@@ -20,10 +22,10 @@ while fasta.next():
         if fasta.seq[i] != '-':
             invalid_columns.remove(i)
 
-columns_to_keep = [x for x in range(0, invalid_columns[-1]) if x not in invalid_columns]
-
 print
 fasta.reset()
+
+columns_to_keep = [x for x in range(0, len_fasta_entry) if x not in invalid_columns] 
 
 f = open(sys.argv[1] + '-TRIMMED', 'w')
 
