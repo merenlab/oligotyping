@@ -25,7 +25,7 @@ decomposer.matrix_percent_file_path = runinfo['matrix_percent_file_path']
 decomposer.matrix_count_file_path = runinfo['matrix_count_file_path']
 decomposer.tmp_directory = runinfo['tmp_directory']
 decomposer.output_directory = runinfo['output_directory']
-decomposer.figures_directory = os.path.join(os.path.dirname(runinfo['figures_directory']), 'FIGURES')
+decomposer.figures_directory = os.path.join(os.path.dirname(runinfo['output_directory']), 'FIGURES')
 
 if not os.path.exists(decomposer.tmp_directory):
     os.makedirs(decomposer.tmp_directory)
