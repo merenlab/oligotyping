@@ -83,14 +83,14 @@ for(g in levels(NMDS$group)){
 
 P <- function(){
     if (length(only_two_groups) > 0)
-        ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group) + geom_line(data = NMDS[NMDS$group %in% only_two_groups,], aes(color = group)) + ggtitle(title_text)
+        ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group) + geom_line(data = NMDS[NMDS$group %in% only_two_groups,], aes(color = group)) + ggtitle(title_text) + theme_bw()
     else
-        ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group) + ggtitle(title_text)
+        ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group)) + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1) + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group) + ggtitle(title_text) + theme_bw()
 }
 
 # PDF
 pdf_output <- paste(output_file_prefix,".pdf",sep="")
-pdf(pdf_output, width = 8, height = 8, pointsize = 8, family='Helvetica')
+pdf(pdf_output, width = 16, height = 10, family='Helvetica')
 P()
 sprintf("Clustering result PDF: '%s'", pdf_output)
 dev.off()
