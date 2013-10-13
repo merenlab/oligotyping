@@ -78,11 +78,11 @@ class Decomposer:
         self.log_file_path = None
         self.keep_tmp = False
         self.gen_html = True
-        self.gen_figures = False
+        self.skip_gen_figures = False
         self.skip_check_input_file = False
         self.sample_mapping = None
-        self.skip_basic_analyses = False
         self.skip_gexf_network_file = False
+        self.skip_basic_analyses = False
          
         if args:
             self.alignment = args.alignment
@@ -103,11 +103,11 @@ class Decomposer:
             self.no_threading = args.no_threading
             self.number_of_threads = args.number_of_threads
             self.keep_tmp = args.keep_tmp
-            self.gen_figures = args.gen_figures
+            self.skip_gen_figures = args.skip_gen_figures
+            self.skip_basic_analyses = args.skip_gen_figures
             self.skip_check_input_file = args.skip_check_input_file
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
-            self.skip_basic_analyses = args.skip_basic_analyses
             self.skip_gexf_network_file = args.skip_gexf_network_file
 
         self.decomposition_depth = -1
@@ -287,7 +287,7 @@ class Decomposer:
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
         self.run.info('store_full_topology', self.store_full_topology)
-        self.run.info('gen_figures', self.gen_figures)
+        self.run.info('skip_gen_figures', self.skip_gen_figures)
         self.run.info('m', self.min_entropy)
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
@@ -312,8 +312,7 @@ class Decomposer:
         self.run.info('output_directory', self.output_directory)
         self.run.info('nodes_directory', self.nodes_directory)
         self.run.info('tmp_directory', self.tmp_directory)
-        if self.gen_figures:
-            self.run.info('figures_directory', self.figures_directory)
+        self.run.info('figures_directory', self.figures_directory)
 
         # business time.
         self._generate_raw_topology()
@@ -355,10 +354,10 @@ class Decomposer:
         if not self.skip_gexf_network_file:
             self._generate_gexf_network_file()
 
-        if self.gen_figures:
+        if not self.skip_gen_figures:
             self._generate_default_figures()
         
-        if self.gen_figures and self.sample_mapping:
+        if (not self.skip_gen_figures) and self.sample_mapping:
             self._generate_exclusive_figures()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")

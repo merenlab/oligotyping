@@ -82,13 +82,10 @@ def decomposer():
                                 visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--gen-html', action = 'store_true', default = False,
                         help = 'When set, decomposer will generate a static HTML output to browse analysis results')
-    parser.add_argument('--gen-figures', action = 'store_true', default = False,
-                        help = 'When set, decomposer will attempt to generate figures post analysis')
+    parser.add_argument('--skip-gen-figures', action = 'store_true', default = False,
+                        help = 'When set, decomposer will not attempt to generate figures post analysis')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
                         help = 'When set, input FASTA will not be checked for potential errors')
-    parser.add_argument('--skip-basic-analyses', action = 'store_true', default = False,
-                        help = 'When set, basic analyses, such as basic NMDS plots and clustering, will be\
-                                skipped')
     parser.add_argument('--skip-gexf-network-file', action = 'store_true', default = False,
                         help = 'When set, GEXF network file will not be generated')
 
