@@ -63,12 +63,13 @@ if __name__ == '__main__':
     # process qual scores if provided
     qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')       
 
-    output_text_path = args.alignment + '%s-ENTROPY' % ('-WEIGHTED' if args.weighted else '')
-    output_img_path = args.alignment + '%s-ENTROPY.png' % ('-WEIGHTED' if args.weighted else '')
+    # the same file path is also used for the figure (e.g. output_file_path + '.png' or
+    # output_file_path + '.pdf')
+    output_file_path = args.alignment + '%s-ENTROPY' % ('-WEIGHTED' if args.weighted else '')
 
     try:
         entropy_values = entropy_analysis(args.alignment,
-                                         output_file = output_text_path,
+                                         output_file = output_file_path,
                                           uniqued = args.uniqued,
                                           weighted = args.weighted,
                                           qual_stats_dict = qual_stats_dict,
@@ -79,7 +80,7 @@ if __name__ == '__main__':
 
     entropy_distribution_bar(args.alignment,
                              entropy_values,
-                             output_file = output_img_path,
+                             output_file = output_file_path,
                              quick = args.quick,
                              no_display = args.no_display,
                              qual_stats_dict = qual_stats_dict,

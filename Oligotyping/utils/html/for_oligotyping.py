@@ -11,6 +11,7 @@
 # Please read the COPYING file.
 
 import os
+import sys
 import copy
 import shutil
 import cPickle
@@ -176,20 +177,38 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     shutil.copy2(os.path.join(absolute, 'scripts/raphael.js'), os.path.join(html_output_directory, 'raphael.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/morris.js'), os.path.join(html_output_directory, 'morris.js'))
 
-    def copy_as(source, dest_name):
+    def copy_as(source, dest_name, essential = True):
         dest = os.path.join(html_output_directory, dest_name)
-        shutil.copy2(source, dest)
+
+        if essential:
+            shutil.copy2(source, dest)
+        else:
+            # it is ok if you fail to copy files that are not
+            # essential.. 
+            try:
+                shutil.copy2(source, dest)
+            except:
+                sys.stderr.write('\n\n[HTML] Warning: Source file not found\n\tSource: "%s"\n\tDest: "%s\n\n"' % (source, dest))
+
         return os.path.basename(dest)
 
     # embarrassingly ad-hoc:
     if entropy_figure:
-        html_dict['entropy_figure'] = copy_as(os.path.join(entropy_figure), 'entropy.png')
-    else:
-        try:
-            html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'][:-3] + 'png'), 'entropy.png')
-        except:
-            html_dict['entropy_figure'] = copy_as(os.path.join(run_info_dict['entropy'] + '.png'), 'entropy.png')
-    
+        if entropy_figure.endswith('.pdf') or entropy_figure.endswith('.png'):
+            entropy_figure = entropy_figure[:-4]
+            
+    CP = lambda e, o:  copy_as(os.path.join(e + ('.%s' % ext)), o, essential = True if ext == 'png' else False)
+    for ext in ['png', 'pdf']:
+        output_file = 'entropy.%s' % ext
+        if entropy_figure:
+            html_dict['entropy_figure_%s' % ext] = CP(entropy_figure, output_file)
+        else:
+            try:
+                html_dict['entropy_figure_%s' % ext] = CP(run_info_dict['entropy'], output_file)
+            except:
+                html_dict['entropy_figure_%s' % ext] = CP(run_info_dict['entropy'][:-4], output_file)
+
+ 
     if run_info_dict['gexf_network_file_path']:
         html_dict['gexf_network_file_path'] = copy_as(run_info_dict['gexf_network_file_path'], 'network.gexf')
 
@@ -414,7 +433,8 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output-directory', default = None, metavar = 'OUTPUT_DIR',\
                         help = 'Output directory for HTML output to be stored')
     parser.add_argument('--entropy-figure', default = None, metavar = 'ENTROPY_FIGURE',\
-                        help = 'Path for entropy figure')
+                        help = 'Path for entropy figure *without* the file extension (e.g. only "/path/to/entropy" \
+                               for "/path/to/entropy.png")')
 
     args = parser.parse_args()
    

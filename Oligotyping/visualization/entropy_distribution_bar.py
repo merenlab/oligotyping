@@ -114,11 +114,12 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
         plt.ylabel('Shannon Entropy')
 
     progress.update('Saving into "%s"' % output_file)
-    plt.savefig(output_file)
+    plt.savefig(output_file + '.png')
+    plt.savefig(output_file + '.pdf')
 
     if verbose:
         progress.reset()
-        run.info('Entropy figure output path', output_file)
+        run.info('Entropy figure output path', output_file + '.{png, pdf}')
 
     if not no_display:
         try:
