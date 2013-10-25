@@ -15,6 +15,7 @@ __version__ = '0.2' # Nov 08, 2012
 import numpy
 import operator
 from scipy import log2 as log
+from numpy import sqrt
 
 import Oligotyping.lib.fastalib as u
 from Oligotyping.utils.utils import pretty_print
@@ -39,10 +40,17 @@ run = Run()
 progress = Progress()
 
 
-def entropy(l, l_qual = None, expected_qual_score = 40, amino_acid_sequences = False):
-    l = l.upper()
+def entropy(l, l_qual = None, expected_qual_score = 40, amino_acid_sequences = False, sqrt_norm = False):
+    l = l.upper() 
     
     valid_chars = VALID_CHARS['amino_acid'] if amino_acid_sequences else VALID_CHARS['nucleotide']
+
+    if sqrt_norm:
+        l_normalized = ''
+        for char in valid_chars:
+            l_normalized += char * int(round(sqrt(l.count(char))))
+        l = l_normalized
+
 
     E_Cs = []
     for char in valid_chars:
