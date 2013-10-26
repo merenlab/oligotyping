@@ -58,6 +58,7 @@ class Decomposer:
         self.analysis = 'decomposition'
         self.alignment = None
         self.min_entropy = 0.3
+        self.normalize_m = True
         self.number_of_discriminants = 4
         self.min_actual_abundance = 0
         self.min_substantive_abundance = 4
@@ -86,7 +87,8 @@ class Decomposer:
          
         if args:
             self.alignment = args.alignment
-            self.min_entropy = args.min_entropy or 0.2
+            self.min_entropy = args.min_entropy or 0.3
+            self.normalize_m = not args.skip_m_normalization
             self.number_of_discriminants = args.number_of_discriminants or 3
             self.min_actual_abundance = args.min_actual_abundance
             self.min_substantive_abundance = args.min_substantive_abundance
@@ -289,6 +291,7 @@ class Decomposer:
         self.run.info('store_full_topology', self.store_full_topology)
         self.run.info('skip_gen_figures', self.skip_gen_figures)
         self.run.info('m', self.min_entropy)
+        self.run.info('normalize_m', self.normalize_m)
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
         self.run.info('M', self.min_substantive_abundance)
@@ -394,7 +397,6 @@ class Decomposer:
   
                 node = self.topology.nodes[node_id]
                 
-                
                 p = '[LVL %d] Analyzing %d of %d / ID: %s / SIZE: %d'\
                                                          % (self.decomposition_depth,
                                                             self.node_ids_to_analyze.index(node_id) + 1,
@@ -440,15 +442,22 @@ class Decomposer:
                 p += ' / CUSR: %.2f / D: %.2f' % (node.competing_unique_sequences_ratio, node.density)
                 self.progress.update(p)
 
-                if node.competing_unique_sequences_ratio < 0.025 or node.density > 0.85:
+                if node.competing_unique_sequences_ratio < 0.0005 or node.density > 0.85:
                     # Finalize this node.
                     self.logger.info('finalize node (CUSR/ND): %s' % node_id)
                     continue
 
                 # find out about the entropy distribution in the given node:
                 node.do_entropy()
+                
+                # normalize m if the user hasn't opted out.
+                if self.normalize_m:
+                    node.set_normalized_m(self.min_entropy, self.topology.frequency_of_the_most_abundant_read)
+                    self.logger.info('normalized m (NM) for %s: %.3f ' % (node_id, node.normalized_m))
 
-                p += ' / ME: %.2f / AE: %.2f' % (max(node.entropy), node.average_entropy)
+                p += ' / ME: %.2f / AE: %.2f / NM: %s' % (max(node.entropy),
+                                                          node.average_entropy,
+                                                          ('%.3f' % node.normalized_m) if self.normalize_m else None)
                 self.progress.update(p)
                 
                 # IF the abundance of the second most abundant unique read in the node is smaller than 
@@ -471,8 +480,11 @@ class Decomposer:
                 # locations driven by homopolymer region associated indels, or dynamicaly set the number of 
                 # discriminants for a given node. for instance, if there is one base left in a node that is
                 # to define two different organisms, this process should be able to *overwrite* the parameter
-                # self.number_of_discriminants.                    
-                node.discriminants = [d[0] for d in node.entropy_tpls[0:self.number_of_discriminants] if d[1] > self.min_entropy]
+                # self.number_of_discriminants.
+                if self.normalize_m:
+                    node.discriminants = [d[0] for d in node.entropy_tpls[0:self.number_of_discriminants] if d[1] > node.normalized_m]
+                else:
+                    node.discriminants = [d[0] for d in node.entropy_tpls[0:self.number_of_discriminants] if d[1] > self.min_entropy]
 
                 if not len(node.discriminants):
                     # FIXME: Finalize this node.

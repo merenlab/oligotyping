@@ -34,6 +34,7 @@ class Topology:
         self.outlier_reasons = []
         self.next_available_node_id = None
         
+        self.frequency_of_the_most_abundant_read = None
         self.average_read_length = None
         self.alignment_length    = None
 
@@ -71,15 +72,13 @@ class Topology:
             # things to initialize if this is the root node
             node.level = 0
 
+            self.frequency_of_the_most_abundant_read = max([read.frequency for read in node.reads])
             self.alignment_length = len(node.reads[0].seq)
             
-            # compute and store the average read length
-            # FIXME: this is taking forever for large samples. there must be a smarter way
-            # to do this.
-            read_lengths = []
-            for read in node.reads:
-                read_lengths.append(len(read.seq.replace('-', '')))
-            self.average_read_length = int(round(numpy.mean(read_lengths)))
+            # store the average read length. this is a terrible approximation,
+            # but it is way better to go through all reads which are most probably
+            # have the same length anyway (or minus/plus 2-3 nt at worst).
+            self.average_read_length = len(node.reads[0].seq.replace('-', ''))
 
         self.nodes[node_id] = node
 
@@ -293,6 +292,11 @@ class Node:
         self.dirty              = False
         self.entropy            = None
         self.entropy_tpls       = None
+        # normalized_m is a heuristic to get away from the problem of
+        # having very low abundance nodes to be stuck in nodes of
+        # extreme abundance. normalization will take the most abundant
+        # unique sequence in the dataset for normalization. 
+        self.normalized_m       = None
         self.parent             = None
         self.children           = []
         self.discriminants      = None
@@ -336,6 +340,17 @@ class Node:
         self.entropy_tpls = sorted(self.entropy_tpls, key=operator.itemgetter(1), reverse=True)
         self.max_entropy = max(self.entropy)
         self.average_entropy = numpy.mean([e for e in self.entropy if e > 0.05] or [0])
+
+
+    def set_normalized_m(self, default_min_entropy, most_abundant_unique_sequence_in_the_dataset):
+        """When called, this function sets the normalized_m value for the node.
+           Normalized m heuristic can be used for decomposition of a given node
+           instead of the static m that is provided by the user"""
+
+        y = numpy.sqrt(self.size) * 1.0 / numpy.sqrt(most_abundant_unique_sequence_in_the_dataset * 2)
+        self.normalized_m = default_min_entropy - (default_min_entropy * y)
+        if self.normalized_m < 0.05:
+            self.normalized_m = 0.05
 
 
     def do_competing_unique_sequences_ratio_and_density(self):

@@ -19,6 +19,11 @@ def decomposer():
     parser.add_argument('-m', '--min-entropy', type=float, default=0.3, metavar="FLOAT",
                         help = 'Minimum entropy for a component to have in order to be picked as a\
                                 discriminant. Defeault: %(default)f')
+    parser.add_argument('-X', '--skip-m-normalization', action = 'store_true', default = False,
+                        help = 'Skip the m normalization heuristics. Normalization heuristics normalize --min-entropy\
+                                parameter per node before decomposition depending on the node size, and the most\
+                                abundant sequence in the dataset. Please see the documentation for more\
+                                comprehensive description and best practices. Default: %(default)s')
     parser.add_argument('-d', '--number-of-discriminants', type=int, default=4, metavar="INTEGER",
                         help = 'Number of discriminant locations to be used for entropy decomposition\
                                 discriminant. Defeault: %(default)d')
