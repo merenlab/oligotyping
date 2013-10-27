@@ -1,6 +1,8 @@
 # removes samples from FASTA file:
 #
-# ./me FASTA_FILE sample_1,sample_2,[...],sample_N
+# ./me SAMPLES_LIST FASTA_FILE
+#
+# SAMPLES_LIST file contains one sample name each line
 #
 
 import sys
@@ -8,21 +10,51 @@ import sys
 import Oligotyping.lib.fastalib as u
 from Oligotyping.utils.utils import pretty_print as pp
 
-fasta = u.SequenceSource(sys.argv[1])
-output = u.FastaOutput(sys.argv[1] + '-SAMPLES-REMOVED.fa')
-samples_to_be_removed = [s.strip() for s in sys.argv[2].split(',')]
+def main(fasta_file_path, samples_file_path, retain_samples = False, output_file_path = None):
 
-while fasta.next():
-    if fasta.pos % 1000 == 0:
-        sys.stderr.write('\rreads processed so far: %s' % (pp(fasta.pos)))
-        sys.stderr.flush()
-    sample_name = '_'.join(fasta.id.split('_')[:-1])
+    if not output_file_path:
+        output_file_path = "%s-%s" % (fasta_file_path, 'SAMPLES-RETAINED' if retain_samples else 'SAMPLES-REMOVED')
 
-    if sample_name in samples_to_be_removed:
-        continue
+    samples_list = [s.strip() for s in open(samples_file_path).readlines()]
+    fasta = u.SequenceSource(fasta_file_path)
+    output = u.FastaOutput(output_file_path)
+    
+    while fasta.next():
+        if fasta.pos % 1000 == 0:
+            sys.stderr.write('\rreads processed so far: %s' % (pp(fasta.pos)))
+            sys.stderr.flush()
+        sample_name = '_'.join(fasta.id.split('_')[:-1])
+    
+        if retain_samples and sample_name in samples_list:
+            output.store(fasta, split=False)
+        elif (not retain_samples) and sample_name not in samples_list:
+            output.store(fasta, split=False)
+    
+    
+    sys.stderr.write('\rNew FASTA file .............: %s\n' % output_file_path)
+    fasta.close()
+    output.close()
 
-    output.store(fasta, split=False)
 
-sys.stderr.write('\rNew FASTA file .............: %s\n' % (sys.argv[1] + '-SAMPLES-REMOVED.fa'))
-fasta.close()
-output.close()
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Remove or retain samples from a given FASTA file')
+    parser.add_argument('samples', metavar = 'SAMPLES_FILE_PATH',
+                        help = 'File that contains a sample name for each line')
+    parser.add_argument('fasta', metavar = 'FASTA_FILE_PATH',
+                        help = 'FASTA file to remove or retain samples from')
+    parser.add_argument('--retain', action = 'store_true', default = False,
+                        help = 'If declared, resulting FASTA file would contain samples that "match"\
+                                sample names listed in the "samples" file. The default behavior\
+                                is the vice versa.')
+    parser.add_argument('-o', '--output', metavar = 'FILE_FILE_PATH', default = None,
+                        help = 'Output file name.')
+
+
+    args = parser.parse_args()
+
+    sys.exit(main(args.fasta,
+                  args.samples,
+                  args.retain,
+                  args.output))
