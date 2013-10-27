@@ -40,10 +40,10 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Remove or retain samples from a given FASTA file')
-    parser.add_argument('samples', metavar = 'SAMPLES_FILE_PATH',
-                        help = 'File that contains a sample name for each line')
     parser.add_argument('fasta', metavar = 'FASTA_FILE_PATH',
                         help = 'FASTA file to remove or retain samples from')
+    parser.add_argument('samples', metavar = 'SAMPLES_FILE_PATH',
+                        help = 'File that contains a sample name for each line')
     parser.add_argument('--retain', action = 'store_true', default = False,
                         help = 'If declared, resulting FASTA file would contain samples that "match"\
                                 sample names listed in the "samples" file. The default behavior\
