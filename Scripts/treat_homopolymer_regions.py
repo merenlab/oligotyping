@@ -9,8 +9,9 @@
 #
 # Please read the COPYING file.
 
-import sys
 import os
+import sys
+
 
 def evaluate_indel(query, target, index, shift = 0):
     # HP stands for Homo-polymer in this context..

@@ -14,6 +14,7 @@ import argparse
 
 import Oligotyping.lib.fastalib as u
 
+
 def gen_tmpl(taxon, otu_id_to_greengenes, greengenes_alignment, output_file_path = None):
     ids = []
     

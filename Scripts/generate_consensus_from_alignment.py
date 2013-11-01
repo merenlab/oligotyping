@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2010 - 2011, A. Murat Eren
+# Copyright (C) 2013, A. Murat Eren
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free

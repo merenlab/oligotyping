@@ -17,6 +17,7 @@ import cPickle
 from Oligotyping.lib.decomposer import Decomposer
 from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 
+
 runinfo = cPickle.load(open(sys.argv[1]))
 sample_mapping = sys.argv[2]
 

@@ -19,6 +19,7 @@ import matplotlib.gridspec as gridspec
 import Oligotyping.lib.fastalib as u
 from Oligotyping.utils.utils import pretty_print
 
+
 def length_distribution(fasta, output = None, title = None):
     fasta = u.SequenceSource(fasta)
 
