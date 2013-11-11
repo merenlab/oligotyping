@@ -18,6 +18,7 @@ import copy
 import shutil
 import cPickle
 import logging
+import itertools
 
 from Oligotyping.utils import utils
 from Oligotyping.utils import blast
@@ -225,8 +226,14 @@ class Oligotyping:
             if min(self.selected_components) < 0:
                 raise utils.ConfigError, "Selected components can't be smaller than 0"
 
-            if len(self.selected_components) != len(set(self.selected_components)):
-                raise utils.ConfigError, "You declared the same component more than once."
+            components_declared_more_than_once = [c[0] for c in itertools.groupby(sorted(self.selected_components))\
+                                                                        if len(list(c[1])) > 1]
+            N = len(components_declared_more_than_once)
+            if N:
+                raise utils.ConfigError, "You declared %s component%s (%s) more than once."\
+                                             % ('a' if N == 1 else '%s' % str(N), 
+                                                's' if N > 1 else '',
+                                                ', '.join([str(c) for c in components_declared_more_than_once]))
 
         if self.min_base_quality:
             try:
