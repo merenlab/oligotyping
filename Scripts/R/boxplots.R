@@ -11,6 +11,8 @@ option_list <- list(
 				help = "Mapping variable to use from the sample mapping file. If none specified, the first column is used."),
 		make_option(c("--output_directory"), default=".",
 				help = "Output directory to store images [default \"%default\"]"),
+		make_option(c("--remove_outliers"), default=F,
+				help = "Remove upper outliers for better scaling [default \"%default\"]"),
 		make_option(c("--pdf_height"), default=9,
 				help = "PDF output height [default \"%default\"]"))
 
@@ -96,6 +98,13 @@ for (i in 1:length(nodes[ord])){
 	#Êget the subset of data with the mapping and node of interest i = 1
 	d <- data.frame(data[[node]], metadata[[mapping_variable]])
 	names(d) <- c(node, mapping_variable)
+	
+	if(options$remove_outliers == T){
+		upper_whisker = boxplot.stats(d[[node]])$stats[c(1, 5)][2] * 2
+		outlier_limit = mean(d[d[[node]] > outlier_limit, ][[node]])
+		d <- d[d[[node]] < outlier_limit, ]
+		mapping <- d[[mapping_variable]]
+	}
 	
 	k <- kruskal.test(d[[node]], g = mapping)
 	kruskal_p <- k$p.value
