@@ -15,26 +15,51 @@ import sys
 import Oligotyping.lib.fastalib as u
 
 
-fasta = u.SequenceSource(sys.argv[1])
-output = u.FastaOutput(sys.argv[1] + '-PADDED-WITH-GAPS')
+def main(input_fasta_path, output_fasta_path=None, reverse=False):
+    if not output_fasta_path:
+        output_fasta_path = input_fasta_path + '-PADDED-WITH-GAPS'
 
-longest_read = 0
-while fasta.next():
-    if len(fasta.seq) > longest_read:
-        longest_read = len(fasta.seq)
+    fasta = u.SequenceSource(input_fasta_path)
+    output = u.FastaOutput(output_fasta_path)
 
-fasta.reset()
-
-while fasta.next():
-    if fasta.pos % 10000 == 0:
-        sys.stdout.write('\rreads processed so far: %d' % (fasta.pos))
-        sys.stdout.flush()
-
-    gaps = longest_read - len(fasta.seq)
+    longest_read = 0
+    while fasta.next():
+        if len(fasta.seq) > longest_read:
+            longest_read = len(fasta.seq)
     
-    output.write_id(fasta.id)
-    output.write_seq(fasta.seq + '-' * gaps, split = False)
+    fasta.reset()
+    
+    while fasta.next():
+        if fasta.pos % 10000 == 0:
+            sys.stderr.write('\rreads processed so far: %d' % (fasta.pos))
+            sys.stderr.flush()
+    
+        gaps = longest_read - len(fasta.seq)
+        
+        output.write_id(fasta.id)
+        if reverse:
+            output.write_seq('-' * gaps + fasta.seq, split = False)
+        else:
+            output.write_seq(fasta.seq + '-' * gaps, split = False)
+    
+    
+    fasta.close()
+    sys.stderr.write('\n')
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Pad sequences with gaps to eliminate length variation')
+    parser.add_argument('fasta', metavar = 'FASTA_FILE_PATH',
+                        help = 'FASTA file that contains reads to be padded')
+    parser.add_argument('--reverse', action = 'store_true', default = False,
+                        help = 'Pad the beginning of reads, instead of the end (default: %(default)s)')
+    parser.add_argument('-o', '--output', metavar = 'FILE_FILE_PATH', default = None,
+                        help = 'Path for output.')
 
 
-fasta.close()
-print
+    args = parser.parse_args()
+
+    sys.exit(main(args.fasta,
+                  args.output,
+                  args.reverse))
