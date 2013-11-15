@@ -90,7 +90,6 @@ get_first_two_factors_and_effect_size <- function(d, mapping_variable, node){
 
 mapping <- with(metadata, get(mapping_variable))
 mapping <- factor(mapping, levels=levels(mapping))
-levels(mapping)
 
 for (i in 1:length(nodes[ord])){
 	node <- nodes[ord][i]
@@ -98,12 +97,17 @@ for (i in 1:length(nodes[ord])){
 	#Êget the subset of data with the mapping and node of interest i = 1
 	d <- data.frame(data[[node]], metadata[[mapping_variable]])
 	names(d) <- c(node, mapping_variable)
+	mapping <- d[[mapping_variable]]
+	mapping <- factor(mapping, levels=levels(mapping))
 	
 	if(options$remove_outliers == T){
-		upper_whisker = boxplot.stats(d[[node]])$stats[c(1, 5)][2] * 2
-		outlier_limit = mean(d[d[[node]] > outlier_limit, ][[node]])
-		d <- d[d[[node]] < outlier_limit, ]
-		mapping <- d[[mapping_variable]]
+		upper_whisker <- boxplot.stats(d[[node]])$stats[c(1, 5)][2] * 2
+		outlier_limit <- mean(d[d[[node]] > upper_whisker, ][[node]])
+		if(!is.nan(outlier_limit)){
+			d <- d[d[[node]] < outlier_limit, ]
+			mapping <- d[[mapping_variable]]
+			mapping <- factor(mapping, levels=levels(mapping))
+		}
 	}
 	
 	k <- kruskal.test(d[[node]], g = mapping)
