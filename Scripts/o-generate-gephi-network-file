@@ -14,7 +14,8 @@ import sys
 import Oligotyping.utils.utils as utils
 
 
-def main(environment_file, sample_mapping_file = None, unit_mapping_file = None, min_abundance = 0, min_sum_normalized_percent = 1):
+def main(environment_file, sample_mapping_file = None, unit_mapping_file = None, min_abundance = 0, min_sum_normalized_percent = 1,
+         sample_size = 8, unit_size = 2):
     samples_dict = utils.get_samples_dict_from_environment_file(environment_file)
     oligos = utils.get_oligos_sorted_by_abundance(samples_dict, min_abundance = min_abundance)
     unit_counts, unit_percents = utils.get_unit_counts_and_percents(oligos, samples_dict)
@@ -31,7 +32,9 @@ def main(environment_file, sample_mapping_file = None, unit_mapping_file = None,
                                      unit_percents, 
                                      output_file, 
                                      sample_mapping_dict = sample_mapping if sample_mapping_file else None,
-                                     unit_mapping_dict = unit_mapping if unit_mapping_file else None)
+                                     unit_mapping_dict = unit_mapping if unit_mapping_file else None,
+                                     sample_size = sample_size,
+                                     unit_size = unit_size)
 
 
 if __name__ == '__main__':
@@ -46,6 +49,10 @@ if __name__ == '__main__':
     parser.add_argument('--unit-mapping', metavar = 'FILE', default = None,
                         help = 'Structurally, unit mapping is identical to sample mapping file,\
                                 instead, it describes properties of units.')
+    parser.add_argument('--sample-size', metavar = 'INT', type = int, default = 8,
+                        help = 'Sample node size. Default: %(default)d')
+    parser.add_argument('--unit-size', metavar = 'INT', type = int, default = 2,
+                        help = 'Unit node size. Default: %(default)d')
     parser.add_argument('--min-abundance', metavar = 'INT', type = int, default = 0,
                         help = 'Minimum abundance of a unit to be included in the network.\
                                 It usually a good idea to give some cut-off since each unit\
@@ -57,12 +64,13 @@ if __name__ == '__main__':
                                 node in a sample to form an edge in the network. Sum normalization takes\
                                 an oligotype or MED node, generates a vector from its percent occurence in all\
                                 samples, then normalizes the percent abundances so the total of the vector adds\
-                                up to 100%. The default is %(default)s, but it might be a good idea to set it\
+                                up to 100%%. The default is %(default)s, but it might be a good idea to set it\
                                 to 0 for samples with a lot of samples (such as more than 100 samples).')
 
 
     args = parser.parse_args()
 
     
-    sys.exit(main(args.environment_file, args.sample_mapping, args.unit_mapping, args.min_abundance, args.min_sum_normalized_percent))
+    sys.exit(main(args.environment_file, args.sample_mapping, args.unit_mapping, args.min_abundance, args.min_sum_normalized_percent,
+                  sample_size = args.sample_size, unit_size = args.unit_size))
 

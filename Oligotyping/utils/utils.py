@@ -348,7 +348,8 @@ def get_vectors_from_oligotypes_across_samples_matrix(file_path):
     return (oligos, vectors)
 
 
-def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None, unit_mapping_dict = None, project = None):
+def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None,
+                               unit_mapping_dict = None, project = None, sample_size=8, unit_size=2):
     output = open(output_file, 'w')
     
     samples = sorted(samples_dict.keys())
@@ -381,7 +382,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     output.write('''<nodes>\n''')
     for sample in samples:
         output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
-        output.write('''        <viz:size value="8"/>\n''')
+        output.write('''        <viz:size value="%d"/>\n''' % sample_size)
 
         if sample_mapping_categories:
             output.write('''        <attvalues>\n''')
@@ -394,7 +395,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
 
     for unit in units:
         output.write('''    <node id="%s">\n''' % (unit))
-        output.write('''        <viz:size value="2" />\n''')
+        output.write('''        <viz:size value="%d" />\n''' % unit_size)
 
         if unit_mapping_categories:
             output.write('''        <attvalues>\n''')
