@@ -21,11 +21,6 @@ if(invalid(output_file_prefix)){
     display <- TRUE
 }
 
-if (display == TRUE){
-    X11(width=12, height=10)
-    library(tcltk)
-}
-
 
 csv <- read.csv(csv_path, header=TRUE, sep="\t")
 rownames(csv) <- csv[,1]
@@ -37,10 +32,6 @@ P <- function(){
     ordilabel (fit, display = c('sites'))
 }
 
-if(display == TRUE){
-    P()
-    tk_messageBox(message="Press a key")
-}
 
 # PDF
 pdf_output <- paste(output_file_prefix,".pdf",sep="")

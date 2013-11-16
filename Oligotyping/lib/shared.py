@@ -171,14 +171,14 @@ def generate_exclusive_figures(_object):
                                                    ("horn", matrix_percent_path),
                                                    ("bray", matrix_percent_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
-                cmd_line = ('%s "%s" "%s" %s "%s" "%s" "%s" >> "%s" 2>&1' % 
+                cmd_line = ('%s -o "%s" -d "%s" -m "%s" --title "%s" "%s" "%s" >> "%s" 2>&1' % 
                                         (os.path.join(scripts_dir_path, script),
-                                         matrix_file,
-                                         mapping_file_path,
+                                         output_prefix,
                                          distance_metric,
                                          category,
                                          _object.project,
-                                         output_prefix,
+                                         matrix_file,
+                                         mapping_file_path,
                                          _object.log_file_path))
                 _object.progress.update('%s "%s" for "%s" ...' % (analysis, distance_metric, category))
                 _object.logger.info('exclusive figure: %s' % (cmd_line))
