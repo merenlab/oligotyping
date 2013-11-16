@@ -353,8 +353,8 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     output = open(output_file, 'w')
     
     samples = sorted(samples_dict.keys())
-    sample_mapping_categories = sorted(sample_mapping_dict.keys()) if sample_mapping_dict else None
-    unit_mapping_categories = sorted(unit_mapping_dict.keys()) if unit_mapping_dict else None
+    sample_mapping_categories = sorted([k for k in sample_mapping_dict.keys() if k != 'colors']) if sample_mapping_dict else None
+    unit_mapping_categories = sorted([k for k in unit_mapping_dict.keys() if k != 'colors']) if unit_mapping_dict else None
     
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
@@ -383,6 +383,9 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     for sample in samples:
         output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
         output.write('''        <viz:size value="%d"/>\n''' % sample_size)
+        if sample_mapping_dict and sample_mapping_dict.has_key('colors'):
+            output.write('''        <viz:color r="%d" g="%d" b="%d" a="1"/>\n''' %\
+                                             HTMLColorToRGB(sample_mapping_dict['colors'][sample], scaled = False))
 
         if sample_mapping_categories:
             output.write('''        <attvalues>\n''')
@@ -747,7 +750,7 @@ def estimate_expected_max_frequency_of_an_erronous_unique_sequence(number_of_rea
     return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads) 
 
 
-def HTMLColorToRGB(colorstring):
+def HTMLColorToRGB(colorstring, scaled = True):
     """ convert #RRGGBB to an (R, G, B) tuple """
     colorstring = colorstring.strip()
     if colorstring[0] == '#': colorstring = colorstring[1:]
@@ -756,7 +759,10 @@ def HTMLColorToRGB(colorstring):
     r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
     r, g, b = [int(n, 16) for n in (r, g, b)]
 
-    return (r / 255.0, g / 255.0, b / 255.0)
+    if scaled:
+        return (r / 255.0, g / 255.0, b / 255.0)
+    else:
+        return (r, g, b)
 
 
 def colorize(txt):
