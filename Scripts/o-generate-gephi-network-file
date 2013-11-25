@@ -15,7 +15,7 @@ import Oligotyping.utils.utils as utils
 
 
 def main(environment_file, sample_mapping_file = None, unit_mapping_file = None, min_abundance = 0, min_sum_normalized_percent = 1,
-         sample_size = 8, unit_size = 2):
+         sample_size = 8, unit_size = 2, skip_unit_labels = False, skip_sample_labels = False):
     samples_dict = utils.get_samples_dict_from_environment_file(environment_file)
     oligos = utils.get_oligos_sorted_by_abundance(samples_dict, min_abundance = min_abundance)
     unit_counts, unit_percents = utils.get_unit_counts_and_percents(oligos, samples_dict)
@@ -34,7 +34,9 @@ def main(environment_file, sample_mapping_file = None, unit_mapping_file = None,
                                      sample_mapping_dict = sample_mapping if sample_mapping_file else None,
                                      unit_mapping_dict = unit_mapping if unit_mapping_file else None,
                                      sample_size = sample_size,
-                                     unit_size = unit_size)
+                                     unit_size = unit_size,
+                                     skip_sample_labels = skip_sample_labels,
+                                     skip_unit_labels = skip_unit_labels)
 
 
 if __name__ == '__main__':
@@ -66,11 +68,16 @@ if __name__ == '__main__':
                                 samples, then normalizes the percent abundances so the total of the vector adds\
                                 up to 100%%. The default is %(default)s, but it might be a good idea to set it\
                                 to 0 for samples with a lot of samples (such as more than 100 samples).')
+    parser.add_argument('--skip-sample-labels', action = 'store_true', default = False,
+                    help = 'Leave sample labels blank.')
+    parser.add_argument('--skip-unit-labels', action = 'store_true', default = False,
+                    help = 'Leave unit labels blank.')
 
 
     args = parser.parse_args()
 
     
     sys.exit(main(args.environment_file, args.sample_mapping, args.unit_mapping, args.min_abundance, args.min_sum_normalized_percent,
-                  sample_size = args.sample_size, unit_size = args.unit_size))
+                  sample_size = args.sample_size, unit_size = args.unit_size, skip_unit_labels = args.skip_unit_labels,
+                  skip_sample_labels = args.skip_sample_labels))
 

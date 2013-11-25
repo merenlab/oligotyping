@@ -349,12 +349,14 @@ def get_vectors_from_oligotypes_across_samples_matrix(file_path):
 
 
 def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, sample_mapping_dict = None,
-                               unit_mapping_dict = None, project = None, sample_size=8, unit_size=2):
+                               unit_mapping_dict = None, project = None, sample_size=8, unit_size=2,
+                               skip_sample_labels = False, skip_unit_labels = False):
     output = open(output_file, 'w')
-    
+
     samples = sorted(samples_dict.keys())
     sample_mapping_categories = sorted([k for k in sample_mapping_dict.keys() if k != 'colors']) if sample_mapping_dict else None
-    unit_mapping_categories = sorted([k for k in unit_mapping_dict.keys() if k != 'colors']) if unit_mapping_dict else None
+    unit_mapping_categories = sorted([k for k in unit_mapping_dict.keys() if k not in ['colors', 'labels']]) if unit_mapping_dict else None
+    print output_file 
     
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
@@ -372,6 +374,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
             output.write('''    <attribute id="%d" title="%s" type="string" />\n''' % (i, category))
         output.write('''</attributes>\n\n''')
 
+    # FIXME: IDK what the hell is this one about:
     if unit_mapping_dict:
         output.write('''<attributes class="edge">\n''')
         for i in range(0, len(unit_mapping_categories)):
@@ -381,7 +384,10 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
 
     output.write('''<nodes>\n''')
     for sample in samples:
-        output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
+        if skip_sample_labels:
+            output.write('''    <node id="%s">\n''' % (sample))
+        else:
+            output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
         output.write('''        <viz:size value="%d"/>\n''' % sample_size)
         if sample_mapping_dict and sample_mapping_dict.has_key('colors'):
             output.write('''        <viz:color r="%d" g="%d" b="%d" a="1"/>\n''' %\
@@ -397,13 +403,20 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         output.write('''    </node>\n''')
 
     for unit in units:
-        output.write('''    <node id="%s">\n''' % (unit))
+        if skip_unit_labels:
+            output.write('''    <node id="%s">\n''' % (unit))
+        else:
+            if unit_mapping_dict and unit_mapping_dict.has_key('labels'):
+                output.write('''    <node id="%s" label="%s">\n''' % (unit, unit_mapping_dict['labels'][unit]))
+            else:
+                output.write('''    <node id="%s">\n''' % (unit))
         output.write('''        <viz:size value="%d" />\n''' % unit_size)
 
         if unit_mapping_categories:
             output.write('''        <attvalues>\n''')
             for i in range(0, len(unit_mapping_categories)):
-                output.write('''            <attvalue id="%d" value="__NA__"/>\n''' % (i))
+                category = unit_mapping_categories[i]
+                output.write('''            <attvalue id="%d" value="%s"/>\n''' % (i, unit_mapping_dict[category][unit]))
             output.write('''        </attvalues>\n''')
 
         output.write('''    </node>\n''')
