@@ -71,9 +71,19 @@ if(invalid(options$mapping_variable))
 
 data <- as.data.frame(read.table(input_file_path, header = TRUE, sep="\t", comment.char = '&'))
 metadata <- as.data.frame(read.table(metadata_path, header=TRUE, sep="\t", comment.char = '&'))
+
+if(names(data)[1] != 'samples')
+	stop(sprintf("Data file '%s' does not seem to be formatted properly", input_file_path))
+if(names(metadata)[1] != 'samples')
+	stop(sprintf("Metadata file '%s' does not seem to be formatted properly", metadata_path))
+
 samples_in_both <- intersect(data$samples, metadata$samples)
 data <- data[data$samples %in% samples_in_both, ]
 metadata <- metadata[metadata$samples %in% samples_in_both, ]
+
+if(dim(metadata)[1] == 0)
+	stop("Samples in the input matrix and metadata do not seem to correspond")
+
 metadata <- metadata[match(data$samples, metadata$samples),]
 data$samples <- factor(data$samples)
 metadata$samples <- factor(metadata$samples)
@@ -110,8 +120,8 @@ P <- function(){
         p <- ggplot(data = NMDS, aes(MDS1, MDS2))
 		p <- p + geom_point(aes(color = group))
 		p <- p + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1)
-		p <- p + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group)
 		p <- p + geom_line(data = NMDS[NMDS$group %in% only_two_groups,], aes(color = group))
+		p <- p + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group, size=8)
 		p <- p + ggtitle(options$title)
 		p <- p + theme_bw()
 	}
@@ -119,7 +129,7 @@ P <- function(){
 		p <- ggplot(data = NMDS, aes(MDS1, MDS2))
 		p <- p + geom_point(aes(color = group))
 		p <- p + geom_path(data=df_ell, aes(x=MDS1, y=MDS2,colour=group), size=0.5, linetype=1)
-		p <- p + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group)
+		p <- p + annotate("text",x=NMDS.mean$MDS1,y=NMDS.mean$MDS2,label=NMDS.mean$group, size=8)
 		p <- p + ggtitle(options$title)
 		p <- p + theme_bw()
 	}
