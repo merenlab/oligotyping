@@ -118,11 +118,14 @@ OLIGO_DIST <- function(dfx){
 #################################################
 #####################  MAIN  ####################
 #################################################
-
 df <- data.frame(readDNAStringSet(input_file_path, format="fasta"))
 
 if(is.na(colors_file)){
-    colors <- data.frame(OLIGO=row.names(df), COLOR=sample(colours(), length(row.names(df))), stringsAsFactors=FALSE)
+    if(length(row.names(df)) < 64){
+        colors <- data.frame(OLIGO=row.names(df), COLOR=sample(colours(), length(row.names(df))), stringsAsFactors=FALSE)
+    } else {
+        colors <- data.frame(OLIGO=row.names(df), COLOR=rep("#FFFFFF", length(row.names(df))), stringsAsFactors=FALSE)
+    }
 } else {
     colors <- read.table(colors_file, header = FALSE, sep="\t", comment.char=";")
     names(colors) <- c("OLIGO", "COLOR")
