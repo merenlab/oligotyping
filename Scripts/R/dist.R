@@ -93,6 +93,7 @@ OLIGO_DIST <- function(dfx){
 		}
 	}
 
+    write.table(as.matrix(dist_mat), file = paste(options$output_file_prefix,".txt",sep=""), sep = "\t", row.names = TRUE, col.names = NA, quote = FALSE)
 	
 	updated_df <- melt(dist_mat)
 	names(updated_df) <- c('OLIGO1', 'OLIGO2', 'DIST')
