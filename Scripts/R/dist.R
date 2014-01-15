@@ -22,7 +22,9 @@ option_list <- list(
 		make_option(c("-O", "--otu_limits"), default=TRUE,
 				help = "Mark de facto 97 percent similarity level [default \"%default\"]"),
 		make_option(c("-C", "--colors_file"),
-				help = "TAB delimited color code for each unit")
+				help = "TAB delimited color code for each unit"),
+		make_option(c("-v", "--visualize"), default=TRUE,
+				help = "Visualize the distance between sequences [default \"%default\"]")
 )
 
 parser <- OptionParser(usage = "script.R [options] fasta_file", option_list=option_list,
@@ -139,72 +141,74 @@ for(oligo in row.names(df)){
 
 updated_df <- OLIGO_DIST(dfx)
 
-dfy <- dfx
-dfx$OLIGO <- factor(dfx$OLIGO, levels=levels(updated_df$OLIGO1))
-dfy$OLIGO <- factor(dfy$OLIGO, levels=rev(levels(updated_df$OLIGO1)))
-
-theme_remove_all <- theme(panel.grid.major = element_blank(),
-						  panel.grid.minor = element_blank(),
-						  panel.border = element_blank(),
-						  axis.title.y = element_blank(),
-						  axis.text.y = element_blank(),
-						  axis.title.x = element_blank(),
-						  axis.text.x = element_blank(),
-						  axis.ticks = element_blank())
-
-p1 <- ggplot(updated_df, aes(OLIGO1, OLIGO2, fill = DIST))
-p1 <- p1 + geom_tile(width=0.98, height=0.98)
-if(options$otu_limits){
-  p1 <- p1 + scale_fill_gradient2(low = "steelblue", high = "red", mid="white", midpoint=98.5, limits=c(97,100), na.value='#AACCAA')
-} else {
-  p1 <- p1 + scale_fill_gradient(low = "steelblue", high = "red", na.value='#AACCAA')
+if(options$visualize){
+    dfy <- dfx
+    dfx$OLIGO <- factor(dfx$OLIGO, levels=levels(updated_df$OLIGO1))
+    dfy$OLIGO <- factor(dfy$OLIGO, levels=rev(levels(updated_df$OLIGO1)))
+    
+    theme_remove_all <- theme(panel.grid.major = element_blank(),
+    						  panel.grid.minor = element_blank(),
+    						  panel.border = element_blank(),
+    						  axis.title.y = element_blank(),
+    						  axis.text.y = element_blank(),
+    						  axis.title.x = element_blank(),
+    						  axis.text.x = element_blank(),
+    						  axis.ticks = element_blank())
+    
+    p1 <- ggplot(updated_df, aes(OLIGO1, OLIGO2, fill = DIST))
+    p1 <- p1 + geom_tile(width=0.98, height=0.98)
+    if(options$otu_limits){
+      p1 <- p1 + scale_fill_gradient2(low = "steelblue", high = "red", mid="white", midpoint=98.5, limits=c(97,100), na.value='#AACCAA')
+    } else {
+      p1 <- p1 + scale_fill_gradient(low = "steelblue", high = "red", na.value='#AACCAA')
+    }
+    p1 <- p1 + theme_remove_all
+    p1 <- p1 + theme(axis.text.x = element_text(angle = 90, size=8, vjust=0, color="black", family="Helvetica"), legend.position = "bottom", panel.background = element_blank())
+    p1 <- p1 + xlab(NULL) + ylab(NULL)
+    p1 <- p1 + theme(legend.position=c(0.9,0.8))
+    p1 <- p1 + theme(legend.background = element_rect())
+    p1 <- p1 + theme(legend.background = element_rect(fill=rgb(1,1,1), size=0.5, linetype=2));
+    
+    colors_dfx <- as.vector(colors[match(levels(dfx$OLIGO), colors$OLIGO), ]$COLOR)
+    p2 <- ggplot(dfx, aes(OLIGO, 1, fill=OLIGO))
+    p2 <- p2 + geom_tile(width=0.8)
+    p2 <- p2 + theme(legend.position = "none", axis.title.y=element_blank(), axis.text.y=element_blank())
+    p2 <- p2 + theme_remove_all
+    p2 <- p2 + xlab(NULL) + ylab(NULL)
+    p2 <- p2 + scale_fill_manual(values = colors_dfx)
+    
+    colors_dfy <- as.vector(colors[match(levels(dfy$OLIGO), colors$OLIGO), ]$COLOR)
+    p3 <- ggplot(dfy, aes(OLIGO, 1, fill=OLIGO))
+    p3 <- p3 + geom_tile(width=0.8)
+    p3 <- p3 + theme(legend.position = "none", axis.title.x=element_blank(), axis.text.x=element_blank())
+    p3 <- p3 + coord_flip()
+    p3 <- p3 + theme_remove_all
+    p3 <- p3 + xlab(NULL) + ylab(NULL)
+    p3 <- p3 + scale_fill_manual(values = colors_dfy)
+    
+    gp1<- ggplot_gtable(ggplot_build(p1))
+    leg <- which(sapply(gp1$grobs, function(x) x$name) == "guide-box")
+    legend <- gp1$grobs[[leg]]
+    
+    gp1<- ggplot_gtable(ggplot_build(p1))
+    gp2<- ggplot_gtable(ggplot_build(p2))
+    gp3<- ggplot_gtable(ggplot_build(p3))
+    
+    maxWidth = unit.pmax(gp1$widths[2:3], gp2$widths[2:3])
+    maxHeight <- unit.pmax(gp1$heights[4:5], gp3$heights[4:5])
+    gp1$widths[2:3] <- maxWidth
+    gp2$widths[2:3] <- maxWidth
+    gp1$heights[4:5] <- maxHeight
+    gp3$heights[4:5] <- maxHeight
+    
+    blank <- grid.rect(gp=gpar(col="white"))
+    pdf_output <- paste(options$output_file_prefix,".pdf",sep="")
+    pdf(pdf_output, width=10, height=10)
+    grid.arrange(blank, gp2, gp3, gp1, heights=c(1/10, 9/10), widths=c(1/10, 9/10), ncol=2)
+    dev.off()
+    
+    png_output <- paste(options$output_file_prefix,".png",sep="")
+    png(png_output, width=1200, height=1200)
+    grid.arrange(blank, gp2, gp3, gp1, heights=c(1/10, 9/10), widths=c(1/10, 9/10), ncol=2)
+    dev.off()
 }
-p1 <- p1 + theme_remove_all
-p1 <- p1 + theme(axis.text.x = element_text(angle = 90, size=8, vjust=0, color="black", family="Helvetica"), legend.position = "bottom", panel.background = element_blank())
-p1 <- p1 + xlab(NULL) + ylab(NULL)
-p1 <- p1 + theme(legend.position=c(0.9,0.8))
-p1 <- p1 + theme(legend.background = element_rect())
-p1 <- p1 + theme(legend.background = element_rect(fill=rgb(1,1,1), size=0.5, linetype=2));
-
-colors_dfx <- as.vector(colors[match(levels(dfx$OLIGO), colors$OLIGO), ]$COLOR)
-p2 <- ggplot(dfx, aes(OLIGO, 1, fill=OLIGO))
-p2 <- p2 + geom_tile(width=0.8)
-p2 <- p2 + theme(legend.position = "none", axis.title.y=element_blank(), axis.text.y=element_blank())
-p2 <- p2 + theme_remove_all
-p2 <- p2 + xlab(NULL) + ylab(NULL)
-p2 <- p2 + scale_fill_manual(values = colors_dfx)
-
-colors_dfy <- as.vector(colors[match(levels(dfy$OLIGO), colors$OLIGO), ]$COLOR)
-p3 <- ggplot(dfy, aes(OLIGO, 1, fill=OLIGO))
-p3 <- p3 + geom_tile(width=0.8)
-p3 <- p3 + theme(legend.position = "none", axis.title.x=element_blank(), axis.text.x=element_blank())
-p3 <- p3 + coord_flip()
-p3 <- p3 + theme_remove_all
-p3 <- p3 + xlab(NULL) + ylab(NULL)
-p3 <- p3 + scale_fill_manual(values = colors_dfy)
-
-gp1<- ggplot_gtable(ggplot_build(p1))
-leg <- which(sapply(gp1$grobs, function(x) x$name) == "guide-box")
-legend <- gp1$grobs[[leg]]
-
-gp1<- ggplot_gtable(ggplot_build(p1))
-gp2<- ggplot_gtable(ggplot_build(p2))
-gp3<- ggplot_gtable(ggplot_build(p3))
-
-maxWidth = unit.pmax(gp1$widths[2:3], gp2$widths[2:3])
-maxHeight <- unit.pmax(gp1$heights[4:5], gp3$heights[4:5])
-gp1$widths[2:3] <- maxWidth
-gp2$widths[2:3] <- maxWidth
-gp1$heights[4:5] <- maxHeight
-gp3$heights[4:5] <- maxHeight
-
-blank <- grid.rect(gp=gpar(col="white"))
-pdf_output <- paste(options$output_file_prefix,".pdf",sep="")
-pdf(pdf_output, width=10, height=10)
-grid.arrange(blank, gp2, gp3, gp1, heights=c(1/10, 9/10), widths=c(1/10, 9/10), ncol=2)
-dev.off()
-
-png_output <- paste(options$output_file_prefix,".png",sep="")
-png(png_output, width=1200, height=1200)
-grid.arrange(blank, gp2, gp3, gp1, heights=c(1/10, 9/10), widths=c(1/10, 9/10), ncol=2)
-dev.off()
