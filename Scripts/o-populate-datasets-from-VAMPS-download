@@ -11,27 +11,68 @@
 # Please read the COPYING file.
 
 import sys
-
+import argparse
 import Oligotyping.lib.fastalib as u
 
+def main(input_file, output_file, taxon = None):
+    fasta = u.SequenceSource(input_file)
 
-fasta = u.SequenceSource(sys.argv[1])
-taxon = sys.argv[2]
+    VAMPS_output_type = None
+    fasta.next()
+    if len(fasta.id.split('|')) == 5:
+        # >GR7EWKD02FPDXN|MBJ_GOS_Bv6v4|C65_5|1.7% from GASTtaxonomy|Count 
+        VAMPS_output_type = 1
+    elif len(fasta.id.split('|')) == 6:
+        # >H3ZRT2102JJIZB|refhvr_ids=v4v6_CD343|GAST Dist=0.01000|Rank=genus|Abundance=1|GASTtaxonomy
+        VAMPS_output_type = 2
+    else:
+        print("The input FASTA doesn't seem to be a VAMPS output :/")
+        sys.exit()
+    fasta.reset()
 
-output = u.FastaOutput(sys.argv[2].replace(';', ''))
+    output = u.FastaOutput(output_file)
 
-while fasta.next():
-    if fasta.id.find(taxon) > -1:
-        acc = fasta.id.split('|')[0]
-        project = fasta.id.split('|')[1].split('=')[1]
-        sample = fasta.id.split('|')[2].split('=')[1]
-        new_id = project + '_' + sample + '_' + acc
+    while fasta.next():
+        if taxon and fasta.id.find(taxon) == -1:
+            continue
 
-        abundance = int(fasta.id.split('|')[7].split('=')[1])
+        if VAMPS_output_type == 2:
+            acc = fasta.id.split('|')[0]
+            project_sample = fasta.id.split('|')[1].split('=')[1]
+            gast = fasta.id.split('|')[5]
+            new_id = project_sample + '_' + acc
+            abundance = int(fasta.id.split('|')[4].split('=')[1])
+
+        if VAMPS_output_type == 1:
+            acc = fasta.id.split('|')[0]
+            project = fasta.id.split('|')[1]
+            sample = fasta.id.split('|')[2]
+            gast = fasta.id.split('|')[3].split()[2]
+            new_id = project + '_' + sample + '_' + acc
+            abundance = int(fasta.id.split('|')[4])
 
         for i in range(0, abundance):
-            output.write_id('%s-%s|%s' % (new_id, str(i), fasta.id))
+            output.write_id('%s-%s|%s' % (new_id, str(i), gast))
             output.write_seq(fasta.seq, split = False)
 
-fasta.close()
-output.close()
+    fasta.close()
+    output.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Populate VAMPS download')
+    parser.add_argument('input_file', metavar = 'FASTA',
+                        help = 'FASTA file downloaded from VAMPS')
+    parser.add_argument('-t', '--taxon', help = 'Isolate a particular taxon', default = None)
+    parser.add_argument('-o', '--output', help = 'Output file name', default = None)
+
+
+    args = parser.parse_args()
+
+    output = args.output
+    if not output and args.taxon:
+        output = args.taxon + ".fa"
+    elif not output and not args.taxon:
+        output = args.input_file + "-POPULATED.fa"
+    
+    main(args.input_file, output, args.taxon)
