@@ -27,29 +27,7 @@ from Oligotyping.lib.shared import generate_default_figures
 from Oligotyping.lib.shared import generate_exclusive_figures
 
 from Oligotyping.utils import blast
-from Oligotyping.utils.utils import Multiprocessing
-from Oligotyping.utils.utils import Run
-from Oligotyping.utils.utils import Progress
-from Oligotyping.utils.utils import get_date
-from Oligotyping.utils.utils import ConfigError
-from Oligotyping.utils.utils import pretty_print
-from Oligotyping.utils.utils import get_pretty_name
-from Oligotyping.utils.utils import check_input_alignment
-from Oligotyping.utils.utils import human_readable_number
-from Oligotyping.utils.utils import generate_MATRIX_files 
-from Oligotyping.utils.utils import get_sample_mapping_dict
-from Oligotyping.utils.utils import homopolymer_indel_exists
-from Oligotyping.utils.utils import mapping_file_simple_check
-from Oligotyping.utils.utils import generate_ENVIRONMENT_file
-from Oligotyping.utils.utils import get_read_objects_from_file
-from Oligotyping.utils.utils import generate_gexf_network_file
-from Oligotyping.utils.utils import get_unit_counts_and_percents
-from Oligotyping.utils.utils import get_sample_name_from_defline
-from Oligotyping.utils.utils import get_units_across_samples_dicts
-from Oligotyping.utils.utils import generate_TAB_delim_file_from_dict
-from Oligotyping.utils.utils import trim_uninformative_columns_from_alignment
-from Oligotyping.utils.utils import get_temporary_file_names_for_BLAST_search
-from Oligotyping.utils.utils import get_percent_identity_for_N_base_difference
+from Oligotyping.utils import utils 
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 
 
@@ -122,8 +100,8 @@ class Decomposer:
         self.average_read_length = None
         self.alignment_length = None
 
-        self.run = Run()
-        self.progress = Progress()
+        self.run = utils.Run()
+        self.progress = utils.Progress()
         self.logger = None
 
         self.root = None
@@ -152,9 +130,9 @@ class Decomposer:
         try:
             blast.LocalBLAST(None, None, None)
         except blast.ModuleVersionError:
-            raise ConfigError, blast.version_error_text
+            raise utils.ConfigError, blast.version_error_text
         except blast.ModuleBinaryError:
-            raise ConfigError, blast.missing_binary_error_text
+            raise utils.ConfigError, blast.missing_binary_error_text
 
         # FIXME: check R modules here.
 
@@ -168,10 +146,10 @@ class Decomposer:
             try:
                 os.makedirs(self.output_directory)
             except:
-                raise ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
+                raise utils.ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
                                                                           (self.output_directory)
         if not os.access(self.output_directory, os.W_OK):
-            raise ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
+            raise utils.ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
 
         self.tmp_directory = self.generate_output_destination('TMP', directory = True)
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
@@ -181,21 +159,21 @@ class Decomposer:
 
     def check_input_files(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
-            raise ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+            raise utils.ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
 
         if self.sample_mapping:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
-                raise ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+                raise utils.ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
 
         samples = None
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
-            samples = check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
+            samples = utils.check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
-                raise ConfigError, 'Exiting.'
+                raise utils.ConfigError, 'Exiting.'
 
         if self.sample_mapping:
-            mapping_file_simple_check(self.sample_mapping, samples)
+            utils.mapping_file_simple_check(self.sample_mapping, samples)
             sample_mapping_new_destination = self.generate_output_destination("SAMPLE-MAPPING.txt")
             shutil.copy(self.sample_mapping, sample_mapping_new_destination)
             self.sample_mapping = sample_mapping_new_destination
@@ -225,12 +203,12 @@ class Decomposer:
 
         self.topology.nodes_output_directory = self.nodes_directory
         
-        reads = get_read_objects_from_file(self.alignment)
+        reads = utils.get_read_objects_from_file(self.alignment)
         
         self.root = self.topology.add_new_node('root', reads, root = True)
         
         if self.root.size < self.min_actual_abundance:
-            raise ConfigError, "The number of reads in alignment file (%d) is smaller than --min-actual-abundance (%d)" % \
+            raise utils.ConfigError, "The number of reads in alignment file (%d) is smaller than --min-actual-abundance (%d)" % \
                                                                 (self.root.size, self.min_actual_abundance)
 
         self.node_ids_to_analyze = ['root']
@@ -270,13 +248,13 @@ class Decomposer:
         self.check_input_files()
         
         if self.sample_mapping:
-            self.sample_mapping_dict = get_sample_mapping_dict(self.sample_mapping)
+            self.sample_mapping_dict = utils.get_sample_mapping_dict(self.sample_mapping)
         else:
             self.sample_mapping_dict = None
 
         # we're in business.
         self.run.info('project', self.project)
-        self.run.info('run_date', get_date())
+        self.run.info('run_date', utils.get_date())
         self.run.info('version', __version__)
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
         self.run.info('multi_threaded', not self.no_threading)
@@ -298,7 +276,7 @@ class Decomposer:
 
         # set number of threads to be used
         if not self.number_of_threads:
-            self.number_of_threads = Multiprocessing(None).num_thread
+            self.number_of_threads = utils.Multiprocessing(None).num_thread
 
         self._init_topology()
 
@@ -309,7 +287,7 @@ class Decomposer:
             self.maximum_variation_allowed = int(round(self.topology.average_read_length * 1.0 / 100)) or 1
 
         self.run.info('maximum_variation_allowed', self.maximum_variation_allowed)
-        self.run.info('total_seq', pretty_print(self.topology.nodes['root'].size))
+        self.run.info('total_seq', utils.pretty_print(self.topology.nodes['root'].size))
         self.run.info('average_read_length', self.topology.average_read_length)
         self.run.info('alignment_length', self.topology.alignment_length)
         self.run.info('output_directory', self.output_directory)
@@ -352,7 +330,7 @@ class Decomposer:
             self.logger.info('final node: %s (%d)' % (node_id,
                                                       self.topology.nodes[node_id].size))
 
-        self.run.info('end_of_run', get_date())
+        self.run.info('end_of_run', utils.get_date())
 
         if not self.skip_gexf_network_file:
             self._generate_gexf_network_file()
@@ -412,7 +390,7 @@ class Decomposer:
                 if node.reads[0].frequency < self.min_substantive_abundance:
                     if node.node_id == 'root':
                         self.progress.end()
-                        raise ConfigError, "Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
+                        raise utils.ConfigError, "Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
                                                 % (node.reads[0].frequency,
                                                    self.min_substantive_abundance)
 
@@ -545,7 +523,7 @@ class Decomposer:
         self.progress.end()
         self.topology.update_final_nodes()
 
-        self.run.info('num_raw_nodes', pretty_print(len(self.topology.final_nodes)))
+        self.run.info('num_raw_nodes', utils.pretty_print(len(self.topology.final_nodes)))
 
         # fin.
 
@@ -574,7 +552,7 @@ class Decomposer:
                     results_array.append(node)
                     shared_counter.set(shared_counter.value + 1)
 
-            mp = Multiprocessing(worker, self.number_of_threads)
+            mp =  utils.Multiprocessing(worker, self.number_of_threads)
             data_chunks = mp.get_data_chunks(dirty_nodes, spiral = True)
             shared_counter = mp.get_shared_integer()
             results_array = mp.get_empty_shared_array()
@@ -619,8 +597,8 @@ class Decomposer:
                 for reason in self.topology.outlier_reasons:
                     count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
                     removed_outliers_total += count
-                    self.run.info('removed_%s' % reason, pretty_print(count))
-                self.run.info('removed_outliers_total', pretty_print(removed_outliers_total))
+                    self.run.info('removed_%s' % reason, utils.pretty_print(count))
+                self.run.info('removed_outliers_total', utils.pretty_print(removed_outliers_total))
 
                 break
 
@@ -696,7 +674,7 @@ class Decomposer:
         # and this has to be fixed at some point (which unfortunately will fuck up the performance drastically
         # once it is fixed, but whatever. science > my pride).
        
-        nz = pretty_print(len(self.topology.zombie_nodes))
+        nz = utils.pretty_print(len(self.topology.zombie_nodes))
         self.progress.new('Merging HP splits :: ITER %d%s' % (iteration,
                                                               ' #Z: %s' % (nz if nz else '')))
 
@@ -710,14 +688,14 @@ class Decomposer:
 
         # ---
         # use blastn to get the similarity dict for gaps.
-        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "HPS_%d_" % iteration,\
+        query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = "HPS_%d_" % iteration,\
                                                                           directory = self.tmp_directory)
 
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
         
-        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
+        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 1)
         params = "-perc_identity %.2f" % (min_percent_identity)
         b = self._perform_blast(query, target, output, params, job = 'HPS')
         
@@ -742,7 +720,7 @@ class Decomposer:
                 sibling = self.topology.nodes[sibling_id]
 
 
-                if homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
+                if utils.homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
                     if dealing_with_zombie_nodes:
                         self.topology.merge_nodes(sibling.node_id, node.node_id)
                         self.topology.standby_bin.append(sibling.node_id)
@@ -791,9 +769,9 @@ class Decomposer:
         self.logger.info('temp unit counts and percents dicts are ready')
         
         self.across_samples_sum_normalized, self.across_samples_max_normalized =\
-                get_units_across_samples_dicts(self.topology.final_nodes, self.samples, self.unit_percents) 
+                utils.get_units_across_samples_dicts(self.topology.final_nodes, self.samples, self.unit_percents) 
         
-        nz = pretty_print(len(self.topology.zombie_nodes))
+        nz = utils.pretty_print(len(self.topology.zombie_nodes))
         self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
                                                                 ' #Z: %s' % (nz if nz else '')))
  
@@ -807,12 +785,12 @@ class Decomposer:
 
         # ---
         # use blastn to get the similarity dict. I don't like it here, but I'll take care of it later.        
-        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "AN_%d_" % iteration,\
+        query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = "AN_%d_" % iteration,\
                                                                           directory = self.tmp_directory)
         self.topology.store_node_representatives(nodes, query)
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length)
+        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length)
         params = "-perc_identity %.2f" % (min_percent_identity)
 
         b = self._perform_blast(query, target, output, params, job = 'AN')
@@ -879,7 +857,7 @@ class Decomposer:
         # comparing each read to previously found final nodes.
 
 
-        sb = pretty_print(len(self.topology.standby_bin))
+        sb = utils.pretty_print(len(self.topology.standby_bin))
         self.progress.new('Removing Outliers :: ITER %d%s' % (iteration,
                                                               ' #SB: %s' % (sb if sb else '')))
 
@@ -890,7 +868,7 @@ class Decomposer:
             node_list = copy.deepcopy(self.topology.final_nodes)
 
 
-        max_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+        max_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                           self.maximum_variation_allowed)
 
         if self.no_threading:
@@ -902,7 +880,7 @@ class Decomposer:
                 self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
 
                 job = 'XO_%s_' % node_id
-                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
+                query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = job,\
                                                                                   directory = self.tmp_directory)
                 id_to_read_object_dict = {}
                 for read_obj in node.reads[1:]:
@@ -945,7 +923,7 @@ class Decomposer:
                 node = self.topology.nodes[node_id]
                     
                 job = 'XO_%s_' % node_id
-                query, target, output = get_temporary_file_names_for_BLAST_search(prefix = job,\
+                query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = job,\
                                                                                   directory = self.tmp_directory)
                 id_to_read_object_dict = {}
                 for read_obj in node.reads[1:]:
@@ -981,7 +959,7 @@ class Decomposer:
                            max([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
                            numpy.mean([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),))
 
-            mp = Multiprocessing(worker, self.number_of_threads)
+            mp = utils.Multiprocessing(worker, self.number_of_threads)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
             shared_outlier_seqs_list = mp.get_empty_shared_array()
 
@@ -1015,13 +993,13 @@ class Decomposer:
         for reason in self.topology.outlier_reasons:
             total_relocated_outliers += self._relocate_outliers(reason, refresh_final_nodes = False)
         
-        self.run.info('relocated_outliers_total', pretty_print(total_relocated_outliers))
+        self.run.info('relocated_outliers_total', utils.pretty_print(total_relocated_outliers))
         self._refresh_final_nodes()
 
 
     def _relocate_outliers(self, reason, refresh_final_nodes = True):
-        self.progress.new('Processing %s' % get_pretty_name(reason))
-        query, target, output = get_temporary_file_names_for_BLAST_search(prefix = "RO_%s_" % reason,
+        self.progress.new('Processing %s' % utils.get_pretty_name(reason))
+        query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = "RO_%s_" % reason,
                                                                           directory = self.tmp_directory)
 
         outliers = self.topology.outliers[reason]
@@ -1038,11 +1016,11 @@ class Decomposer:
 
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
-        min_percent_identity = get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                           self.maximum_variation_allowed)
 
-        self.progress.update('Running blastn (query: %s, target: %s)' % (pretty_print(len(outliers)),
-                                                                         pretty_print(len(self.topology.final_nodes))))
+        self.progress.update('Running blastn (query: %s, target: %s)' % (utils.pretty_print(len(outliers)),
+                                                                         utils.pretty_print(len(self.topology.final_nodes))))
         params = "-perc_identity %.2f -max_target_seqs 1" % (min_percent_identity)
         b = self._perform_blast(query, target, output, params, job = 'RO_%s_' % reason)
 
@@ -1062,7 +1040,7 @@ class Decomposer:
                                            reason)
 
         self.progress.end()
-        self.run.info('relocated_%s' % reason, pretty_print(num_outliers_relocated))
+        self.run.info('relocated_%s' % reason, utils.pretty_print(num_outliers_relocated))
 
         if refresh_final_nodes:
             self._refresh_final_nodes()
@@ -1093,7 +1071,7 @@ class Decomposer:
                                  
             node.freq_curve_img_path = node.unique_alignment + '.png'
             vis_freq_curve(node.unique_alignment, output_file = node.freq_curve_img_path, mini = True,\
-                           title = '%s\n(%s)' % (node.pretty_id, human_readable_number(node.size))) 
+                           title = '%s\n(%s)' % (node.pretty_id, utils.human_readable_number(node.size))) 
         
         self.progress.end()
 
@@ -1121,7 +1099,7 @@ class Decomposer:
             self.progress.update('Processing outliers (%s)' % (reason))
             for read_object in self.topology.outliers[reason]:
                 for read_id in read_object.ids:
-                    sample = get_sample_name_from_defline(read_id, self.sample_name_separator)
+                    sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
                     
                     if not read_distribution_dict.has_key(sample):
                         read_distribution_dict[sample] = get_dict_entry_tmpl()
@@ -1129,7 +1107,7 @@ class Decomposer:
                     read_distribution_dict[sample][reason] += 1
         
         self.progress.update('Storing...')
-        generate_TAB_delim_file_from_dict(read_distribution_dict,
+        utils.generate_TAB_delim_file_from_dict(read_distribution_dict,
                                           self.read_distribution_table_path,
                                           order = ['represented_reads'] + self.topology.outlier_reasons)
 
@@ -1144,8 +1122,8 @@ class Decomposer:
         
         if self.no_threading:
             for i in range(0, total_final_nodes):
-                self.progress.update('%s of %s' % (pretty_print(i + 1),
-                                                   pretty_print(total_final_nodes)))
+                self.progress.update('%s of %s' % (utils.pretty_print(i + 1),
+                                                   utils.pretty_print(total_final_nodes)))
                 node_id = self.topology.final_nodes[i]
                 node = self.topology.get_node(node_id)
                 node.store()
@@ -1156,7 +1134,7 @@ class Decomposer:
                 node = self.topology.get_node(node_id)
                 node.store()
 
-            mp = Multiprocessing(worker, self.number_of_threads)
+            mp = utils.Multiprocessing(worker, self.number_of_threads)
             
             # arrange processes
             processes_to_run = []
@@ -1201,7 +1179,7 @@ class Decomposer:
         
             for read in node.reads:
                 for read_id in read.ids:
-                    sample = get_sample_name_from_defline(read_id, self.sample_name_separator)
+                    sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
             
                     if not self.samples_dict.has_key(sample):
                         self.samples_dict[sample] = {}
@@ -1221,9 +1199,9 @@ class Decomposer:
         environment_file_path = self.generate_output_destination("ENVIRONMENT.txt")
         self.progress.update('Being generated')
         
-        generate_ENVIRONMENT_file(self.samples,
-                                  self.samples_dict,
-                                  environment_file_path)
+        utils.generate_ENVIRONMENT_file(self.samples,
+                                        self.samples_dict,
+                                        environment_file_path)
 
         self.progress.end()
         self.run.info('environment_file_path', environment_file_path)        
@@ -1233,7 +1211,7 @@ class Decomposer:
         self.progress.new('Unit counts and percents')
         self.progress.update('Data is being generated')
             
-        self.unit_counts, self.unit_percents = get_unit_counts_and_percents(self.topology.final_nodes, self.samples_dict)
+        self.unit_counts, self.unit_percents = utils.get_unit_counts_and_percents(self.topology.final_nodes, self.samples_dict)
             
         self.progress.end()
 
@@ -1245,12 +1223,12 @@ class Decomposer:
         self.matrix_count_file_path = self.generate_output_destination("MATRIX-COUNT.txt")
         self.matrix_percent_file_path = self.generate_output_destination("MATRIX-PERCENT.txt")    
             
-        generate_MATRIX_files(self.topology.final_nodes,
-                              self.samples,
-                              self.unit_counts,
-                              self.unit_percents,
-                              self.matrix_count_file_path,
-                              self.matrix_percent_file_path)
+        utils.generate_MATRIX_files(self.topology.final_nodes,
+                                    self.samples,
+                                    self.unit_counts,
+                                    self.unit_percents,
+                                    self.matrix_count_file_path,
+                                    self.matrix_percent_file_path)
             
         self.progress.end()
         self.run.info('matrix_count_file_path', self.matrix_count_file_path)
@@ -1318,7 +1296,7 @@ class Decomposer:
             f.write(node.representative_seq + '\n')
         f.close()
         self.progress.end()
-        trim_uninformative_columns_from_alignment(node_representatives_file_path)
+        utils.trim_uninformative_columns_from_alignment(node_representatives_file_path)
         self.run.info('node_representatives_file_path', node_representatives_file_path)
 
 
@@ -1378,12 +1356,12 @@ class Decomposer:
 
         self.progress.new('GEXF Network File')
        
-        generate_gexf_network_file(self.topology.final_nodes,
-                                   self.samples_dict,
-                                   self.unit_percents,
-                                   self.gexf_network_file_path,
-                                   sample_mapping_dict = self.sample_mapping_dict,
-                                   project = self.project)
+        utils.generate_gexf_network_file(self.topology.final_nodes,
+                                         self.samples_dict,
+                                         self.unit_percents,
+                                         self.gexf_network_file_path,
+                                         sample_mapping_dict = self.sample_mapping_dict,
+                                         project = self.project)
 
         self.progress.end()
         self.run.info('gexf_network_file_path', self.gexf_network_file_path)
@@ -1418,17 +1396,17 @@ class Decomposer:
 
             
     def _report_final_numbers(self):
-        self.run.info('num_samples_in_fasta', pretty_print(len(self.samples)))
-        self.run.info('num_final_nodes', pretty_print(len(self.topology.final_nodes)))
-        self.run.info('num_sequences_after_qc', pretty_print(self.topology.get_final_count()))
+        self.run.info('num_samples_in_fasta', utils.pretty_print(len(self.samples)))
+        self.run.info('num_final_nodes', utils.pretty_print(len(self.topology.final_nodes)))
+        self.run.info('num_sequences_after_qc', utils.pretty_print(self.topology.get_final_count()))
 
         final_outliers_total = 0
         for reason in self.topology.outlier_reasons:
             count = sum([read_obj.frequency for read_obj in self.topology.outliers[reason]])
             final_outliers_total += count
-            self.run.info('final_%s' % reason, pretty_print(count))
+            self.run.info('final_%s' % reason, utils.pretty_print(count))
 
-        self.run.info('final_outliers_total', pretty_print(final_outliers_total))
+        self.run.info('final_outliers_total', utils.pretty_print(final_outliers_total))
 
 if __name__ == '__main__':
     pass
