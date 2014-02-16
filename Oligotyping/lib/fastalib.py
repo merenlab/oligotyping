@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.130804
+# v.140216
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -64,10 +64,11 @@ class ReadFasta:
 
 
 class SequenceSource():
-    def __init__(self, fasta_file_path, lazy_init = True, unique = False):
+    def __init__(self, fasta_file_path, lazy_init = True, unique = False, allow_mixed_case = False):
         self.fasta_file_path = fasta_file_path
         self.name = None
         self.lazy_init = lazy_init
+        self.allow_mixed_case = allow_mixed_case
         
         self.pos = 0
         self.id  = None
@@ -122,7 +123,7 @@ class SequenceSource():
                 hash_entry = self.unique_hash_dict[self.unique_hash_list[self.pos]]
                 
                 self.pos += 1
-                self.seq = hash_entry['seq']
+                self.seq = hash_entry['seq'] if self.allow_mixed_case else hash_entry['seq'].upper()
                 self.id  = hash_entry['id']
                 self.ids = hash_entry['ids']
 
@@ -151,7 +152,7 @@ class SequenceSource():
                 break
             sequence += line.strip()
 
-        self.seq = sequence
+        self.seq = sequence if self.allow_mixed_case else sequence.upper()
         self.pos += 1
         return True
 
