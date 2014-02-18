@@ -150,7 +150,7 @@ for (i in 1:length(nodes[ord])){
 	g <- ggplot(data=d, aes(mapping, d[[node]], color=mapping))
 	g <- g + geom_boxplot() 
 	g <- g + geom_jitter(position = position_jitter(width = .05, height = 0), size=4, alpha=0.7) 
-	g <- g + theme(axis.text.x = element_text(angle = 0, size=12, colour='black')) 
+	g <- g + theme(axis.text.x = element_text(angle = 90, size=12, colour='black')) 
 	g <- g + theme(legend.position = 'none')
 	g <- g + labs(x='', y='Percent Abundance', title = node)
 	#g <- g + annotate("text", x=(length(levels(factor(mapping))) + 1) / 2, y=max(d[[node]]) * 0.8, label=label, size=4)
