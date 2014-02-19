@@ -69,9 +69,9 @@ def decomposer():
                                 This parameter, when set, makes the pipeline go through each read identified as\
                                 an outlier and try to find the best nodes for them. Please read the documentation\
                                 for details. This step might take a long time. Default: %(default)s')
-    parser.add_argument('-F', '--store-full-topology', action = 'store_true', default = False,
+    parser.add_argument('-F', '--store-topology-dict', action = 'store_true', default = False,
                         help = 'When set, topology dict with read ids will be generated. This may take a very large\
-                                disk space and computation time for big samples.')
+                                disk space and computation time for large data sets')
     parser.add_argument('-K', '--keep-tmp', action = 'store_true', default = False,
                         help = 'When set, directory with temporary BLAST results will not be deleted at the end of the\
                                 run. It may be necessary to debug the results')
