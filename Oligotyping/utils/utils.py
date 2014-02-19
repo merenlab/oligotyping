@@ -448,6 +448,68 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     output.close()
 
 
+def generate_gexf_network_file_for_nodes_topology(nodes_dict, output_file, attribute_types_dict = {}, project = None, skip_node_labels = False):
+    output = open(output_file, 'w')
+
+    nodes = sorted(nodes_dict.keys())
+    nodes_mapping_categories = sorted([k for k in nodes_dict[nodes[0]].keys() if k not in ['children', 'parent']]) if nodes_dict else None
+
+    output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
+    output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
+    output.write('''<meta lastmodifieddate="2010-01-01+23:42">\n''')
+    output.write('''    <creator>Oligotyping pipeline</creator>\n''')
+    if project:
+        output.write('''    <creator>Topology description for %s</creator>\n''' % (project))
+    output.write('''</meta>\n''')
+    output.write('''<graph type="static" defaultedgetype="undirected">\n\n''')
+
+    if nodes_mapping_categories:
+        output.write('''<attributes class="node" type="static">\n''')
+        for i in range(0, len(nodes_mapping_categories)):
+            category = nodes_mapping_categories[i]
+            attr_type = attribute_types_dict[category] if attribute_types_dict.has_key(category) else "string"
+            output.write('''    <attribute id="%d" title="%s" type="%s" />\n''' % (i, category, attr_type))
+        output.write('''</attributes>\n\n''')
+
+    output.write('''<nodes>\n''')
+    for node in nodes:
+        if skip_node_labels:
+            output.write('''    <node id="%s">\n''' % (node))
+        else:
+            output.write('''    <node id="%s" label="%s">\n''' % (node, node))
+        output.write('''        <viz:size value="%.2f"/>\n''' % (math.log10(nodes_dict[node]['size']) + 1))
+
+        #if nodes_dict and nodes_dict.has_key('colors'):
+        #    output.write('''        <viz:color r="%d" g="%d" b="%d" a="1"/>\n''' %\
+        #                                     HTMLColorToRGB(nodes_dict['colors'][node], scaled = False))
+
+        if nodes_mapping_categories:
+            output.write('''        <attvalues>\n''')
+            for i in range(0, len(nodes_mapping_categories)):
+                category = nodes_mapping_categories[i]
+                output.write('''            <attvalue id="%d" value="%s"/>\n''' % (i, nodes_dict[node][category]))
+            output.write('''        </attvalues>\n''')
+
+        output.write('''    </node>\n''')
+
+    output.write('''</nodes>\n''')
+
+    edge_id = 0
+    output.write('''<edges>\n''')
+    for node in nodes:
+        if node == 'root':
+            continue
+        output.write('''    <edge id="%d" source="%s" target="%s" weight="1" />\n''' % (edge_id, node, nodes_dict[node]['parent']))
+        edge_id += 1
+
+    output.write('''</edges>\n''')
+    output.write('''</graph>\n''')
+    output.write('''</gexf>\n''')
+
+    output.close()
+
+
+
 def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     """This function takes quals dict (which can be obtained by calling the
        utils.utils.get_quals_dict function) and returns a dictionary that
