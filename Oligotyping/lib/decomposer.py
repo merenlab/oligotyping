@@ -50,7 +50,7 @@ class Decomposer:
         self.agglomerate_nodes = False
         self.relocate_outliers = False
         self.maximum_variation_allowed = None
-        self.store_full_topology = False
+        self.store_topology_dict = False
         self.merge_homopolymer_splits = False
         self.no_threading = False
         self.number_of_threads = None
@@ -77,7 +77,7 @@ class Decomposer:
             self.skip_removing_outliers = args.skip_removing_outliers
             self.agglomerate_nodes = args.agglomerate_nodes
             self.relocate_outliers = args.relocate_outliers
-            self.store_full_topology = args.store_full_topology
+            self.store_topology_dict = args.store_topology_dict
             self.merge_homopolymer_splits = args.merge_homopolymer_splits
             self.maximum_variation_allowed = args.maximum_variation_allowed
             self.no_threading = args.no_threading
@@ -266,7 +266,7 @@ class Decomposer:
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
-        self.run.info('store_full_topology', self.store_full_topology)
+        self.run.info('store_topology_dict', self.store_topology_dict)
         self.run.info('skip_gen_figures', self.skip_gen_figures)
         self.run.info('m', self.min_entropy)
         self.run.info('normalize_m', self.normalize_m)
@@ -316,14 +316,13 @@ class Decomposer:
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
  
-        self._store_light_topology_dict()
-        self._store_topology_text()
+        self._store_topology()
         self._store_final_nodes()
         self._store_all_outliers()
         self._store_node_representatives()
         self._store_read_distribution_table()
         
-        if self.store_full_topology:
+        if self.store_topology_dict:
             self._store_topology_dict()
 
         for node_id in self.topology.final_nodes:
@@ -1236,20 +1235,8 @@ class Decomposer:
 
 
     def _store_topology_dict(self):
-        self.progress.new('Generating topology dict (full)')
-        self.progress.update('Processing %d nodes' % len(self.topology.nodes))
-        
-        topology_dict_file_path = self.generate_output_destination('TOPOLOGY.cPickle')
-        cPickle.dump(self.topology.nodes, open(topology_dict_file_path, 'w'))
-        
-        self.progress.end()
-        
-        self.run.info('topology_dict', topology_dict_file_path)
-
-
-    def _store_light_topology_dict(self):
         self.progress.new('Generating topology dict (lightweight)')
-        lightweight_topology_dict = {}
+        topology_dict = {}
         
         self.progress.update('Processing %d nodes' % len(self.topology.nodes))
         for node_id in self.topology.nodes:
@@ -1260,18 +1247,22 @@ class Decomposer:
             new_node = copy.deepcopy(node)
             new_node.entropy_tpls = None
             
-            lightweight_topology_dict[node_id] = new_node
+            topology_dict[node_id] = new_node
 
         self.progress.end()
         
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY-LIGHT.cPickle')
-        cPickle.dump(lightweight_topology_dict, open(topology_dict_file_path, 'w'))
+        cPickle.dump(topology_dict, open(topology_dict_file_path, 'w'))
         self.run.info('topology_light_dict', topology_dict_file_path)
 
 
-    def _store_topology_text(self):
+    def _store_topology(self):
+        self.progress.new('Generating TXT and GEXF files for topology')
+        topology_gexf_file_path = self.generate_output_destination('TOPOLOGY.gexf')
         topology_text_file_path = self.generate_output_destination('TOPOLOGY.txt')
         topology_text_file_obj = open(topology_text_file_path, 'w')
+        
+        nodes_dict = {}
         for node_id in self.topology.alive_nodes:
             node = self.topology.nodes[node_id]
             topology_text_file_obj.write('%s\t%d\t%s\t%d\t%s\n' \
@@ -1280,8 +1271,36 @@ class Decomposer:
                                                   node.parent or '',
                                                   node.level,
                                                   ','.join(node.children) or ''))
+
+            nodes_dict[node_id] = {'size': node.size,
+                                   'level': node.level,
+                                   'parent': node.parent,
+                                   'children': ','.join(node.children) or None,
+                                   'final_node': 'Yes' if node.children else 'No',
+                                   'max_entropy': node.max_entropy,
+                                   'average_entropy': node.average_entropy,
+                                   'density': node.density,
+                                   'num_comps_larger_than_m': len([True for tpl in node.entropy_tpls if tpl[1] > self.min_entropy]),
+                                   'normalized_m': node.normalized_m}
+
+
         topology_text_file_obj.close()
+
+        attribute_types_dict = {'size': "int",
+                                'level': "int",
+                                'max_entropy': "float",
+                                'average_entropy': "float",
+                                'density': "float",
+                                'num_comps_larger_than_m': "int",
+                                'normalized_m': "float"}
+
+        utils.generate_gexf_network_file_for_nodes_topology(nodes_dict,
+                                                            topology_gexf_file_path,
+                                                            attribute_types_dict = attribute_types_dict)
+
+        self.progress.end()
         self.run.info('topology_text', topology_text_file_path)
+        self.run.info('topology_gexf', topology_gexf_file_path)
 
 
     def _store_node_representatives(self): 
