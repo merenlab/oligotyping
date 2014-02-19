@@ -443,6 +443,19 @@ class Decomposer:
                 # the most abundant unique read. of course by not decomposing any further we are losing
                 # the opportunity to 'purify' this node further, but we are not worried about it,
                 # because 'max_allowed_variation' outliers will be removed from this node later on.  
+                # UPDATE: Well, this causes some serious purity issues. For instance a node with,
+                # 
+                # >Read_1|frequency:957
+                # >Read_2|frequency:120
+                # >Read_3|frequency:57
+                # >Read_4|frequency:7
+                #
+                # is finalized due to SMA < MSA although the entropy looked like this:
+                #
+                #    http://i.imgur.com/ctFnJE2.png
+                #
+                # when M = 300. This begs for a FIXME.
+                #
                 if node.reads[1].frequency < self.min_substantive_abundance:
                     # we are done with this node.
                     self.logger.info('finalize node (SMA < MSA): %s' % node_id)
