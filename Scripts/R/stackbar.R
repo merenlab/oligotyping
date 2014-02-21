@@ -61,6 +61,12 @@ if(!is.na(colors_file)){
     names(colors_list) <- c('oligo', 'color')
     colors_list$oligo <- factor(colors_list$oligo, levels=rev(levels(df$oligo)))
     colors_list <- colors_list[order(colors_list$oligo), ]
+} else {
+    colors <- rainbow(length(levels(df$oligo)))
+    colors <- sample(colors)
+    colors_list <- data.frame(cbind(levels(df$oligo), colors))
+    names(colors_list) <- c('oligo', 'color')
+    print(head(colors_list))
 }
 
 P <- function(df){
@@ -74,11 +80,7 @@ P <- function(df){
     p <- p + guides(fill = guide_legend(nrow = 25))
     p <- p + theme(plot.title = element_text(hjust=0, vjust=1))
     p <- p + coord_cartesian(ylim=c(-0.01, 1.01))
-
-    # colors file was provided?
-    if(!invalid(colors_file)){
-        p <- p + scale_fill_manual(limits = colors_list[[1]], values = as.vector(colors_list[[2]]))
-    }
+    p <- p + scale_fill_manual(limits = colors_list[[1]], values = as.vector(colors_list[[2]]))
 
     print(p)
 }
