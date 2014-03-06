@@ -755,12 +755,14 @@ def trim_uninformative_columns_from_alignment(input_file_path):
     input_fasta.reset()
     
     while input_fasta.next():
+        cols_not_invalid = []
         for i in invalid_columns:
             if input_fasta.seq[i] != '-':
-                invalid_columns.remove(i)
-   
+                cols_not_invalid.append(i)
+        invalid_columns = [i for i in invalid_columns if not i in cols_not_invalid]
+
     columns_to_keep = [x for x in range(0, fasta_read_len) if x not in invalid_columns]
-    
+
     input_fasta.reset()
 
     temp_file = tempfile.NamedTemporaryFile(delete = False)
