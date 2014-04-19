@@ -118,7 +118,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
     plt.savefig(output_file + '.pdf')
 
     if verbose:
-        progress.reset()
+        progress.clear()
         run.info('Entropy figure output path', output_file + '.{png, pdf}')
 
     if not no_display:

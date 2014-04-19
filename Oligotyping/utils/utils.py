@@ -43,6 +43,16 @@ class ConfigError(Exception):
     def __str__(self):
         return 'Config Error: %s' % self.e
 
+
+class LibError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        return
+    def __str__(self):
+        return 'Lib Error: %s' % self.e
+
+
 def get_unit_counts_and_percents(units, samples_dict):
     # this function returns two dictionaries that contain unit counts and percents
     # across samples. that can be used for agglomeration, as well as generation of
@@ -841,10 +851,6 @@ def HTMLColorToRGB(colorstring, scaled = True):
         return (r, g, b)
 
 
-def colorize(txt):
-    return '\033[0;30m\033[46m%s\033[0m' % txt
-
-
 def run_command(cmdline):
     try:
         if subprocess.call(cmdline, shell = True) < 0:
@@ -921,8 +927,6 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("\n\n")
             
         alignment.close()
-        if progress_func:
-            progress_func.end()
         return None
     if len(samples) == 1:
         sys.stderr.write("\n\n")
@@ -939,12 +943,8 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("\n\n")
             
         alignment.close()
-        if progress_func:
-            progress_func.end()
         return None
     else:
-        if progress_func:
-            progress_func.end()
         alignment.close()
         return samples
 
@@ -1047,31 +1047,79 @@ class Progress:
     def __init__(self):
         self.pid = None
         self.verbose = True
+        self.terminal_width = None
+
+        self.get_terminal_width()
+        self.color_prefix = '\033[0;30m\033[46m'
+        self.color_postfix = '\033[0m'
+        
+        self.currently_shown = None
+
+
+    def get_terminal_width(self):
+        try:
+            self.terminal_width = get_terminal_size()[0]
+        except:
+            self.terminal_width = 80 
+
 
     def new(self, pid):
         if self.pid:
-            self.end()
+            raise LibError, "Progress.new() can't be called before ending the previous one (Existing: '%s')." % self.pid
+
+        if not self.verbose:
+            return
+
         self.pid = '%s %s' % (get_date(), pid)
+        self.get_terminal_width()
+        self.currently_shown = None
+
 
     def write(self, c):
+        surpass = self.terminal_width - len(c)
+        
+        if surpass < 0:
+            c = c[0:-(-surpass + 4)] + ' (...)'
+        else:
+            self.currently_shown = c
+            c = c + ' ' * surpass
+
         if self.verbose:
-            sys.stderr.write(c)
+            sys.stderr.write(self.color_prefix + c + self.color_postfix)
             sys.stderr.flush()
+            
 
     def reset(self):
-        self.write('\r' + ' ' * get_terminal_size()[0])
-        self.write('\r')
-    
+        self.clear()
+
+    def clear(self):
+        if not self.verbose:
+            return
+        null = '\r' + ' ' * (self.terminal_width) 
+        sys.stderr.write(null)
+        sys.stderr.write('\r')
+        sys.stderr.flush()
+        self.currently_shown = None
+
+
     def append(self, msg):
-        self.write(colorize('%s' % (msg)))
+        if not self.verbose:
+            return
+        self.write('%s%s' % (self.currently_shown, msg))
+
 
     def update(self, msg):
-        self.write('\r' + colorize(' ' * get_terminal_size()[0]))
-        self.write(colorize('\r[%s] %s' % (self.pid, msg)))
+        if not self.verbose:
+            return
+        self.clear()
+        self.write('\r[%s] %s' % (self.pid, msg))
+
     
     def end(self):
-        self.reset()
         self.pid = None
+        if not self.verbose:
+            return
+        self.clear()
 
 
 def get_pretty_name(key):

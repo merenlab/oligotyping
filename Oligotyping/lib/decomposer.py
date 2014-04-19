@@ -171,6 +171,7 @@ class Decomposer:
             samples = utils.check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
                 raise utils.ConfigError, 'Exiting.'
+            self.progress.end()
 
         if self.sample_mapping:
             utils.mapping_file_simple_check(self.sample_mapping, samples)

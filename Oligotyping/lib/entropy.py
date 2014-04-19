@@ -37,7 +37,6 @@ VALID_CHARS = {'nucleotide': set(['A', 'T', 'C', 'G', '-']),
                'amino_acid': set(['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', '-'])}
 
 run = Run()
-progress = Progress()
 
 
 def entropy(l, l_qual = None, expected_qual_score = 40, amino_acid_sequences = False, sqrt_norm = False):
@@ -71,6 +70,8 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
     lines = []
     previous_alignment_length = None
+
+    progress = Progress()
     progress.verbose = verbose
    
     alignment = u.SequenceSource(alignment_path)

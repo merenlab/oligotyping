@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.96'
+__version__ = '1.0'
 
 import os
 import sys
@@ -489,7 +489,7 @@ class Oligotyping:
                 self.samples_dict[sample][oligo] = 1
        
         self.samples.sort()
-        self.progress.reset()
+        self.progress.end()
         self.run.info('num_samples_in_fasta', len(self.samples_dict))
 
         if self.quals_dict:
@@ -526,17 +526,18 @@ class Oligotyping:
             for oligo in oligos_in_samples_dict[sample]:
                 if oligo not in oligos_set:
                     oligos_set.append(oligo)
-        self.progress.reset()
+        self.progress.end()
         self.run.info('num_unique_oligos', len(oligos_set))
        
 
+        self.progress.new('Computing Oligo Abundances')
         # count oligo abundance
         oligo_sample_abundance = []
         for i in range(0, len(oligos_set)):
             oligo = oligos_set[i]
             
             if i % 100 == 0 or i == len(oligos_set) - 1:
-                self.progress.update('Counting oligo abundance: ' + utils.P(i, len(oligos_set)))
+                self.progress.update(utils.P(i, len(oligos_set)))
             
             count = 0
             for sample in self.samples:
@@ -544,22 +545,23 @@ class Oligotyping:
                     count += 1
             oligo_sample_abundance.append((count, oligo),)
         oligo_sample_abundance.sort()
-        self.progress.reset()
+        self.progress.end()
 
         # eliminate oligos based on the number of samples they appear
         # (any oligo required to appear in at least 'self.min_number_of_samples'
         # samples)
+        self.progress.new('Applying -s parameter')
         non_singleton_oligos = []
         for i in range(0, len(oligo_sample_abundance)):
             if i % 100 == 0 or i == len(oligo_sample_abundance) - 1:
-                self.progress.update('Eliminating singletons: ' + utils.P(i, len(oligo_sample_abundance)))
+                self.progress.update(utils.P(i, len(oligo_sample_abundance)))
             tpl = oligo_sample_abundance[i]
             if tpl[0] >= self.min_number_of_samples:
                 non_singleton_oligos.append(tpl[1])
             else:
                 self._register_removal(tpl[1], 'failed_s')
 
-        self.progress.reset()
+        self.progress.end()
         self.run.info('num_oligos_after_s_elim', len(non_singleton_oligos))
 
 
@@ -573,10 +575,11 @@ class Oligotyping:
 
         # eliminate very rare oligos (the percent abundance of every oligo should be
         # more than 'self.min_percent_abundance' percent in at least one sample)
+        self.progress.new('Applying -a parameter')
         for i in range(0, len(non_singleton_oligos)):
             oligo = non_singleton_oligos[i]
             if i % 100 == 0 or i == len(non_singleton_oligos) - 1:
-                self.progress.update('Applying -a parameter: ' + utils.P(i, len(non_singleton_oligos)))
+                self.progress.update(utils.P(i, len(non_singleton_oligos)))
             
             percent_abundances = []
             for sample in self.samples:
@@ -604,7 +607,7 @@ class Oligotyping:
                 else:
                     self._register_removal(oligo, 'failed_a')
 
-        self.progress.reset()
+        self.progress.end()
         self.run.info('num_oligos_after_a_elim', len(self.abundant_oligos))
         
         self.abundant_oligos = [x[1] for x in sorted(self.abundant_oligos, reverse = True)]
@@ -612,13 +615,14 @@ class Oligotyping:
 
         # eliminate very rare oligos (the ACTUAL ABUNDANCE, which is the sum of oligotype in all samples
         # should should be more than 'self.min_actual_abundance'.
+        self.progress.new('Applying -A parameter')
         if self.min_actual_abundance > 0:
             oligos_for_removal = []
             for i in range(0, len(self.abundant_oligos)):
                 oligo = self.abundant_oligos[i]
 
                 if i % 100 == 0 or i == len(self.abundant_oligos) - 1:
-                    self.progress.update('Applying -A parameter: ' + utils.P(i, len(non_singleton_oligos)))
+                    self.progress.update(utils.P(i, len(non_singleton_oligos)))
 
                 oligo_actual_abundance = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
                                                         if self.samples_dict[sample].has_key(oligo)])
@@ -629,8 +633,8 @@ class Oligotyping:
                 self.abundant_oligos.remove(oligo)
                 self._register_removal(oligo, 'failed_A')
 
-            self.progress.reset()
-            self.run.info('num_oligos_after_A_elim', len(self.abundant_oligos))
+        self.progress.end()
+        self.run.info('num_oligos_after_A_elim', len(self.abundant_oligos))
 
 
         # eliminate oligos based on -M / --min-substantive-abundance parameter.
@@ -661,11 +665,14 @@ class Oligotyping:
         # solution... And if you read this comment all the way here you either must be very bored or
         # very interested in using this codebase properly. Thanks.
 
+        self.progress.new('Applying -M parameter')
         if self.min_substantive_abundance:
             oligos_for_removal = []
             unique_sequence_distributions = self._get_unique_sequence_distributions_within_abundant_oligos()
 
-            for oligo in self.abundant_oligos:
+            for i in range(0, len(self.abundant_oligos)):
+                self.progress.update(utils.P(i))
+                oligo = self.abundant_oligos[i]
                 if max(unique_sequence_distributions[oligo]) < self.min_substantive_abundance:
                     oligos_for_removal.append(oligo)
 
@@ -673,8 +680,8 @@ class Oligotyping:
                 self._register_removal(oligo, 'failed_M')
                 self.abundant_oligos.remove(oligo)
 
-            self.progress.reset()
-            self.run.info('num_oligos_after_M_elim', len(self.abundant_oligos))
+        self.progress.end()
+        self.run.info('num_oligos_after_M_elim', len(self.abundant_oligos))
 
 
         # if 'limit_oligotypes_to' is defined, eliminate all other oligotypes
@@ -704,8 +711,6 @@ class Oligotyping:
             self.final_oligo_counts_dict[oligo] = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
                                                         if self.samples_dict[sample].has_key(oligo)])
 
-        self.progress.end()
-        
         # in case no oligos left
         if not len(self.abundant_oligos):
             raise utils.ConfigError, "\n\n\tAll oligotypes were discarded during the noise removal step.\
@@ -723,7 +728,7 @@ class Oligotyping:
         # MIN_NUMBER_OF_SAMPLES_OLIGOTYPE_APPEARS filters.
         self.progress.new('Refining Samples Dict')
 
-        self.progress.update('Deepcopying samples dict .. ')
+        self.progress.update('Deep-copying the dictionary .. ')
         samples_dict_copy = copy.deepcopy(self.samples_dict)
         self.progress.append('done')
 
@@ -742,10 +747,9 @@ class Oligotyping:
             self.samples.remove(sample)
             self.samples_dict.pop(sample)
 
-        self.progress.end()
-        
         self.num_sequences_after_qc = sum([sum(self.samples_dict[sample].values()) for sample in self.samples_dict]) 
 
+        self.progress.end()
         self.run.info('num_sequences_after_qc', self.num_sequences_after_qc)
 
         if len(samples_to_remove):
@@ -1055,10 +1059,9 @@ class Oligotyping:
         # this is what is going on here: we go through all oligotypes, gather sequences that are being
         # represented by a particular oligotype, unique them and report the top ten unique sequences
         # ordered by the frequency.
-        self.progress.new('Represenative Sequences')
+        self.progress.new('Representative Sequences')
 
         output_directory_for_reps = self.generate_output_destination("OLIGO-REPRESENTATIVES", directory = True)
-
 
         fasta_files_dict = {}
         unique_files_dict = {}
@@ -1159,9 +1162,8 @@ class Oligotyping:
 
         self.progress.end()
 
-
+        self.progress.new('Generating Entropy Figures')
         if (not self.quick) and (not self.no_figures):
-            self.progress.new('Generating Entropy Figures')
             if self.no_threading:
                 for oligo in self.abundant_oligos:
                     self.progress.update('%s (%d of %d)' % (oligo,
@@ -1183,8 +1185,7 @@ class Oligotyping:
                 mp.run_processes(processes_to_run, self.progress)
                 
                 self.final_oligo_entropy_distribution_dict = copy.deepcopy(entropy_per_oligo_shared_dict)
-            self.progress.end()
-
+        self.progress.end()
 
 
         if (not self.quick) and (not self.skip_blast_search):
