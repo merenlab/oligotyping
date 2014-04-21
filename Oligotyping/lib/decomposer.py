@@ -39,7 +39,7 @@ class Decomposer:
         self.normalize_m = True
         self.number_of_discriminants = 4
         self.min_actual_abundance = 0
-        self.min_substantive_abundance = 4
+        self.min_substantive_abundance = None
         self.output_directory = None
         self.project = None
         self.sample_name_separator = '_'
@@ -226,6 +226,11 @@ class Decomposer:
         return prefix
 
 
+    def set_min_substantive_abundance(self):
+        suggested_M = round(self.topology.nodes['root'].size / 5000.0)
+        self.min_substantive_abundance = suggested_M if suggested_M > 4 else 4
+
+
     def generate_output_destination(self, postfix, directory = False):
         return_path = os.path.join(self.output_directory, postfix)
 
@@ -273,13 +278,24 @@ class Decomposer:
         self.run.info('normalize_m', self.normalize_m)
         self.run.info('d', self.number_of_discriminants)
         self.run.info('A', self.min_actual_abundance)
-        self.run.info('M', self.min_substantive_abundance)
 
         # set number of threads to be used
         if not self.number_of_threads:
             self.number_of_threads = utils.Multiprocessing(None).num_thread
 
+        # If --min-substantive abundance is not zero, use it. otherwise a default value is
+        # going to be computed for it after the topology is initiated and the number of reads
+        # in the dataset is known.
+        if self.min_substantive_abundance:
+            self.run.info('M', self.min_substantive_abundance)
+
+        # initializing the topology.
         self._init_topology()
+
+        if not self.min_substantive_abundance:
+            self.set_min_substantive_abundance()
+            self.run.info('M', self.min_substantive_abundance)
+
 
         # to decide at what level should algorithm be concerned about divergent reads in a node, there has to be a
         # threshold that defines what is the maximum variation from the most abundant unique sequence. if user did

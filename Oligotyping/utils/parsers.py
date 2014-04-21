@@ -31,18 +31,22 @@ def decomposer():
                         help = 'Minimum number of reads in a node for decomposition to continue. Decomposition\
                                 will continue for any node that has more reads than this number as far as they\
                                 present an entropy that is larger than --min-entropy. This number should be\
-                                chosen carefully depending on the size of the sample')
-    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=4, metavar = "INTEGER",
+                                chosen carefully depending on the size of the sample. Althought this parameter\
+                                is available to you for historical reasons, For noise filtering, you are\
+                                encouraged to use --min-substantive-abundance parameter instead.')
+    parser.add_argument('-M', '--min-substantive-abundance', type=int, default=0, metavar = "INTEGER",
                         help = 'Unlike "actual" abundance, "substantive" abundance is interested in the abundance\
                                 of the most abundant read in a node. If the abundance of the most abundant\
                                 unique sequence in a node is smaller than the number given with this parameter\
-                                the node will be eliminated and not included in downstream analyses. Default\
-                                is %(default)d.')
+                                the node will be eliminated and not included in downstream analyses. This is the\
+                                most appropriate, and most cases, the only noise filtering parameter. If the user\
+                                does not set a value for minimum substantive abudnance, MED algorithm will set\
+                                one by default by dividing the number of reads in the input dataset by 5,000.')
     parser.add_argument('-V', '--maximum-variation-allowed', type=int, default=None, metavar = 'INTEGER',
                         help = 'This parameter is being used to remove "outliers" from nodes. The similarity of a\
                                 read in a node is less than --maximum-variation-allowed than the representative\
                                 sequence of the node, it is identified as an outlier. If not set, this value is \
-                                being computed depenging on the average read length.')
+                                being computed depending on the average read length.')
     parser.add_argument('-t', '--sample-name-separator', type=str, default='_', metavar = "CHAR",
                         help = 'Character that separates sample name from unique info in the defline. For insatnce\
                                 if the defline says >sample-1_GD7BRW402IVMZE, the separator should be set to "_"\
