@@ -206,6 +206,9 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     if run_info_dict['gexf_network_file_path']:
         html_dict['gexf_network_file_path'] = copy_as(run_info_dict['gexf_network_file_path'], 'network.gexf')
 
+    if run_info_dict['topology_gexf']:
+        html_dict['topology_gexf'] = copy_as(run_info_dict['topology_gexf'], 'topology.gexf')
+
     html_dict['samples_dict'] = get_samples_dict_from_environment_file(run_info_dict['environment_file_path'])
     html_dict['samples'] = sorted(html_dict['samples_dict'].keys())
     html_dict['blast_results_found'] = False

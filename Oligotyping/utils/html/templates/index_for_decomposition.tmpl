@@ -121,6 +121,9 @@
     {% if gexf_network_file_path %}
     	<tr><td id="l">{{pretty_names.gexf_network_file_path}}</td><td id="r"><a href="{{gexf_network_file_path}}">network.gexf</a></td></tr>
     {% endif %}
+    {% if topology_gexf %}
+    	<tr><td id="l">{{pretty_names.topology_gexf}}</td><td id="r"><a href="{{topology_gexf}}">topology.gexf</a></td></tr>
+    {% endif %}
     {% if blast_ref_db and blast_ref_db_path %}
     <tr><td id="l">{{pretty_names.blast_ref_db}}</td><td id="r"><a href="{{blast_ref_db_path}}">reference_db.fa</a></td></tr>
     {% endif %}
