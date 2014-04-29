@@ -60,7 +60,7 @@ class Decomposer:
         self.skip_gen_figures = False
         self.skip_check_input_file = False
         self.sample_mapping = None
-        self.skip_gexf_network_file = False
+        self.skip_gexf_files = False
         self.skip_basic_analyses = False
          
         if args:
@@ -88,7 +88,7 @@ class Decomposer:
             self.skip_check_input_file = args.skip_check_input_file
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
-            self.skip_gexf_network_file = args.skip_gexf_network_file
+            self.skip_gexf_files = args.skip_gexf_files
 
         self.decomposition_depth = -1
 
@@ -348,7 +348,7 @@ class Decomposer:
 
         self.run.info('end_of_run', utils.get_date())
 
-        if not self.skip_gexf_network_file:
+        if not self.skip_gexf_files:
             self._generate_gexf_network_file()
 
         if not self.skip_gen_figures:
@@ -1288,8 +1288,7 @@ class Decomposer:
 
 
     def _store_topology(self):
-        self.progress.new('Generating TXT and GEXF files for topology')
-        topology_gexf_file_path = self.generate_output_destination('TOPOLOGY.gexf')
+        self.progress.new('Generating output files for topology')
         topology_text_file_path = self.generate_output_destination('TOPOLOGY.txt')
         topology_text_file_obj = open(topology_text_file_path, 'w')
         
@@ -1317,21 +1316,26 @@ class Decomposer:
 
         topology_text_file_obj.close()
 
-        attribute_types_dict = {'size': "int",
-                                'level': "int",
-                                'max_entropy': "float",
-                                'average_entropy': "float",
-                                'density': "float",
-                                'num_comps_larger_than_m': "int",
-                                'normalized_m': "float"}
+        if not self.skip_gexf_files:
+            topology_gexf_file_path = self.generate_output_destination('TOPOLOGY.gexf')
+            attribute_types_dict = {'size': "int",
+                                    'level': "int",
+                                    'max_entropy': "float",
+                                    'average_entropy': "float",
+                                    'density': "float",
+                                    'num_comps_larger_than_m': "int",
+                                    'normalized_m': "float"}
 
-        utils.generate_gexf_network_file_for_nodes_topology(nodes_dict,
-                                                            topology_gexf_file_path,
-                                                            attribute_types_dict = attribute_types_dict)
+            utils.generate_gexf_network_file_for_nodes_topology(nodes_dict,
+                                                                topology_gexf_file_path,
+                                                                attribute_types_dict = attribute_types_dict)
 
         self.progress.end()
+
         self.run.info('topology_text', topology_text_file_path)
-        self.run.info('topology_gexf', topology_gexf_file_path)
+
+        if not self.skip_gexf_files:
+            self.run.info('topology_gexf', topology_gexf_file_path)
 
 
     def _store_node_representatives(self): 

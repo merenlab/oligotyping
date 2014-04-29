@@ -95,8 +95,8 @@ def decomposer():
                         help = 'When set, decomposer will not attempt to generate figures post analysis')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
                         help = 'When set, input FASTA will not be checked for potential errors')
-    parser.add_argument('--skip-gexf-network-file', action = 'store_true', default = False,
-                        help = 'When set, GEXF network file will not be generated')
+    parser.add_argument('--skip-gexf-files', action = 'store_true', default = False,
+                        help = 'When set, GEXF files for network and topology will not be generated')
 
 
     return parser
