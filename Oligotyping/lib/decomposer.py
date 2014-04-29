@@ -47,7 +47,6 @@ class Decomposer:
         self.generate_frequency_curves = False
         self.skip_refining_topology = False # FIXME: ADD THIS IN PARSERS!
         self.skip_removing_outliers = False
-        self.agglomerate_nodes = False
         self.relocate_outliers = False
         self.maximum_variation_allowed = None
         self.store_topology_dict = False
@@ -75,7 +74,6 @@ class Decomposer:
             self.sample_name_separator = args.sample_name_separator
             self.generate_frequency_curves = args.generate_frequency_curves
             self.skip_removing_outliers = args.skip_removing_outliers
-            self.agglomerate_nodes = args.agglomerate_nodes
             self.relocate_outliers = args.relocate_outliers
             self.store_topology_dict = args.store_topology_dict
             self.merge_homopolymer_splits = args.merge_homopolymer_splits
@@ -268,7 +266,6 @@ class Decomposer:
         self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
         self.run.info('sample_mapping', self.sample_mapping)
-        self.run.info('agglomerate_nodes', self.agglomerate_nodes)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
@@ -631,12 +628,6 @@ class Decomposer:
 
                 break
 
-            if self.agglomerate_nodes:
-                if it_is_OK_to_pass_this():
-                    pass
-                else:
-                    self._agglomerate_nodes(iteration)
-
             if self.merge_homopolymer_splits:
                 if it_is_OK_to_pass_this():
                     pass
@@ -771,104 +762,6 @@ class Decomposer:
         self.unit_counts = {}
         self.unit_percents = {}
         
-        self.progress.end()
-        self._refresh_topology()
-
-
-    def _agglomerate_nodes(self, iteration):
-        # since we generate nodes based on selected components immediately, some of the nodes will obviously
-        # be error driven, since systematic errors can inflate entropy to a point where a column can create
-        # its own entropy peak to be selected among all other things. most of the time sequencing errors are
-        # random (except some platform-dependent systematic errors, such as homopolymer region indels). so,
-        # the errors should not change beta diversity, and frequency distribution patterns of error driven nodes
-        # should follow their parent node very tightly (because if a node is very abundant in a sample, the erroneous
-        # node stemmed from the same parent will also be relatively abundant in the same sample). a metric that
-        # has the ability to describe similar patterns of frequency distribution, such as cosine similarity, can 
-        # be used to agglomerate nodes that diverge from each other by one base and has almost the exact frequency
-        # distribution pattern across samples. this type of process would agglomerate operons, and sometimes very
-        # closely related taxa that consistently co-occur, but since minimum entropy decomposition is not interested
-        # in diversity much, I am not sure whether this is a bad thing.
-
-        from Oligotyping.utils.cosine_similarity import cosine_distance
-
-        # generating a temporary samples dict.
-        self._generate_samples_dict()
-        self.logger.info('temp samples dict is ready; %d samples found' % (len(self.samples)))
-        self._get_unit_counts_and_percents()
-        self.logger.info('temp unit counts and percents dicts are ready')
-        
-        self.across_samples_sum_normalized, self.across_samples_max_normalized =\
-                utils.get_units_across_samples_dicts(self.topology.final_nodes, self.samples, self.unit_percents) 
-        
-        nz = utils.pretty_print(len(self.topology.zombie_nodes))
-        self.progress.new('Agglomerating nodes :: ITER %d%s' % (iteration,
-                                                                ' #Z: %s' % (nz if nz else '')))
- 
-        dealing_with_zombie_nodes = False
-
-        if self.topology.zombie_nodes:
-            nodes = copy.deepcopy(self.topology.zombie_nodes)
-            dealing_with_zombie_nodes = True
-        else:
-            nodes = copy.deepcopy(self.topology.final_nodes)
-
-        # ---
-        # use blastn to get the similarity dict. I don't like it here, but I'll take care of it later.        
-        query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = "AN_%d_" % iteration,\
-                                                                          directory = self.tmp_directory)
-        self.topology.store_node_representatives(nodes, query)
-        self.topology.store_node_representatives(self.topology.final_nodes, target)
-
-        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length)
-        params = "-perc_identity %.2f" % (min_percent_identity)
-
-        b = self._perform_blast(query, target, output, params, job = 'AN')
-        
-        self.progress.update('Generating similarity dict from blastn results')
-        similarity_dict = b.get_results_dict(mismatches = 1, gaps = 0)
-
-        node_ids = set(similarity_dict.keys())
-        nodes_to_skip = set()
-
-        while node_ids:
-            node = self.topology.nodes[node_ids.pop()]
-
-            if node.node_id in nodes_to_skip:
-                continue
-
-            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(node_ids)))
-            
-            for sibling_id in similarity_dict[node.node_id]:
-                if sibling_id in nodes_to_skip:
-                    continue
-                
-                sibling = self.topology.nodes[sibling_id]
-
-                d = cosine_distance(self.across_samples_max_normalized[node.node_id], self.across_samples_max_normalized[sibling.node_id])
-
-                if d < 0.1:
-                    if dealing_with_zombie_nodes:
-                        self.topology.merge_nodes(sibling.node_id, node.node_id)
-                        self.topology.standby_bin.append(sibling.node_id)
-                        nodes_to_skip.add(node.node_id)
-                        self.logger.info('zombie node merged (AN, d: %.2f): %s -> %s' % (d, node.node_id, sibling.node_id))
-                        break
-                    else:
-                        self.topology.merge_nodes(node.node_id, sibling.node_id)
-                        nodes_to_skip.add(sibling.node_id)
-                        self.logger.info('nodes merged (AN, d: %.2f): %s -> %s' % (d, node.node_id, sibling.node_id))
-
-                        # this shouldn't be necessary, but just in case:
-                        if sibling.node_id in node_ids:
-                            node_ids.remove(sibling.node_id)
-
-
-        # reset temporary stuff
-        self.samples = []
-        self.samples_dict = {}
-        self.unit_counts = {}
-        self.unit_percents = {}
-
         self.progress.end()
         self._refresh_topology()
 
