@@ -727,7 +727,7 @@ class Decomposer:
         
         min_percent_identity = 90.0
         params = "-perc_identity %.2f" % (min_percent_identity)
-        b = self._perform_blast(query, target, output, params, job = 'HPS')
+        b = self._perform_blast(query, target, output, params, job = 'HPS', no_threading = True)
         
         self.progress.update('Generating similarity dict from blastn results')
         similarity_dict = b.get_results_dict(mismatches = 0, gaps = 1)
