@@ -725,7 +725,7 @@ class Decomposer:
         self.topology.store_node_representatives(self.topology.final_nodes, target)
 
         
-        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length, N = 2)
+        min_percent_identity = 90.0
         params = "-perc_identity %.2f" % (min_percent_identity)
         b = self._perform_blast(query, target, output, params, job = 'HPS')
         
