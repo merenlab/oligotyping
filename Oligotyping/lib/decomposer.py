@@ -789,9 +789,10 @@ class Decomposer:
         else:
             node_list = copy.deepcopy(self.topology.final_nodes)
 
-
-        max_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length,
+        
+        min_percent_identity = utils.get_percent_identity_for_N_base_difference(self.topology.average_read_length,
                                                                           self.maximum_variation_allowed)
+        param = "-perc_identity %.2f" % (min_percent_identity)
 
         if self.no_threading:
             # no threading
@@ -816,27 +817,32 @@ class Decomposer:
 
                 target_obj = u.FastaOutput(target)
                 target_obj.write_id(node.reads[0].md5id)
-                target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
+                target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)
                 target_obj.close()
 
-                b = self._perform_blast(query, target, output, params = '', job = job)
-                    
-                similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
-                               
-                if len(similarity_dict):
+                b = self._perform_blast(query, target, output, params = param, job = job)
+
+                # while I feel ashamed for this redundancy, you go ahead and read the description
+                # written in the worker function below on this voodoo stuff.
+                similarity_dict = b.get_results_dict(min_identity = min_percent_identity)
+                read_ids_to_keep = set(similarity_dict.keys())
+                all_read_ids = set(id_to_read_object_dict.keys())
+                outliers = all_read_ids.difference(read_ids_to_keep)
+
+                if len(outliers):
                     node.dirty = True
                 else:
                     continue
     
-                self.progress.append(' / screening node to remove %d outliers' % len(similarity_dict))
+                self.progress.append(' / screening node to remove %d outliers' % len(outliers))
 
-                for _id in similarity_dict:
+                for _id in outliers:
                     outlier_read_object = id_to_read_object_dict[_id]
                     node.reads.remove(outlier_read_object)
                     self.topology.store_outlier(outlier_read_object, 'maximum_variation_allowed_reason')
  
                 self.logger.info('%d outliers removed from node: %s'\
-                            % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
+                            % (sum([id_to_read_object_dict[_id].frequency for _id in outliers]),
                                node_id))
  
         else:
@@ -862,24 +868,31 @@ class Decomposer:
                 target_obj.write_seq(node.reads[0].seq.replace('-', ''), split = False)            
                 target_obj.close()
 
-                b = self._perform_blast(query, target, output, params = '', job = job, no_threading = True)
-                    
-                similarity_dict = b.get_results_dict(max_identity = max_percent_identity)
-            
-                for _id in similarity_dict:
+                b = self._perform_blast(query, target, output, params = param, job = job, no_threading = True)
+
+                # something semi-smart: get all the read ids that are more similar to the rep_seq
+                # than allowed max_variation; keep them, remove anything that doesn't show up here.
+                # the other option would be to search for low similarity guys, but it would have
+                # required much more computational investment. 
+                similarity_dict = b.get_results_dict(min_identity = min_percent_identity)
+                read_ids_to_keep = set(similarity_dict.keys())
+                all_read_ids = set(id_to_read_object_dict.keys())
+                outliers = all_read_ids.difference(read_ids_to_keep)
+
+                for _id in outliers:
                     outlier_read_object = id_to_read_object_dict[_id]
                     node.reads.remove(outlier_read_object)
                     shared_outlier_seqs_list.append(outlier_read_object)
                 
-                if len(similarity_dict):
+                if len(outliers):
                     node.dirty = True
                     shared_dirty_nodes_list.append(node)
                 
                     self.logger.info('%d outliers removed from node: %s (max frequency: %d; mean frequency: %.2f)'\
-                        % (sum([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
+                        % (sum([id_to_read_object_dict[_id].frequency for _id in outliers]),
                            node_id,
-                           max([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),
-                           numpy.mean([id_to_read_object_dict[_id].frequency for _id in similarity_dict]),))
+                           max([id_to_read_object_dict[_id].frequency for _id in outliers]),
+                           numpy.mean([id_to_read_object_dict[_id].frequency for _id in outliers]),))
 
             mp = utils.Multiprocessing(worker, self.number_of_threads)
             shared_dirty_nodes_list = mp.get_empty_shared_array()
