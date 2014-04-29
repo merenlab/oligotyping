@@ -1379,7 +1379,7 @@ class Decomposer:
             self.logger.info('blastn for %s: %s' % (job, s.search_cmd))
         else:
             s.params = params
-            s.search_parallel(self.number_of_threads, 2000)
+            s.search_parallel(self.number_of_threads, 2000, keep_parts = self.keep_tmp)
             self.logger.info('parallel blastn for %s: %s' % (job, s.search_cmd))
 
         return s

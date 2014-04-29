@@ -169,7 +169,7 @@ class LocalBLAST:
             raise ModuleVersionError, version_error_text
 
 
-    def search_parallel(self, num_processes, num_reads_per_process = 2000):
+    def search_parallel(self, num_processes, num_reads_per_process = 2000, keep_parts = False):
         def worker(search_cmd):
             run_command(search_cmd)
         
@@ -209,10 +209,14 @@ class LocalBLAST:
             os.remove(self.output)
         
         for output_file_part in output_file_parts:
-            append_file(self.output, output_file_part)
+            if keep_parts:
+                append_file(self.output, output_file_part, remove_source = False)
+            else:
+                append_file(self.output, output_file_part)
 
-        for input_file_part in input_file_parts:
-            os.remove(input_file_part)
+        if not keep_parts:
+            for input_file_part in input_file_parts:
+                os.remove(input_file_part)
         
 
     def search(self, num_processes = None):

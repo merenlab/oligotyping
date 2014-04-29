@@ -17,6 +17,8 @@ import fcntl
 import shutil
 import struct
 import hashlib
+import random
+import string
 import termios 
 import cPickle
 import tempfile
@@ -1205,7 +1207,8 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_f
             if part_obj:
                 part_obj.close()
 
-            file_path = os.path.join(dest_dir, '%s-%d' % (prefix, next_part))
+            rand_bit = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(8)])
+            file_path = os.path.join(dest_dir, '%s-%d-%s.fa' % (prefix, next_part, rand_bit))
             parts.append(file_path)
             next_part += 1
             part_obj = u.FastaOutput(file_path)
