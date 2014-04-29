@@ -364,6 +364,7 @@ class Node:
 
     def refresh(self):
         self.set_representative()
+        self.size = sum([read.frequency for read in self.reads])
         self.do_entropy()
         self.do_competing_unique_sequences_ratio_and_density()
         self.dirty = False
