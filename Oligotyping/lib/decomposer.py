@@ -725,21 +725,44 @@ class Decomposer:
         
         node_ids = set(similarity_dict.keys())
 
+        # we first generate list of lists that, each of which contains node ids that are
+        # split by a homopolymer region-associated in/del (HPS).
         merge_clusters = []
         for source_node_id in node_ids:
+            related_ids = [source_node_id]
+            node = self.topology.nodes[source_node_id]
+            
             for target_node_id in similarity_dict[source_node_id]:
-                node = self.topology.nodes[source_node_id]
                 sibling = self.topology.nodes[target_node_id]
                 if utils.homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
-                    # source_node_id and target_node_id needs to get merged.
-                    placed = False
-                    for merge_cluster in merge_clusters:
-                        if source_node_id in merge_cluster or target_node_id in merge_cluster:
-                            placed = True
-                            merge_cluster.add(source_node_id)
-                            merge_cluster.add(target_node_id)
-                    if not placed:
-                        merge_clusters.append(set([source_node_id, target_node_id]))
+                    related_ids.append(target_node_id)
+
+            if len(related_ids) > 1:
+                merge_clusters.append(set(related_ids))
+
+        # previous step generates many clusters that are connected by shared nodes, such as this one:
+        #
+        # [set([000000007', '000000006']), set(['000000005', '000000006'])]
+        #
+        # so we finalize it here by absorbing connected clusters into one cluster, which
+        # generates this from the one above:
+        #
+        # set(['000000005', '000000007', '000000006'])]
+        #
+        hps_merge_final = []
+        while len(merge_clusters):
+            cluster_absorbing = merge_clusters.pop()
+
+            redo = True
+            while redo:
+                redo = False
+                for cluster in merge_clusters:
+                    if cluster_absorbing.intersection(cluster):
+                        cluster_absorbing.update(cluster)
+                        merge_clusters.remove(cluster)
+                        redo = True
+
+            hps_merge_final.append(cluster_absorbing)
 
         # code above populates merge_clusters, which looks like this at the end:
         #
@@ -749,12 +772,12 @@ class Decomposer:
         # is merged with the higher abundance:
         #
         #    [[(4, '000000009'), (2, '000000002')], [(5, '000000007'), (4, '000000005'), (3, '000000006')]]
-        merge_clusters = [sorted([(self.topology.nodes[t].size, t) for t in x], reverse = True) for x in merge_clusters]
-        self.logger.info('merge clusters: %s' % merge_clusters.__str__())
+        hps_merge_final = [sorted([(self.topology.nodes[t].size, t) for t in x], reverse = True) for x in hps_merge_final]
+        self.logger.info('merge clusters: %s' % hps_merge_final.__str__())
 
         # go through every merge cluster, perform merging the most left node
-        for i in range(0, len(merge_clusters)):
-            merge_cluster = merge_clusters[i]
+        for i in range(0, len(hps_merge_final)):
+            merge_cluster = hps_merge_final[i]
             self.progress.update('Processing merge cluster %d of %d' % (i, len(merge_clusters)))
             
             node_id = merge_cluster[0][1]
