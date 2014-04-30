@@ -721,40 +721,52 @@ class Decomposer:
         
         self.progress.update('Generating similarity dict from blastn results')
         similarity_dict = b.get_results_dict(mismatches = 0, gaps = 1)
-
+        
         node_ids = set(similarity_dict.keys())
-        nodes_to_skip = set()
 
-        while node_ids:
-            node = self.topology.nodes[node_ids.pop()]
-
-            if node.node_id in nodes_to_skip:
-                continue
-
-            self.progress.update('Processing node ID: "%s" (remaining: %d)' % (node.pretty_id, len(node_ids)))
-            
-            for sibling_id in similarity_dict[node.node_id]:
-                if sibling_id in nodes_to_skip:
-                    continue
-                
-                sibling = self.topology.nodes[sibling_id]
-
-
+        merge_clusters = []
+        for source_node_id in node_ids:
+            for target_node_id in similarity_dict[source_node_id]:
+                node = self.topology.nodes[source_node_id]
+                sibling = self.topology.nodes[target_node_id]
                 if utils.homopolymer_indel_exists(node.representative_seq, sibling.representative_seq):
-                    if dealing_with_zombie_nodes:
-                        self.topology.merge_nodes(sibling.node_id, node.node_id)
-                        self.topology.standby_bin.append(sibling.node_id)
-                        nodes_to_skip.add(node.node_id)
-                        self.logger.info('zombie node merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
-                        break
-                    else:
-                        self.topology.merge_nodes(node.node_id, sibling.node_id)
-                        nodes_to_skip.add(sibling.node_id)
-                        self.logger.info('nodes merged (HPS): %s -> %s' % (node.node_id, sibling.node_id))
+                    # source_node_id and target_node_id needs to get merged.
+                    placed = False
+                    for merge_cluster in merge_clusters:
+                        if source_node_id in merge_cluster or target_node_id in merge_cluster:
+                            placed = True
+                            merge_cluster.add(source_node_id)
+                            merge_cluster.add(target_node_id)
+                    if not placed:
+                        merge_clusters.append(set([source_node_id, target_node_id]))
 
-                        # this shouldn't be necessary, but just in case:
-                        if sibling.node_id in node_ids:
-                            node_ids.remove(sibling.node_id)
+        # code above populates merge_clusters, which looks like this at the end:
+        #
+        #    [set(['000000009', '000000002']), set(['000000005', '000000007', '000000006'])]
+        #
+        # the one liner below sorts these ladies appropriately. so it is always the lower abundance
+        # is merged with the higher abundance:
+        #
+        #    [[(4, '000000009'), (2, '000000002')], [(5, '000000007'), (4, '000000005'), (3, '000000006')]]
+        merge_clusters = [sorted([(self.topology.nodes[t].size, t) for t in x], reverse = True) for x in merge_clusters]
+
+        # go through every merge cluster, perform merging the most left node
+        for i in range(0, len(merge_clusters)):
+            merge_cluster = merge_clusters[i]
+            self.progress.update('Processing merge cluster %d of %d' % (i, len(merge_clusters)))
+            
+            node_id = merge_cluster[0][1]
+            
+            for sibling_id in [m[1] for m in merge_cluster[1:]]:
+
+                if dealing_with_zombie_nodes:
+                    self.topology.merge_nodes(node_id, sibling_id)
+                    self.topology.standby_bin.append(node_id)
+                    self.logger.info('zombie node merged (HPS): %s <<< %s' % (node_id, sibling_id))
+                else:
+                    self.topology.merge_nodes(node_id, sibling_id)
+                    self.logger.info('nodes merged (HPS): %s <<< %s' % (node_id, sibling_id))
+
 
         # reset temporary stuff
         self.samples = []
