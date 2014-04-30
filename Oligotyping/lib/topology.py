@@ -38,6 +38,8 @@ class Topology:
         self.average_read_length = None
         self.alignment_length    = None
 
+        self.logger = None
+
 
     def get_new_node_id(self):
         if not self.next_available_node_id:
@@ -140,8 +142,11 @@ class Topology:
     def remove_node(self, node_id, store_content_in_outliers_dict = False, reason = None):
         node = self.nodes[node_id]
         parent = self.nodes[node.parent]
+
+        self.logger.info('topology: remove node "%s" (of parent "%s")' % (node_id, node.parent))
         
         parent.children.remove(node_id)
+        parent.size -= node.size
 
         if store_content_in_outliers_dict:
             for read in node.reads:
@@ -190,6 +195,7 @@ class Topology:
         absorber.dirty = True
         
         # remove absorbed from the topology
+        self.logger.info('topology: remove child "%s" from parent "%s"' % (absorbed.node_id, absorbed_parent.node_id))
         absorbed_parent.children.remove(absorbed.node_id)
         
         if absorber_parent.node_id != absorbed_parent.node_id and absorbed_parent.node_id != 'root':
@@ -200,6 +206,7 @@ class Topology:
         # node was previously split between its child nodes. if all children were absorbed by other nodes
         # this node has no place in the topology anymore.
         if not absorbed_parent.children:
+            self.logger.info('topology: remove empty parent of absorbed "%s"' % (absorbed_parent.node_id))
             self.remove_node(absorbed_parent.node_id)
 
         self.final_nodes.remove(absorbed.node_id)

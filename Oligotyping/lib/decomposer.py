@@ -180,6 +180,7 @@ class Decomposer:
 
     def _init_logger(self, path = None):
         self.logger = logging.getLogger('decomposer')
+        self.topology.logger = self.logger
         
         if path:
             self.log_file_path = path 
@@ -749,6 +750,7 @@ class Decomposer:
         #
         #    [[(4, '000000009'), (2, '000000002')], [(5, '000000007'), (4, '000000005'), (3, '000000006')]]
         merge_clusters = [sorted([(self.topology.nodes[t].size, t) for t in x], reverse = True) for x in merge_clusters]
+        self.logger.info('merge clusters: %s' % merge_clusters.__str__())
 
         # go through every merge cluster, perform merging the most left node
         for i in range(0, len(merge_clusters)):
@@ -760,12 +762,12 @@ class Decomposer:
             for sibling_id in [m[1] for m in merge_cluster[1:]]:
 
                 if dealing_with_zombie_nodes:
+                    self.logger.info('zombie node merged (HPS): %s <<< %s' % (node_id, sibling_id))
                     self.topology.merge_nodes(node_id, sibling_id)
                     self.topology.standby_bin.append(node_id)
-                    self.logger.info('zombie node merged (HPS): %s <<< %s' % (node_id, sibling_id))
                 else:
-                    self.topology.merge_nodes(node_id, sibling_id)
                     self.logger.info('nodes merged (HPS): %s <<< %s' % (node_id, sibling_id))
+                    self.topology.merge_nodes(node_id, sibling_id)
 
 
         # reset temporary stuff
