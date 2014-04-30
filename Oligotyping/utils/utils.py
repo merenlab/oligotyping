@@ -489,7 +489,7 @@ def generate_gexf_network_file_for_nodes_topology(nodes_dict, output_file, attri
             output.write('''    <node id="%s">\n''' % (node))
         else:
             output.write('''    <node id="%s" label="%s">\n''' % (node, node))
-        output.write('''        <viz:size value="%.2f"/>\n''' % (math.sqrt(nodes_dict[node]['size']) + 1))
+        output.write('''        <viz:size value="%.2f"/>\n''' % (math.log10(nodes_dict[node]['size'] + 1) + 1))
 
         #if nodes_dict and nodes_dict.has_key('colors'):
         #    output.write('''        <viz:color r="%d" g="%d" b="%d" a="1"/>\n''' %\
