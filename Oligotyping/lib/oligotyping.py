@@ -670,8 +670,10 @@ class Oligotyping:
             oligos_for_removal = []
             unique_sequence_distributions = self._get_unique_sequence_distributions_within_abundant_oligos()
 
-            for i in range(0, len(self.abundant_oligos)):
-                self.progress.update(utils.P(i))
+            num_abundant_oligos = len(self.abundant_oligos)
+
+            for i in range(0, num_abundant_oligos):
+                self.progress.update(utils.P(i, num_abundant_oligos))
                 oligo = self.abundant_oligos[i]
                 if max(unique_sequence_distributions[oligo]) < self.min_substantive_abundance:
                     oligos_for_removal.append(oligo)
@@ -1029,14 +1031,12 @@ class Oligotyping:
         # listed in this dictionary MAY NOT be the final oligos once the noise
         # filtering step has ended.
 
-        self.progress.new('Unique Sequence Distributions Within Abundant Oligos')
-
         temp_unique_distributions = dict(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))]))
 
         self.fasta.reset()
         while self.fasta.next():
-            if self.fasta.pos % 1000 == 0:
-                self.progress.update('Computing: %.2f%%' \
+            if self.progress and self.fasta.pos % 1000 == 0:
+                self.progress.update('Computing sequence distributions: %.2f%%' \
                                                 % (self.fasta.pos * 100.0 / self.fasta.total_seq))
             oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
             if oligo in self.abundant_oligos:
@@ -1048,7 +1048,6 @@ class Oligotyping:
         for oligo in self.abundant_oligos:
             temp_unique_distributions[oligo] = sorted(temp_unique_distributions[oligo].values(), reverse = True)
 
-        self.progress.end()
 
         return temp_unique_distributions
 

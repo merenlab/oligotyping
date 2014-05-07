@@ -1067,7 +1067,7 @@ class Progress:
 
     def new(self, pid):
         if self.pid:
-            raise LibError, "Progress.new() can't be called before ending the previous one (Existing: '%s')." % self.pid
+            raise LibError, "Progress.new() can't be called before ending the previous one (Existing: '%s', Competing: '%s')." % (self.pid, pid)
 
         if not self.verbose:
             return
