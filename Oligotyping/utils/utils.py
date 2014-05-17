@@ -151,6 +151,14 @@ def generate_MATRIX_files_for_units_across_samples(units, samples, MN_fp, SN_fp,
         across_samples_MN_file.close()
         across_samples_SN_file.close()
 
+
+def get_num_nt_diff_between_two_aligned_sequences(seq1, seq2):
+    if len(seq1) != len(seq2):
+        raise LibError, "Two sequences are not equal in length:\n\t%s\n\t%s" % (seq1, seq2)
+
+    return len(["diff" for i in range(0, len(seq1)) if seq1[i] != seq2[i]])
+
+
 def homopolymer_indel_exists(seq1, seq2):
     seq1, seq2 = trim_uninformative_gaps_from_sequences(seq1, seq2)
     
