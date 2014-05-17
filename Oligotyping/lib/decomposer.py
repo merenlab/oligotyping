@@ -529,7 +529,7 @@ class Decomposer:
                         new_nodes_dict[oligo]['reads'] = [read]
                 
                 
-                # all reads in the parent reads are analyzed. time to add spawned nodes into the topology.
+                # all reads in the parent node are analyzed. time to add spawned nodes into the topology.
                 oligos = new_nodes_dict.keys()
                 len_oligos = len(oligos)
                 for i in range(0, len_oligos):
