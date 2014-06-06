@@ -36,6 +36,7 @@ def main(input_fasta, trim_from = 0, trim_to = sys.maxint, min_length = sys.maxi
 
     fasta.close()
     output.close()
+    sys.stderr.write('\n')
 
 
 if __name__ == '__main__':
