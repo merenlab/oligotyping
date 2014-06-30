@@ -16,7 +16,7 @@ def decomposer():
     parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
     parser.add_argument('alignment', metavar = 'FILEPATH',
                         help = 'Alignment file that contains all samples and sequences in FASTA format')
-    parser.add_argument('-m', '--min-entropy', type=float, default=0.3, metavar="FLOAT",
+    parser.add_argument('-m', '--min-entropy', type=float, default=0.0965, metavar="FLOAT",
                         help = 'Minimum entropy for a component to have in order to be picked as a\
                                 discriminant. Defeault: %(default)f')
     parser.add_argument('-X', '--skip-m-normalization', action = 'store_true', default = False,

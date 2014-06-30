@@ -35,7 +35,7 @@ class Decomposer:
     def __init__(self, args = None):
         self.analysis = 'decomposition'
         self.alignment = None
-        self.min_entropy = 0.3
+        self.min_entropy = 0.0965
         self.normalize_m = True
         self.number_of_discriminants = 4
         self.min_actual_abundance = 0
