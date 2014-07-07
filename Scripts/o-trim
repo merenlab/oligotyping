@@ -13,20 +13,49 @@
 import sys
 
 import Oligotyping.lib.fastalib as u
+from Oligotyping.utils.utils import pretty_print as pp
 
 
-fasta = u.SequenceSource(sys.argv[1], lazy_init = False)
-output = u.FastaOutput(sys.argv[1] + '-TRIMMED')
+def main(input_fasta, trim_from = 0, trim_to = sys.maxint, min_length = sys.maxint, output = None):
+    if not output:
+        output = input_fasta + '.TRIMMED.fa'
 
-trim_from = int(sys.argv[2])
-trim_to = int(sys.argv[3]) if len(sys.argv) == 4 else None
+    fasta = u.SequenceSource(input_fasta)
+    output = u.FastaOutput(output)
+    
+    while fasta.next():
+        if fasta.pos % 1000 == 0:
+            sys.stderr.write('\rreads processed so far: %s' % (pp(fasta.pos)))
+            sys.stderr.flush()
 
-while fasta.next():
-    output.write_id(fasta.id)
-    if trim_to:
-        output.write_seq(fasta.seq[trim_from:trim_to], split = False)
-    else:
-        output.write_seq(fasta.seq[trim_from:], split = False)
+        if len(fasta.seq) < min_length:
+            continue
 
-fasta.close()
-output.close()
+        output.write_id(fasta.id)
+        output.write_seq(fasta.seq[trim_from:trim_to])
+
+    fasta.close()
+    output.close()
+    sys.stderr.write('\n')
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Trim FASTA file')
+    parser.add_argument('input_fasta', metavar = 'FILE',
+                        help = 'FASTA file to subsample')
+    parser.add_argument('--trim-from', metavar = 'INTEGER', type = int, default = 0,
+                        help = 'Start position')
+    parser.add_argument('--trim-to', metavar = 'INTEGER', type = int, default = sys.maxint,
+                        help = 'End position')
+    parser.add_argument('--min-length', metavar = 'INTEGER', type = int, default = sys.maxint,
+                        help = 'Minimum lenght of a read to be kept')
+    parser.add_argument('-o', '--output', metavar = 'FILE_FILE_PATH', default = None,
+                        help = 'Output file name.')
+
+    args = parser.parse_args()
+
+
+    sys.exit(main(args.input_fasta, args.trim_from, args.trim_to, args.min_length, args.output))
+
