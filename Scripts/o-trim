@@ -16,7 +16,7 @@ import Oligotyping.lib.fastalib as u
 from Oligotyping.utils.utils import pretty_print as pp
 
 
-def main(input_fasta, trim_from = 0, trim_to = sys.maxint, min_length = sys.maxint, output = None):
+def main(input_fasta, trim_from = 0, trim_to = sys.maxint, min_length = 0, output = None):
     if not output:
         output = input_fasta + '.TRIMMED.fa'
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
                         help = 'Start position')
     parser.add_argument('--trim-to', metavar = 'INTEGER', type = int, default = sys.maxint,
                         help = 'End position')
-    parser.add_argument('--min-length', metavar = 'INTEGER', type = int, default = sys.maxint,
+    parser.add_argument('--min-length', metavar = 'INTEGER', type = int, default = 0,
                         help = 'Minimum lenght of a read to be kept')
     parser.add_argument('-o', '--output', metavar = 'FILE_FILE_PATH', default = None,
                         help = 'Output file name.')
