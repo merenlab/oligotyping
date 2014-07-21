@@ -33,9 +33,10 @@ class Tests(unittest.TestCase):
         self.oligotyping.min_percent_abundance = 1
         self.oligotyping.min_actual_abundance = 100
         self.oligotyping.min_number_of_samples = 1
+        self.oligotyping.min_substantive_abundance = 0
         self.oligotyping.project = 'Unaligned 25K Illumina Test'
         self.oligotyping.quick = True
-        self.oligotyping.generate_sets = True
+        self.oligotyping.generate_sets = False
         self.oligotyping.cosine_similarity_threshold = 0.5
         self.oligotyping.output_directory = self.output_directory_path 
         self.oligotyping.no_display = True
@@ -63,17 +64,17 @@ class Tests(unittest.TestCase):
         self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-MATRIX-COUNT.txt'),
                                            os.path.join(self.output_directory_path, 'MATRIX-COUNT.txt')))
        
-    def test_06_OligotypeSets(self):
-        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOTYPE-SETS.txt'),
-                                           os.path.join(self.output_directory_path, 'OLIGOTYPE-SETS.txt')))
-       
-    def test_07_OligotypesAcrossSamplesMaxNorm(self):
-        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-MAX-NORM.txt'),
-                                           os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-MAX-NORM.txt')))
+    #def test_06_OligotypeSets(self):
+    #    self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOTYPE-SETS.txt'),
+    #                                       os.path.join(self.output_directory_path, 'OLIGOTYPE-SETS.txt')))
+    #   
+    #def test_07_OligotypesAcrossSamplesMaxNorm(self):
+    #    self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-MAX-NORM.txt'),
+    #                                       os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-MAX-NORM.txt')))
 
-    def test_08_OligotypesAcrossSamplesSumNorm(self):
-        self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-SUM-NORM.txt'),
-                                           os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-SUM-NORM.txt')))
+    #def test_08_OligotypesAcrossSamplesSumNorm(self):
+    #    self.assertTrue(files_are_the_same(os.path.join(my_path, 'files/unaligned-25K-illumina-OLIGOS-ACROSS-DATASETS-SUM-NORM.txt'),
+    #                                       os.path.join(self.output_directory_path, 'OLIGOS-ACROSS-DATASETS-SUM-NORM.txt')))
        
     def test_99_CleanUp(self):
         shutil.rmtree(self.output_directory_path)

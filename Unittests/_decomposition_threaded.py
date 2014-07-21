@@ -30,6 +30,7 @@ class Tests(unittest.TestCase):
         self.decomposer.min_entropy = 0.3
         self.decomposer.min_actual_abundance = 0
         self.decomposer.min_substantive_abundance = 2
+        self.decomposer.skip_check_input_file = True
         self.decomposer.number_of_discriminants = 1
         self.decomposer.progress.verbose = False
         self.decomposer.run.verbose = False

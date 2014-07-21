@@ -39,11 +39,11 @@ class Tests(unittest.TestCase):
                              self.output)
         s.make_blast_db()
         s.params = '-perc_identity %f' % self.min_percent_identity 
-        s.search_parallel(num_processes = 8, num_reads_per_process = 1000)
+        s.search_parallel(num_processes = 2, num_reads_per_process = 1000)
         similarity_dict = s.get_results_dict(min_identity = self.min_percent_identity)
 
         self.assertTrue(len(similarity_dict) == 21076)
-        
+
         self.assertTrue(files_are_the_same(self.expected_output, self.output))
 
 
@@ -53,3 +53,4 @@ class Tests(unittest.TestCase):
                        'unaligned-25K-illumina-target.db.nsq',
                        'unaligned-25K-illumina-test.b6']:
             os.remove(os.path.join(my_path, 'files/%s' % output))
+        pass
