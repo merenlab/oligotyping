@@ -322,6 +322,36 @@ h1 {
     margin-bottom: 20px;
 }
 
+.info_table_one {
+    width: 900px;
+    padding-left: 200px;
+    padding-bottom: 170px;
+    font-size: 1.0em;
+    margin-bottom: 20px;
+}
+
+.info_one {
+    float: left;
+    width: 700px;
+    font-style:italic;
+    margin-bottom: 20px;
+}
+
+.info_two {
+    float: left;
+    width: 100px;
+    height: 150px;
+    padding-left: 100px;
+}
+
+.score {
+    font-style:italic;
+    border: solid 1px #CCCCCC;
+    background-color: #f9f9f9;
+    display: table;
+    width: 150px;
+    height: 150px;
+}
 
 .sampleslist {
     width: 90%;
