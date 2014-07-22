@@ -28,9 +28,9 @@
 
 <div class="smallhead"><a name="General"></a>Overview</div>
 <p class="smallheadtitle">» A summary of what happened.
-<div class="info_table">
-<p style="width: 800px;text-align:justify;text-justify:inter-word;font-style:italic;">
-
+<div class="info_table_one">
+<div class="info_one" >
+    <p style="text-justify:inter-word;"> 
 		Oligotyping analysis was performed on
 		{{total_seq|pretify}} read{{ total_seq|pluralize }} from {{num_samples_in_fasta|pretify}} sample{{ num_samples_in_fasta|pluralize }}
 		for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using
@@ -64,9 +64,13 @@
 			{{samples_removed_after_qc|length}} sample{{ samples_removed_after_qc|length|pluralize }} were removed
 			from the analysis because all its reads were eliminated during the QC.
 		{% endif %}
-</p>
+    </p>
 </div>
-
+<div class="info_two">
+    <p style="text-justify:inter-word;"> 
+<div class="score" align="center" >Total Purity Score <br /> <p style="font-size:2.5em;"><span style="color:{{ total_score_color }};">{{ total_purity_score }}</span> <img src="colorbar.png" border="0" width="80%" height="80%"/></p></div>
+</div>
+</div>
 
 <div class="smallhead"><a name="General"></a>General Information</div>
 <br />
@@ -239,13 +243,14 @@
     <div class="wrap">
         <div id='sequences' style="height: auto;"> 
             <div style="width: {% if alignment_length|multiply:10 > 1200 %}{{alignment_length|multiply:10}}{% else %}1200{%endif%}px; position: relative;">
-                     <p>
+                     <p> 
+                        <span style="border: 0.1px solid white;-moz-border-radius: 50%;-webkit-border-radius: 50%; border-radius: 50%;">&nbsp;&nbsp;</span>
                         <span class="check">&nbsp;</span>
                         <span class="frequency">&nbsp;</span>
                         <span style="background-color:{{white}}; border: 1px solid white;">&nbsp;&nbsp;</span>
                         <span style="color: white;"> <strong>{{oligos.0}}</strong> b {{ component_reference|safe }}</span>
                 {% for oligo in oligos %}
-                    <p>
+                    <p><a onmouseover="popup('{{ purity_score|lookup:oligo|floatformat:"2" }}',30)"><span style="background-color:{{ score_color_dict|lookup:oligo }};border:0.1px solid white;-moz-border-radius: 50%; -webkit-border-radius: 50%; border-radius: 50%;">&nbsp;&nbsp;</span></a>
                         {% if blast_results_found %}
                             {% if oligo_reps_dict.blast_results|lookup:oligo|has_perfect_hit %}
                                 <span class="check">✓</span>
@@ -257,7 +262,7 @@
                         {% endif %}
                         </span>
                         <span class="frequency">{{ frequency|lookup:oligo }}</span>
-                        <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;">&nbsp;&nbsp;</span>
+                        <span style="background-color:{{color_dict|lookup:oligo}}; border: 1px solid black;" class="score_oligo">&nbsp;&nbsp;</span>
                         <span style="border-bottom:1px solid {{ color_dict|lookup:oligo }}"> <strong><a onmouseover="popup('<img src={{oligo_reps_dict.imgs|lookup:oligo}} width=&quot;790&quot;>{% if oligo_reps_dict.blast_results|lookup:oligo|length %}{{ oligo_reps_dict.blast_results|lookup:oligo|get_blast_hits }}{% endif %}', 800)" href="oligo_{{oligo}}.html">{{oligo}}</a></strong> <em><a title="BLAST search this sequence in NCBI" href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on&LINK_LOC=blasthome&DATABASE=nr&QUERY=>{{ oligo }}%0d{{ rep_oligo_seqs_clean_dict|lookup:oligo|cleangaps }}">b</a></em> {{ rep_oligo_seqs_fancy_dict|lookup:oligo|safe }}</span>
                 {% endfor %}
             </div>
@@ -332,7 +337,7 @@
 
 {% if figures_dict and not skip_basic_analyses %}
 	<div class="smallhead"><a name="BasicAnalyses"></a>Basic Analyses</div>
-	<p class="smallheadtitle">» Deafult
+	<p class="smallheadtitle">» Default
 	<div class="info_table">
 	{% for key, value in figures_dict.basic_analyses.items %}
 	<p style="font-weight:bold;">» {{ key }}
