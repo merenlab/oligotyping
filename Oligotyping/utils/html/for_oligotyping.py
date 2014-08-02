@@ -54,8 +54,6 @@ def get_list_item(l, index):
         return l[index]
     return ''
 
-
-
 @register.filter(name='has_perfect_hit')
 def has_perfect_hit(b6_entry_list):
     return b6_entry_list[0].identity == 100.0 if len(b6_entry_list) else False
@@ -170,6 +168,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header_1.png'), os.path.join(html_output_directory, 'header.png'))
     shutil.copy2(os.path.join(absolute, 'static/missing_image.png'), os.path.join(html_output_directory, 'missing.png'))
+    shutil.copy2(os.path.join(absolute, 'static/colorbar.png'), os.path.join(html_output_directory, 'colorbar.png'))
     shutil.copy2(os.path.join(absolute, 'scripts/jquery-1.7.1.js'), os.path.join(html_output_directory, 'jquery-1.7.1.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/popup.js'), os.path.join(html_output_directory, 'popup.js'))
     shutil.copy2(os.path.join(absolute, 'scripts/g.pie.js'), os.path.join(html_output_directory, 'g.pie.js'))
@@ -273,6 +272,13 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['alignment_length'] = get_alignment_length(run_info_dict['alignment'])
     # include pretty names
     html_dict['pretty_names'] = pretty_names
+    # get purity score colors dict
+    html_dict['score_color_dict'] = {}
+    gradient = get_list_of_colors(26, colormap = 'RdYlGn')
+    for oligo in run_info_dict['final_purity_score_dict']:
+        html_dict['score_color_dict'][oligo] = gradient[int(run_info_dict['final_purity_score_dict'][oligo] * 25)]
+    # get total purity score color dict
+    html_dict['total_score_color'] = gradient[int(float(run_info_dict['total_purity_score_dict']) * 25)]
     # get colors dict
     html_dict['color_dict'] = get_colors_dict(run_info_dict['colors_file_path'])
     # get abundant oligos list
@@ -281,6 +287,10 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     html_dict['frequency'] = {}
     for oligo in html_dict['oligos']:
         html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in html_dict['samples_dict'].values() if d.has_key(oligo)]))
+    # get purity score
+    html_dict['purity_score'] = run_info_dict['final_purity_score_dict']
+    # get total purity score
+    html_dict['total_purity_score'] = run_info_dict['total_purity_score_dict']
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
     if html_dict.has_key('output_directory_for_reps'):
         html_dict['rep_oligo_seqs_clean_dict'], html_dict['rep_oligo_seqs_fancy_dict'] = get_unique_sequences_dict(html_dict)
@@ -399,7 +409,6 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
             oligo_reps_dict['blast_results'][oligo] = None
 
     return oligo_reps_dict
-
 
 def get_alignment_length(alignment_path):
     alignment = u.SequenceSource(alignment_path)

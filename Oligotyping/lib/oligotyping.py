@@ -19,6 +19,7 @@ import shutil
 import cPickle
 import logging
 import itertools
+import math
 
 from Oligotyping.utils import utils
 from Oligotyping.utils import blast
@@ -127,7 +128,10 @@ class Oligotyping:
         self.final_oligo_counts_dict = {}
         self.final_oligo_entropy_distribution_dict = {}
         self.final_oligo_unique_distribution_dict = {}
+        self.final_purity_score_dict = {}
+        self.total_purity_score_dict = {}
         self.colors_dict = None
+        self.score_color_dict = None
         self.figures_directory = None
 
         # be smart, turn the threading on if necessary.
@@ -392,7 +396,7 @@ class Oligotyping:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
         self._store_read_distribution_table()
-        
+
         if self.generate_sets:
             self._generate_MATRIX_files_for_units_across_samples()
             self._agglomerate_oligos_based_on_cosine_similarity()
@@ -404,6 +408,7 @@ class Oligotyping:
             self._generate_stack_bar_figure_with_agglomerated_oligos()
             self._generate_oligos_across_samples_figure()
             self._generate_sets_across_samples_figure()
+            
 
         if not self.quick:
             self._generate_representative_sequences()
@@ -425,7 +430,8 @@ class Oligotyping:
         self.run.info('final_oligo_counts_dict', self.final_oligo_counts_dict, quiet = True)
         self.run.info('final_oligo_entropy_distribution_dict', self.final_oligo_entropy_distribution_dict, quiet = True)
         self.run.info('final_oligo_unique_distribution_dict', self.final_oligo_unique_distribution_dict, quiet = True)
-
+        self.run.info('final_purity_score_dict', self.final_purity_score_dict, quiet = True)
+        self.run.info('total_purity_score_dict', self.total_purity_score_dict)
         self.run.info('end_of_run', utils.get_date())
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
@@ -438,7 +444,6 @@ class Oligotyping:
 
         if self.gen_html:
             self._generate_html_output()
-
 
     def _construct_samples_dict(self):
         """This is where oligotypes are being genearted based on bases of each
@@ -940,7 +945,7 @@ class Oligotyping:
             self.colors_dict = random_colors(self.abundant_oligos, self.colors_file_path)
         self.run.info('colors_file_path', self.colors_file_path)
 
-
+    
     def _agglomerate_oligos_based_on_cosine_similarity(self):
         from Oligotyping.utils.cosine_similarity import get_oligotype_sets
         self.progress.new('Agglomerating Oligotypes into Sets')
@@ -1160,7 +1165,12 @@ class Oligotyping:
             cPickle.dump(distribution_among_samples, open(distribution_among_samples_dict_path, 'w'))
 
         self.progress.end()
+        
 
+        self._get_purity_score()
+        self._get_total_purity_score()
+
+        
         self.progress.new('Generating Entropy Figures')
         if (not self.quick) and (not self.no_figures):
             if self.no_threading:
@@ -1219,6 +1229,22 @@ class Oligotyping:
 
         self.run.info('output_directory_for_reps', output_directory_for_reps) 
 
+    def _get_purity_score(self):
+        for oligo in self.final_oligo_unique_distribution_dict:
+            freq_dict = self.final_oligo_unique_distribution_dict[oligo]
+            if len(self.final_oligo_unique_distribution_dict[oligo]) > 1:
+                bp = (freq_dict[1] / (freq_dict[0] * 1.0))
+                self.final_purity_score_dict[oligo] = 1 - bp
+            else:
+                self.final_purity_score_dict[oligo] = 1.00
+
+
+    def _get_total_purity_score(self):
+        sorted_scores = sorted(self.final_purity_score_dict.values())
+        last_quarter = sorted_scores[:int(math.ceil(len(sorted_scores)/4.0))] # take the last quarter of the unique sequences   
+        final_total = reduce(lambda x, y: x + y, last_quarter) / len(last_quarter) # take the average of these sequences 
+        
+        self.total_purity_score_dict =  "%.2f" %final_total
 
     def _perform_local_BLAST_search_for_oligo_representative(self, unique_files_dict):            
         query, target, output = utils.get_temporary_file_names_for_BLAST_search(prefix = "REPS_", directory = self.tmp_directory)
@@ -1305,8 +1331,6 @@ class Oligotyping:
 
         return True
 
-
-
     def _generate_entropy_figure_for_abundant_oligotype(self, oligo, unique_fasta_path, final_oligo_entropy_distribution_dict):
         entropy_file_path = unique_fasta_path + '_entropy'
         color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
@@ -1329,9 +1353,7 @@ class Oligotyping:
             color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
 
         cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
-
-
-
+    
     def _generate_sample_oligotype_network_figures(self):
         output_directory_for_samples = self.generate_output_destination("DATASETS", directory = True)
         oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_samples)

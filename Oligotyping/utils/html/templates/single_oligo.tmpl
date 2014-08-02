@@ -77,6 +77,8 @@
 <div class="title">Page that explains diversity within an oligotype.</div>
 <div class="links-bar"><a href="./index.html">Main Analysis Page</a> | <a href="http://oligotyping.org">Oligotyping.org</a></div>
 
+<div class="score" align="center" style="margin-left: 140px;"><br /> <p style="font-size:2.5em;"><span style="color:{{ score_color_dict|lookup:oligo }};">{{ purity_score|lookup:oligo|floatformat:"2" }}</span> <img src="colorbar.png" border="0" width="80%" height="80%"/></p></div>
+
 <div class="smallhead">Unique Sequences Curve</div>
 <p class="smallheadtitle">» Abundance curve of unique sequences within {{ oligo }}, along with entropy values associated with these new set of alignments.
 <p class="content"><a href="{{ oligo_reps_dict.imgs|lookup:oligo }}"><img src="{{ oligo_reps_dict.imgs|lookup:oligo }}" style="width:1200px" border="0"></a>

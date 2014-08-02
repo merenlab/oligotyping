@@ -15,7 +15,7 @@ import matplotlib.cm as cm
 
 #
 # all available colormaps in matplotlib can be seen via
-# http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+# http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
 #
 
 def getColor(name, n):
@@ -46,11 +46,9 @@ def random_colors(oligotypes, output_file_path = None, colormap = 'Paired'):
     
     return color_dict
 
-
 def get_list_of_colors(number_of_colors, colormap = 'OrRd'):
     color_list = getColor(colormap, number_of_colors)
     return [get_hex_color(color_list(i)) for i in range(0, number_of_colors)] 
-
 
 def get_color_shade_dict_for_list_of_values(values, colormap = 'OrRd'):
     color_shade_dict = {}

@@ -152,6 +152,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     shutil.copy2(os.path.join(absolute, 'static/style.css'), os.path.join(html_output_directory, 'style.css'))
     shutil.copy2(os.path.join(absolute, 'static/header_2.png'), os.path.join(html_output_directory, 'header.png'))
     shutil.copy2(os.path.join(absolute, 'static/missing_image.png'), os.path.join(html_output_directory, 'missing.png'))
+    shutil.copy2(os.path.join(absolute, 'static/colorbar.png'), os.path.join(html_output_directory, 'colorbar.png'))
 
     def copy_as(source, dest_name):
         dest = os.path.join(html_output_directory, dest_name)
