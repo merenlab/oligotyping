@@ -94,6 +94,10 @@ def decomposer():
                         help = 'When set, input FASTA will not be checked for potential errors')
     parser.add_argument('--skip-gexf-files', action = 'store_true', default = False,
                         help = 'When set, GEXF files for network and topology will not be generated')
+    parser.add_argument('--quick', action = 'store_true', default = False,
+                        help = 'When set, the pipeline will do only the essential steps, skipping anything\
+                                auxiliary, even if other parameters require otherwise. Please do not use it other than\
+                                benchmarking or testing purposes')
 
 
     return parser

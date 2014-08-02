@@ -61,6 +61,7 @@ class Decomposer:
         self.sample_mapping = None
         self.skip_gexf_files = False
         self.skip_basic_analyses = False
+        self.quick = False
          
         if args:
             self.alignment = args.alignment
@@ -87,8 +88,18 @@ class Decomposer:
             self.sample_mapping = args.sample_mapping
             self.gen_html = args.gen_html
             self.skip_gexf_files = args.skip_gexf_files
+            self.quick = args.quick
 
         self.decomposition_depth = -1
+
+        if self.quick:
+            self.skip_gexf_files = True
+            self.skip_basic_analyses = True
+            self.skip_check_input_file = True
+            self.skip_gen_figures = True
+            self.skip_refining_topology = True
+            self.skip_removing_outliers = True
+            self.gen_html = False
 
         # there is a difference between 'average read length' and 'alignment length',
         # therefore there are two different variables to keep that information. the first
@@ -267,6 +278,7 @@ class Decomposer:
         self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
         self.run.info('sample_mapping', self.sample_mapping)
+        self.run.info('quick', self.quick)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
         self.run.info('skip_removing_outliers', self.skip_removing_outliers)
         self.run.info('relocate_outliers', self.relocate_outliers)
