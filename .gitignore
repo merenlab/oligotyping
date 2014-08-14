@@ -13,3 +13,7 @@
 .project
 .pydevproject
 .settings/
+
+build/
+dist/
+oligotyping.egg-info/

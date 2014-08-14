@@ -1,0 +1,6 @@
+Matplotlib
+BioPython
+SciPy
+cogent
+Django
+
