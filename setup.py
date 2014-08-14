@@ -15,6 +15,7 @@ setup(name = "Oligotyping",
       author_email = "meren@mbl.edu",
       url = "https://github.com/meren/oligotyping",
       packages = find_packages(),
+      install_requires=reqs,
       scripts=['decompose', 'entropy-analysis', 'oligotype'],
 )
 
