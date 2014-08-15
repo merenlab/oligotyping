@@ -1,4 +1,4 @@
-recursive-include Oligotyping *
-recursive-include Scripts *
-recursive-include Unittests *
-include *
+recursive-include Oligotyping 
+recursive-include Scripts
+recursive-include Unittests
+include CHANGELOG.md COPYING README.md requirements.txt
