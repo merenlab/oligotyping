@@ -26,10 +26,9 @@ import subprocess
 import numpy as np
 import multiprocessing
 
-from cogent.align.algorithm import nw_align
-
 from Oligotyping.lib import fastalib as u
 from Oligotyping.utils.constants import pretty_names
+from Oligotyping.utils.aligner import nw_align
 
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 

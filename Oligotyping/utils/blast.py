@@ -25,16 +25,8 @@ from Oligotyping.utils.utils import is_program_exist
 from Oligotyping.utils.utils import check_command_output
 from Oligotyping.utils.utils import get_temporary_file_name
 from Oligotyping.utils.utils import remove_white_space_mask_from_B6_entry
+from Oligotyping.utils.aligner import nw_align 
 
-
-cogent_error_text = '''\n
-            You need 'cogent' module in your Python path to run this software.
-
-            You can get more information about the installation here:
-
-                http://pycogent.sourceforge.net/install.html
-
-            Exiting.\n'''
 
 biopython_error_text = '''\n
             You need 'BioPython' module in your Python path to run this software.
@@ -106,11 +98,6 @@ try:
     from Bio.Blast import NCBIXML
 except:
     raise MissingModuleError, biopython_error_text
-
-try:
-    from cogent.align.algorithm import nw_align
-except:
-    raise MissingModuleError, cogent_error_text
 
 
 class LocalBLAST:
@@ -397,7 +384,7 @@ class RemoteBLAST:
 
 if __name__ == "__main__":
     try:
-        u = LocalBLAST(None, None, None, None)
+        u = LocalBLAST(None, None)
     except ModuleVersionError:
         raise ModuleVersionError, version_error_text
     
