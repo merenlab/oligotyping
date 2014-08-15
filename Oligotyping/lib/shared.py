@@ -24,9 +24,6 @@ from Oligotyping.utils.utils import get_temporary_file_name
 
 
 def generate_default_figures(_object):
-    import Oligotyping
-    scripts_dir_path = os.path.dirname(Oligotyping.__file__)
-
     figures_dict = {}
     figures_dict['basic_analyses'] = {}
     figures_dict['basic_reports'] = {}
@@ -35,7 +32,7 @@ def generate_default_figures(_object):
     # basic reports
     #
 
-    for (analysis, script, output_dir) in [('Stackbar', '../Scripts/R/stackbar.R', 'stackbar')]:
+    for (analysis, script, output_dir) in [('Stackbar', 'o-stackbar.R', 'stackbar')]:
         #¬†generating a stackbar is only feasible for oligotyping:
         if _object.analysis != 'oligotyping':
             continue
@@ -48,7 +45,7 @@ def generate_default_figures(_object):
             
         output_prefix = os.path.join(target_dir, output_dir)
         cmd_line = ('%s "%s" --title "%s" -o "%s" --colors_file "%s" >> "%s" 2>&1' \
-                                          % (os.path.join(scripts_dir_path, script),
+                                          % (script,
                                              _object.environment_file_path,
                                              _object.project,
                                              output_prefix,
@@ -60,8 +57,8 @@ def generate_default_figures(_object):
         figures_dict['basic_reports'][output_dir][output_dir] = output_prefix
 
 
-    for (analysis, script, output_dir) in [('Read Distribution Lines', '../Scripts/R/lines-for-each-column.R', 'lines'),
-                                           ('Read Distribution Bars', '../Scripts/R/bars-for-each-column.R', 'bars')]:
+    for (analysis, script, output_dir) in [('Read Distribution Lines', 'o-lines-for-each-column.R', 'lines'),
+                                           ('Read Distribution Bars', 'o-bars-for-each-column.R', 'bars')]:
         figures_dict['basic_reports'][output_dir] = {}
 
         target_dir = _object.generate_output_destination('%s/__default__/%s' \
@@ -69,7 +66,7 @@ def generate_default_figures(_object):
                                                       directory = True)
             
         output_prefix = os.path.join(target_dir, output_dir)
-        cmd_line = ('%s "%s" "%s" >> "%s" 2>&1' % (os.path.join(scripts_dir_path, script),
+        cmd_line = ('%s "%s" "%s" >> "%s" 2>&1' % (script,
                                              _object.read_distribution_table_path,
                                              output_prefix,
                                              _object.log_file_path))
@@ -83,8 +80,8 @@ def generate_default_figures(_object):
     # basic analyses
     #
     if not _object.skip_basic_analyses:
-        for (analysis, script, output_dir) in [('Cluster Analysis', '../Scripts/R/cluster-analysis.R', 'cluster_analysis'),
-                                               ('NMDS Analysis', '../Scripts/R/metaMDS-analysis.R', 'nmds_analysis')]:
+        for (analysis, script, output_dir) in [('Cluster Analysis', 'o-cluster-analysis.R', 'cluster_analysis'),
+                                               ('NMDS Analysis', 'o-metaMDS-analysis.R', 'nmds_analysis')]:
             figures_dict['basic_analyses'][output_dir] = {}
                         
             target_dir = _object.generate_output_destination('%s/__default__/%s' \
@@ -98,7 +95,7 @@ def generate_default_figures(_object):
                                                    ("bray", _object.matrix_percent_file_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s "%s" %s "%s" "%s" >> "%s" 2>&1' % 
-                                        (os.path.join(scripts_dir_path, script),
+                                        (script,
                                          matrix_file,
                                          distance_metric,
                                          _object.project,
@@ -113,8 +110,6 @@ def generate_default_figures(_object):
 
 
 def generate_exclusive_figures(_object):
-    import Oligotyping
-    scripts_dir_path = os.path.dirname(Oligotyping.__file__)
     exclusive_figures_dict = {}
 
     sample_mapping_dict = get_sample_mapping_dict(_object.sample_mapping)
@@ -157,7 +152,7 @@ def generate_exclusive_figures(_object):
                              % (category, len(samples), mapping_file_path, matrix_percent_path, matrix_count_path))
 
 
-        for (analysis, script, output_dir) in [('NMDS Analysis', '../Scripts/R/metaMDS-analysis-with-metadata.R', 'nmds_analysis')]:
+        for (analysis, script, output_dir) in [('NMDS Analysis', 'o-metaMDS-analysis-with-metadata.R', 'nmds_analysis')]:
             exclusive_figures_dict[category][output_dir] = {}
                         
             target_dir = _object.generate_output_destination('%s/%s/%s' % (os.path.basename(_object.figures_directory),
@@ -172,7 +167,7 @@ def generate_exclusive_figures(_object):
                                                    ("bray", matrix_percent_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s -o "%s" -d "%s" -m "%s" --title "%s" "%s" "%s" >> "%s" 2>&1' % 
-                                        (os.path.join(scripts_dir_path, script),
+                                        (script,
                                          output_prefix,
                                          distance_metric,
                                          category,
@@ -187,7 +182,7 @@ def generate_exclusive_figures(_object):
 
 
         # heatmap
-        for (analysis, script, output_dir) in [('Heatmap Analysis', '../Scripts/R/heatmap.R', 'heatmap_analysis')]:
+        for (analysis, script, output_dir) in [('Heatmap Analysis', 'o-heatmap.R', 'heatmap_analysis')]:
             exclusive_figures_dict[category][output_dir] = {}
                         
             target_dir = _object.generate_output_destination('%s/%s/%s' % (os.path.basename(_object.figures_directory),
@@ -202,7 +197,7 @@ def generate_exclusive_figures(_object):
                                                    ("bray", matrix_percent_path)]:
                 output_prefix = os.path.join(target_dir, distance_metric)
                 cmd_line = ('%s "%s" -m "%s" -d %s --title "%s" -o "%s" >> "%s" 2>&1' % 
-                                        (os.path.join(scripts_dir_path, script),
+                                        (script,
                                          matrix_file,
                                          mapping_file_path,
                                          distance_metric,
