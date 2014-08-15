@@ -7,6 +7,10 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.0
+    * Minimum Entropy Decomposition is an part of the pipeline.
+    * Experimental purity score implemented by Doğancan Özturan is now included in the HTML output.
+
 * 0.96
     * Improved HTML output.
     * Better error reporting.
