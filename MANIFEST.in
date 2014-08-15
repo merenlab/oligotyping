@@ -1,2 +1,5 @@
 recursive-include Unittests *
+recursive-include Oligotyping/utils/html/scripts *
+recursive-include Oligotyping/utils/html/static *
+recursive-include Oligotyping/utils/html/templates *
 include CHANGELOG.md COPYING README.md requirements.txt
