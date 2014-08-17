@@ -80,7 +80,7 @@ P <- function(df){
     p <- p + guides(fill = guide_legend(nrow = 25))
     p <- p + theme(plot.title = element_text(hjust=0, vjust=1))
     p <- p + coord_cartesian(ylim=c(-0.01, 1.01))
-    p <- p + scale_fill_manual(limits = colors_list[[1]], values = as.vector(colors_list[[2]]))
+    p <- p + scale_fill_manual(values = as.vector(colors_list[[2]]))
 
     print(p)
 }
