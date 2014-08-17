@@ -14,7 +14,7 @@ reqs = [str(ir.req) for ir in install_reqs]
 
 setup(
     name = "oligotyping",
-    version = "1.0",
+    version = open('VERSION').read().strip(),
     description = "The oligotyping and minimum entropy decomposition (MED) pipeline for the analysis of marker gene amplicons",
     author = u"A. Murat Eren",
     author_email = "meren@mbl.edu",

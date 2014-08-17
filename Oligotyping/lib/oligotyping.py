@@ -10,7 +10,8 @@
 #
 # Please read the COPYING file.
 
-__version__ = '1.0'
+import pkg_resources
+__version__ = pkg_resources.require("oligotyping")[0].version
 
 import os
 import sys
