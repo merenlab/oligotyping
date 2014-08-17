@@ -7,6 +7,9 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.1
+    * ggplot2-related bug (which resulted in blank stackbar plots) is fixed.
+
 * 1.0
     * Minimum Entropy Decomposition is an part of the pipeline.
     * Experimental purity score implemented by Doğancan Özturan is now included in the HTML output.
