@@ -58,6 +58,7 @@ class Decomposer:
         self.gen_html = True
         self.skip_gen_figures = False
         self.skip_check_input_file = False
+        self.skip_storing_final_nodes = False
         self.sample_mapping = None
         self.skip_gexf_files = False
         self.skip_basic_analyses = False
@@ -99,6 +100,7 @@ class Decomposer:
             self.skip_gen_figures = True
             self.skip_refining_topology = True
             self.skip_removing_outliers = True
+            self.skip_storing_final_nodes = True
             self.gen_html = False
 
         # there is a difference between 'average read length' and 'alignment length',
@@ -342,9 +344,11 @@ class Decomposer:
 
         if self.generate_frequency_curves:
             self._generate_frequency_curves()
- 
+
+        if not self.skip_storing_final_nodes:
+            self._store_final_nodes()
+
         self._store_topology()
-        self._store_final_nodes()
         self._store_all_outliers()
         self._store_node_representatives()
         self._store_read_distribution_table()
