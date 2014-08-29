@@ -7,6 +7,10 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.2
+    * Bug in MANIFEST file is fixed.
+    * Bug related to --quick flag (which resulted in under-estimaded benchmark scores) is fixed.
+
 * 1.1
     * ggplot2-related bug (which resulted in blank stackbar plots) is fixed.
 
@@ -28,7 +32,7 @@ Versions
     * RUNINFO.cPickle format has changed.
 
 * 0.8
-    * USEARCH is removed from the pipeline. NCBI's blastn is now the default search tool for relevant operations.
+    * Dependency to USEARCH is removed from the pipeline. NCBI's blastn is now the default search tool for relevant operations.
     * Reads that are being discarded during the noise removal step are now tracked to avoid biases.
     * New commandline parapmeter: `--sample-mapping` (which supports TAB delimited categorical mapping files for samples to be used for post-analysis visualizations; a relevant blog post: http://oligotyping.org/2013/02/04/basic-sample-mapping-with-oligotyping/).
 
