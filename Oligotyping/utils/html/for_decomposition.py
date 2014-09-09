@@ -23,8 +23,18 @@ from error import HTMLError
 
 
 try:
-    from django.template.loader import render_to_string
     from django.conf import settings
+    absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+    settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
+
+    try:
+        import django
+        django.setup()
+    except:
+        pass
+
+    from django.template.loader import get_template
+    from django.template.loader import render_to_string
     from django.template.defaultfilters import register
 except ImportError:
     raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
@@ -134,10 +144,6 @@ def sumvals(arg, clean = None):
 def mklist(arg):
     return range(0, int(arg))
 
-absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
-
-from django.template.loader import get_template
 t = get_template('index_for_decomposition.tmpl')
 
 def generate_html_output(run_info_dict, html_output_directory = None):

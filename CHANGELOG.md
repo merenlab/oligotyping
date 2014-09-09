@@ -7,6 +7,9 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.3
+    * A minor update to fix the broken backward compatibility of Django v1.7. I thank Bernd from Amsterdam for pointing it out.
+
 * 1.2
     * Bug in MANIFEST file is fixed.
     * Bug related to --quick flag (which resulted in under-estimaded benchmark scores) is fixed.
