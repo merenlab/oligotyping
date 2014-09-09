@@ -25,7 +25,6 @@ if(invalid(output_file_prefix)){
 
 if (display == TRUE){
     X11(width=12, height=10)
-    library(tcltk)
 }
 
 
