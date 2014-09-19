@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# -*- coding: utf-8
+
+# Copyright (C) 2010 - 2012, A. Murat Eren
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Please read the COPYING file.
+
+import os
+import sys
+import cPickle
+import argparse
+
+parser = argparse.ArgumentParser(description='Generate Static HTML Output from MED or Oligotyping runs')
+parser.add_argument('run_info_dict_path', metavar = 'DICT', help = 'Serialized run info dictionary (RUNINFO.cPickle)')
+parser.add_argument('type', metavar = '[oligotyping | med]', help = 'Type of analysis')
+parser.add_argument('-o', '--output-directory', default = None, metavar = 'OUTPUT_DIR',\
+                    help = 'Output directory for HTML output to be stored')
+parser.add_argument('--entropy-figure', default = None, metavar = 'ENTROPY_FIGURE',\
+                    help = 'Path for entropy figure *without* the file extension (e.g. only "/path/to/entropy" \
+                           for "/path/to/entropy.png")')
+
+args = parser.parse_args()
+
+if args.type not in ['oligotyping', 'med']:
+    print "Run type must be either 'oligotyping' or 'med'"
+    sys.exit()
+
+if not os.path.exists(args.run_info_dict_path):
+    print "Runinfo file is not where you said it would be: '%s'" % args.run_info_dict_path
+    sys.exit()
+
+run_info_dict = cPickle.load(open(args.run_info_dict_path))
+
+if args.type == 'oligotyping':
+    from Oligotyping.utils.html.for_oligotyping import generate_html_output
+    index_page = generate_html_output(run_info_dict, args.output_directory, args.entropy_figure) 
+else:
+    from Oligotyping.utils.html.for_decomposition import generate_html_output
+    index_page = generate_html_output(run_info_dict, args.output_directory) 
+
+
+print '\n\tHTML output is ready: "%s"\n' % index_page
