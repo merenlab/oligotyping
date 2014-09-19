@@ -1308,7 +1308,6 @@ class Decomposer:
             f.write(node.representative_seq + '\n')
         f.close()
         self.progress.end()
-        utils.trim_uninformative_columns_from_alignment(node_representatives_file_path)
         self.run.info('node_representatives_file_path', node_representatives_file_path)
 
 
