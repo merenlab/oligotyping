@@ -7,6 +7,9 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.4 (2014-10-01)
+    * A minor update to remove a once-useful command line parameter from the oligotyping pipeline, --gen-sample-oligo-networks. The same functionality is now available as a separate script (o-generate-oligo-base-networks). I thank Sinisa Bratulic for reporting it.
+
 * 1.3
     * A minor update to fix the broken backward compatibility of Django v1.7. I thank Bernd from Amsterdam for pointing it out.
 

@@ -31,7 +31,6 @@ from Oligotyping.lib.shared import generate_default_figures
 from Oligotyping.lib.shared import generate_exclusive_figures
 from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
-from Oligotyping.visualization.oligotype_network_structure import oligotype_network_structure
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from Oligotyping.visualization.oligotype_distribution_across_samples import oligotype_distribution_across_samples
 
@@ -62,7 +61,6 @@ class Oligotyping:
         self.blast_ref_db = None
         self.skip_blast_search = False
         self.gen_html = False
-        self.gen_sample_oligo_networks = False
         self.colors_list_file = None
         self.generate_sets = False
         self.cosine_similarity_threshold = 0.1
@@ -100,7 +98,6 @@ class Oligotyping:
             self.blast_ref_db = Absolute(args.blast_ref_db) if args.blast_ref_db else None
             self.skip_blast_search = args.skip_blast_search
             self.gen_html = args.gen_html
-            self.gen_sample_oligo_networks = args.gen_sample_oligo_networks
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
             self.generate_sets = args.generate_sets
@@ -403,8 +400,6 @@ class Oligotyping:
             self._agglomerate_oligos_based_on_cosine_similarity()
             self._generate_MATRIX_files_for_oligotype_sets()       
              
-        if ((not self.no_figures) and (not self.quick)) and self.gen_sample_oligo_networks:
-            self._generate_sample_oligotype_network_figures()
         if (not self.no_figures) and self.generate_sets:
             self._generate_stack_bar_figure_with_agglomerated_oligos()
             self._generate_oligos_across_samples_figure()
@@ -1332,6 +1327,7 @@ class Oligotyping:
 
         return True
 
+
     def _generate_entropy_figure_for_abundant_oligotype(self, oligo, unique_fasta_path, final_oligo_entropy_distribution_dict):
         entropy_file_path = unique_fasta_path + '_entropy'
         color_per_column_path  = unique_fasta_path + '_color_per_column.cPickle'
@@ -1355,11 +1351,6 @@ class Oligotyping:
 
         cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
     
-    def _generate_sample_oligotype_network_figures(self):
-        output_directory_for_samples = self.generate_output_destination("DATASETS", directory = True)
-        oligotype_network_structure(self.run.info_dict['environment_file_path'], output_dir = output_directory_for_samples)
-        self.run.info('output_directory_for_samples', output_directory_for_samples) 
- 
 
     def _generate_oligos_across_samples_figure(self):
         self.progress.new('Oligotypes Across Samples Figure')

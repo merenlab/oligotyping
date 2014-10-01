@@ -208,8 +208,6 @@ def oligotyping():
                         help = 'This value is used to agglomerate oligotypes into higher order groups. The higher\
                                 the threshold is, the more oligotypes will be pulled together. Cosine similarity\
                                 would return 0 for perfectly similar two vectors. Default is %(default)f.')
-    parser.add_argument('--gen-sample-oligo-networks', action = 'store_true', default = False,
-                        help = 'Generate oligotype network structure figures for each sample.')
     parser.add_argument('-E', '--sample-mapping', metavar = 'FILEPATH', default = None,
                         help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
                                 visualizations. Refer to the tutorial for the file format')
