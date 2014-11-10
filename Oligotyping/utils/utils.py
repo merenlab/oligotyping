@@ -321,23 +321,6 @@ def get_unique_sequences_from_FASTA(alignment, limit = 10):
     return unique_sequences
 
 
-
-def get_purity_score(final_oligo_unique_distribution_dict):
-    for oligo in final_oligo_unique_distribution_dict:
-        freq_dict = final_oligo_unique_distribution_dict[oligo]
-        if len(final_oligo_unique_distribution_dict[oligo]) > 1:
-            bp = (freq_dict[1] / (freq_dict[0] * 1.0))
-            final_purity_score_dict[oligo] = 1 - bp
-        else:
-            final_purity_score_dict[oligo] = 1.00
-
-def get_total_purity_score(final_purity_score_dict):
-    sorted_scores = sorted(final_purity_score_dict.values())
-    last_quarter = sorted_scores[:int(math.ceil(len(sorted_scores)/4.0))] # take the last quarter of the unique sequences   
-    final_total = reduce(lambda x, y: x + y, last_quarter) / len(last_quarter) # take the average of these sequences 
-        
-    total_purity_score_dict =  "%.2f" %final_total
-
 def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 0):
     samples = samples_dict.keys()
     samples.sort()
