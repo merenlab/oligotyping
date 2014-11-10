@@ -25,8 +25,12 @@ def main(environment_file, sample_mapping_file = None, unit_mapping_file = None,
 
     if unit_mapping_file:
         unit_mapping = utils.get_sample_mapping_dict(unit_mapping_file)
-    
-    output_file = '.'.join(environment_file.split('.')[:-1]) + '.gexf'
+
+    if len(environment_file.split('.')) > 1:
+        output_file = '.'.join(environment_file.split('.')[:-1]) + '.gexf'
+    else:
+        output_file = environment_file + '.gexf'
+
     utils.generate_gexf_network_file(oligos,
                                      samples_dict, 
                                      unit_percents, 
