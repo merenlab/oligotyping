@@ -17,6 +17,15 @@ from Oligotyping.utils.utils import Progress
 
 progress = Progress()
 
+
+def get_trim_loc(seq):
+    # to find longest terminal gap and trim both sequences to the last base they both have...
+    for p in range(0, len(seq)):
+        if seq[len(seq) - p -1] != '-':
+            break
+    return p
+
+
 def main(input_file, output_file, align = False):
     sequences = {}
     similarities = {}
@@ -31,14 +40,27 @@ def main(input_file, output_file, align = False):
     progress.new('Processing sequences')
     for i in range(0, len(keys)):
         progress.update('%d of %d' % (i + 1, len(keys)))
+
+        if not align:
+            p1 = get_trim_loc(sequences[keys[i]])
+
         for j in range(i, len(keys)):
             if i == j:
                 continue
 
             if align:
                 seq1, seq2 = nw_align(sequences[keys[i]].replace('-', ''), sequences[keys[j]].replace('-', ''))
+                p1 = get_trim_loc(seq1)
             else:
                 seq1, seq2 = sequences[keys[i]], sequences[keys[j]]
+
+            p2 = get_trim_loc(seq2)
+
+            trim = p1 if p1 > p2 else p2
+            if trim:
+                seq1 = seq1[:-trim]
+                seq2 = seq2[:-trim]
+                
 
             percent_identity = 100 - len([True for x in range(0, len(seq1)) if seq1[x] != seq2[x]]) * 100.0 / len(seq1)
 
