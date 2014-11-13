@@ -26,6 +26,16 @@ def get_trim_loc(seq):
     return p
 
 
+def remove_common_gaps(seq1, seq2):
+    s1, s2 = '', ''
+    for m in range(0, len(seq1)):
+        if seq1[m] == '-' and seq2[m] == '-':
+            continue
+        s1 += seq1[m]
+        s2 += seq2[m]
+    return s1, s2
+
+
 def main(input_file, output_file, align = False):
     sequences = {}
     similarities = {}
@@ -61,6 +71,10 @@ def main(input_file, output_file, align = False):
                 seq1 = seq1[:-trim]
                 seq2 = seq2[:-trim]
                 
+            if (seq1 + seq2).find('-') > -1:
+                # yes, this is very expensive, but common gaps must be removed
+                # before assessing percent similarity...
+                seq1, seq2 = remove_common_gaps(seq1, seq2)
 
             percent_identity = 100 - len([True for x in range(0, len(seq1)) if seq1[x] != seq2[x]]) * 100.0 / len(seq1)
 
