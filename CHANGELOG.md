@@ -7,6 +7,12 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.6 (2014-11-30)
+    * Minor bug fixes.
+
+* 1.5 (2014-11-11)
+    * o-dist.R is removed from the codebase. Another script that computes pairwise distances of sequencs in a given FASTA file to generate a distance matrix is added (o-dist) along with another script to visualize this informatopn (o-visualize-distance-matrix.R).
+
 * 1.4 (2014-10-01)
     * A minor update to remove a once-useful command line parameter from the oligotyping pipeline, --gen-sample-oligo-networks. The same functionality is now available as a separate script (o-generate-oligo-base-networks). I thank Sinisa Bratulic for reporting it.
 

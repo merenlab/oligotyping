@@ -10,7 +10,8 @@
 #
 # Please read the COPYING file.
 
-__version__ = '0.1-alpha'
+import pkg_resources
+__version__ = pkg_resources.require("oligotyping")[0].version
 
 import os
 import sys
@@ -342,9 +343,6 @@ class Decomposer:
         self._generate_ENVIRONMENT_file()
         self._generate_MATRIX_files()
 
-        if self.generate_frequency_curves:
-            self._generate_frequency_curves()
-
         if not self.skip_storing_final_nodes:
             self._store_final_nodes()
 
@@ -370,6 +368,10 @@ class Decomposer:
         
         if (not self.skip_gen_figures) and self.sample_mapping:
             self._generate_exclusive_figures()
+
+        if (not self.skip_gen_figures) and self.generate_frequency_curves:
+            # FIXME: parallelize this one:
+            self._generate_frequency_curves()
 
         info_dict_file_path = self.generate_output_destination("RUNINFO.cPickle")
         self.run.store_info_dict(info_dict_file_path)
@@ -1048,17 +1050,14 @@ class Decomposer:
         
 
     def _generate_frequency_curves(self):
-        self.progress.new('Generating mini entropy figures')
-        for i in range(0, len(self.topology.alive_nodes)):
-            node = self.topology.nodes[self.topology.alive_nodes[i]]
+        self.progress.new('Generating frequency curves for final nodes')
+        for i in range(0, len(self.topology.final_nodes)):
+            node = self.topology.nodes[self.topology.final_nodes[i]]
             
-            if node.killed:
-                continue
-            
-            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.alive_nodes)))
+            self.progress.update('Node ID: "%s" (%d of %d)' % (node.pretty_id, i + 1, len(self.topology.final_nodes)))
                                  
-            node.freq_curve_img_path = node.unique_alignment + '.png'
-            vis_freq_curve(node.unique_alignment, output_file = node.freq_curve_img_path, mini = True,\
+            node.freq_curve_img_path = node.unique_alignment_path + '.png'
+            vis_freq_curve(node.unique_alignment_path, output_file = node.freq_curve_img_path,\
                            title = '%s\n(%s)' % (node.pretty_id, utils.human_readable_number(node.size))) 
         
         self.progress.end()
