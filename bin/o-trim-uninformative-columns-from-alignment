@@ -13,42 +13,57 @@
 import sys
 
 import Oligotyping.lib.fastalib as u
+import Oligotyping.utils.utils as utils
 
+progress = utils.Progress()
+run = utils.Run()
 
-# eh..
+# get read length
 fasta = u.SequenceSource(sys.argv[1], lazy_init = False)
 fasta.next()
-
 len_fasta_entry = len(fasta.seq)
+
+# reset fasta.
 fasta.reset()
 
-invalid_columns = range(0, len_fasta_entry)
-
+# make sure all reads have equal length
 while fasta.next():
-    if fasta.pos % 100 == 0:
-        sys.stderr.write('\rSTEP 1: %.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
-        sys.stderr.flush()
+    if len(fasta.seq) != len_fasta_entry:
+        sys.stderr.write('All reads must have equal number of characters, but it is not the case. Sorry and bye.\n')
+        sys.exit()
+fasta.reset()
 
-    for i in invalid_columns:
-        if fasta.seq[i] != '-':
+# -*-
+
+nucleotide_positions = set(range(0, len_fasta_entry))
+invalid_columns = set(range(0, len_fasta_entry))
+
+progress.new('Step 1')
+while fasta.next():
+    if fasta.pos % 100 == 1:
+        progress.update('%.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
+
+    for i in nucleotide_positions:
+        if fasta.seq[i] != '-' and i in invalid_columns:
             invalid_columns.remove(i)
 
-print
+progress.end()
 fasta.reset()
 
-columns_to_keep = [x for x in range(0, len_fasta_entry) if x not in invalid_columns] 
+# -*-
+
+columns_to_keep = [x for x in range(0, len_fasta_entry) if x not in invalid_columns]
 
 f = open(sys.argv[1] + '-TRIMMED', 'w')
 
+progress.new('Step 2')
 while fasta.next():
-    if fasta.pos % 100 == 0:
-        sys.stderr.write('\rSTEP 2: %.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
-        sys.stderr.flush()
-    new_seq = ''
-    for i in columns_to_keep:
-        new_seq += fasta.seq[i]
+    if fasta.pos % 100 == 1:
+        progress.update('%.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
+
+    new_seq = ''.join(fasta.seq[i] for i in columns_to_keep)
+
     f.write('>' + fasta.id + '\n')
     f.write(new_seq + '\n')
 
-print
 f.close()
