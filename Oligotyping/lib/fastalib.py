@@ -233,7 +233,6 @@ class SequenceSource():
         plt.figtext(0.5, 0.96, '%s' % (title), weight = 'black', size = 'xx-large', ha = 'center')
     
         ax1 = plt.subplot(gs[9])
-        plt.rcParams.update({'axes.edgecolor' : 20})
         plt.grid(False)
         plt.yticks([])
         plt.xticks([])
