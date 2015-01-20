@@ -1,4 +1,5 @@
 import os
+import uuid
 import glob
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
@@ -9,7 +10,7 @@ if os.environ.get('USER','') == 'vagrant':
 
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-install_reqs = parse_requirements('requirements.txt')
+install_reqs = parse_requirements('requirements.txt', session=uuid.uuid1())
 reqs = [str(ir.req) for ir in install_reqs]
 
 setup(
