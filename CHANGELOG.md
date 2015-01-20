@@ -7,6 +7,10 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.7 (2015-01-20)
+    * Incompatibility with pip 6.0.6 is fixed.
+    * Minor bug fixes.
+
 * 1.6 (2014-11-30)
     * Minor bug fixes.
 
