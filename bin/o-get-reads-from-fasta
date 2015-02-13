@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2010 - 2011, A. Murat Eren
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Please read the COPYING file.
+
+import sys
+import random
+
+from Oligotyping.utils.utils import get_sample_name_from_defline, Run, Progress
+import Oligotyping.lib.fastalib as u
+
+run = Run()
+progress = Progress()
+
+def main(input_fasta, ids_file_path, output_fasta, run=run, progress=progress):
+    fasta = u.SequenceSource(input_fasta)
+    output = u.FastaOutput(output_fasta)
+
+    progress.new('Reading read IDs into memory')
+    progress.update('...')
+    read_ids = set([l.strip() for l in open(ids_file_path) if not l.startswith('#')])
+    progress.end()
+    run.info('Read IDs', '%d read IDs found' % len(read_ids))
+
+
+    num_ids_found = 0
+    progress.new('Processing input FASTA')
+    while fasta.next() and len(read_ids):
+        if fasta.pos % 1000 == 0:
+            progress.update('%d processed; %d ids matched' % (fasta.pos, num_ids_found))
+
+        if fasta.id in read_ids:
+            output.store(fasta, split=False)
+            read_ids.remove(fasta.id)
+            num_ids_found += 1
+
+    progress.end()
+    run.info('Info', '%d ids stored' % num_ids_found)
+    run.info('Output', output_fasta)
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Generates a new FASTA file with all matching read IDs in a FASTA')
+    parser.add_argument('input_fasta',
+                        help = 'Input FASTA file path')
+    parser.add_argument('ids_file',
+                        help = 'Text file with read IDs in each line to sample from the input file')
+    parser.add_argument('output_fasta',
+                        help = 'Output FASTA file path')
+
+    args = parser.parse_args()
+
+
+    sys.exit(main(args.input_fasta, args.ids_file, args.output_fasta))
