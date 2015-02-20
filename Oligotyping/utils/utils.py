@@ -94,7 +94,7 @@ def import_error(e):
     post may be useful to set up the right environment for the
     oligotyping pipeline:
 
-    http://oligotyping.org/2012/05/11/oligotyping-pipeline-explained/
+    https://meren.github.io/2012/05/11/oligotyping-pipeline-explained/
 
     \n''' % e
     sys.exit()

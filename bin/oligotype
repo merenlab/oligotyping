@@ -38,11 +38,17 @@ except ImportError, e:
 
 
 if __name__ == '__main__':
+    if '--version' in sys.argv:
+        print parsers.version
+        sys.exit()
+
     parser = parsers.oligotyping()
-    oligotyping = Oligotyping(parser.parse_args())
+    args = parser.parse_args()
+
+    oligotyping = Oligotyping(args)
 
     try:
         oligotyping.run_all()
     except ConfigError, e:
         print e
-        sys.exit()
+        sys.exit(-1)

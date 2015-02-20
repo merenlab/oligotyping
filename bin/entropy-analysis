@@ -57,6 +57,10 @@ except ImportError, e:
     sys.exit()
 
 if __name__ == '__main__':
+    if '--version' in sys.argv:
+        print parsers.version
+        sys.exit()
+
     parser = parsers.entropy()
     args = parser.parse_args()
 
@@ -76,7 +80,7 @@ if __name__ == '__main__':
                                           amino_acid_sequences = args.amino_acid_sequences)
     except EntropyError, e:
         print "Something went wrong. Here is what we know:\n\n\t%s\n\n" % e
-        sys.exit()
+        sys.exit(-1)
 
     entropy_distribution_bar(args.alignment,
                              entropy_values,

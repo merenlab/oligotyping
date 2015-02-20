@@ -23,7 +23,7 @@
 
 <div class="head">Oligotyping Results for "{{ project }}"</div>
 <div class="title">A user-friendly interface to make sense of oligotyping results.</div>
-<div class="links-bar"><a href="http://oligotyping.org">Oligotyping.org</a></div>
+<div class="links-bar"><a href="https://meren.github.io/projects/oligotyping/">Oligotyping Project Webpage</a></div>
 
 
 <div class="smallhead"><a name="General"></a>Overview</div>
@@ -33,7 +33,7 @@
     <p style="text-justify:inter-word;"> 
 		Oligotyping analysis was performed on
 		{{total_seq|pretify}} read{{ total_seq|pluralize }} from {{num_samples_in_fasta|pretify}} sample{{ num_samples_in_fasta|pluralize }}
-		for "{{ project }}" with oligotyping pipeline version {{version}} (available from http://oligotyping.org) using
+		for "{{ project }}" with oligotyping pipeline version {{version}} (available from https://meren.github.io/projects/oligotyping/) using
 			{% if number_of_auto_components %}
 				{{number_of_auto_components}} component{{ number_of_auto_components|pluralize }} automatically
 				selected form the highest entropy values
@@ -393,7 +393,7 @@
 
 
 
-<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Samples">Samples</a> | {% if not skip_basic_analyses %}<a href="#BasicAnalyses"><b>Basic Analyses</b></a> {% else %} Basic Analyses {% endif %}| {% if exclusive_figures_dict %}<a href="#ExclusiveAnalyses"><b>Exclusive Analyses</b></a>{% else %}Exclusive Analyses <a href="http://oligotyping.org/2013/02/04/basic-sample-mapping-with-oligotyping/">?</a>{% endif %}</div>
+<div class="floatingbar"><a href="#General">General</a> | <a href="#Downloads">Downloads</a> | <a href="#Entropy">Entropy</a> | <a href="#Stackbar">Stackbar</a> | <a href="#ReadCounts">Counts</a> | <a href="#Oligotypes">Oligotypes</a> | <a href="#Samples">Samples</a> | {% if not skip_basic_analyses %}<a href="#BasicAnalyses"><b>Basic Analyses</b></a> {% else %} Basic Analyses {% endif %}| {% if exclusive_figures_dict %}<a href="#ExclusiveAnalyses"><b>Exclusive Analyses</b></a>{% else %}Exclusive Analyses <a href="https://meren.github.io/2013/02/04/basic-sample-mapping-with-oligotyping/">?</a>{% endif %}</div>
 <div class="footer"><p>For questions and comments: meren / mbl.edu</div>
 </body>
 </html>

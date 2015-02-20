@@ -11,9 +11,12 @@
 # Please read the COPYING file.
 
 import argparse
+import Oligotyping.lib.oligotyping
+
+version = Oligotyping.lib.oligotyping.__version__
 
 def decomposer():
-    parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition')
+    parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition (version: %s)' % version)
     parser.add_argument('alignment', metavar = 'FILEPATH',
                         help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('-m', '--min-entropy', type=float, default=0.0965, metavar="FLOAT",
@@ -98,12 +101,14 @@ def decomposer():
                         help = 'When set, the pipeline will do only the essential steps, skipping anything\
                                 auxiliary, even if other parameters require otherwise. Please do not use it other than\
                                 benchmarking or testing purposes')
-
+    parser.add_argument('--version', action = 'store_true', default = False,
+                        help = 'Print version and exit.')    
 
     return parser
 
+
 def oligotyping():
-    parser = argparse.ArgumentParser(description='Start an Oligotyping Process')
+    parser = argparse.ArgumentParser(description='Oligotyping (version: %s)' % version)
     parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
                         help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('entropy', metavar = 'ENTROPY',
@@ -227,12 +232,15 @@ def oligotyping():
                         help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
                                 of CPU cores available. If not set, this number will be set to 90%% of available cores,\
                                 or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
+    parser.add_argument('--version', action = 'store_true', default = False,
+                        help = 'Print version and exit.')    
+
 
     return parser
 
 
 def entropy():
-    parser = argparse.ArgumentParser(description='Entropy Analysis')
+    parser = argparse.ArgumentParser(description='Entropy Analysis (version: %s)' % version)
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
                          that contains all samples and sequences in FASTA format')
     parser.add_argument('--qual-scores-file', metavar = 'QUAL SCORES FILE',
@@ -267,5 +275,7 @@ def entropy():
                                 possible (some visualization steps will be skipped).')
     parser.add_argument('--no-display', action = 'store_true', default = False,
                                 help = 'When set, no figures will be shown.')
+    parser.add_argument('--version', action = 'store_true', default = False,
+                        help = 'Print version and exit.')    
 
     return parser

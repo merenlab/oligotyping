@@ -10,14 +10,9 @@ With oligotyping, depending on the hyper-variable region, similarity threshold
 between different types can be as low as 0.2%, more than a magnitude lower than
 de facto 3% similarity threshold that is being used by OTU clustering methods.
 
-Here you can find some information about this codebase and learn more about the
-oligotyping:
+For installation and usage instructions, please see the project web page:
 
-* http://oligotyping.org
-
-For installation and usage instructions, please see the tutorial:
-
-* http://oligotyping.org/2012/05/11/oligotyping-pipeline-explained/
+* https://meren.github.io/projects/oligotyping/
 
 
 Licence
