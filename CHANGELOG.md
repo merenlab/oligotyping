@@ -7,6 +7,11 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 1.9 (2015-03-31)
+    * New script `o-smart-trim` to trim ragged ends of alignments with care.
+    * Slightly better command line interface.
+    * Minor bug fixes.
+
 * 1.7 (2015-01-20)
     * Incompatibility with pip 6.0.6 is fixed.
     * Minor bug fixes.
