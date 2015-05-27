@@ -1034,12 +1034,12 @@ def get_sample_mapping_dict(mapping_file_path):
     mapping_dict = {}
     mapping_file = open(mapping_file_path)
     
-    header_line = mapping_file.readline()
+    header_line = mapping_file.readline().replace('\r','')
     categories = header_line.strip('\n').split('\t')[1:]
     for category in categories:
         mapping_dict[category] = {}
     
-    for fields in [line.strip('\n').split('\t') for line in mapping_file.readlines()]:
+    for fields in [line.replace('\r','').strip('\n').split('\t') for line in mapping_file.readlines()]:
         sample = fields[0]
         mappings = fields[1:]
         

@@ -7,6 +7,9 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 2.0 (2015-05-22)
+    * Fixing a ancient bug: remove carriage return characters from sample mapping files (so people who export their mapping files from EXCEL on Mac computers can get nice figures as well).
+
 * 1.9 (2015-03-31)
     * New script `o-smart-trim` to trim ragged ends of alignments with care.
     * Slightly better command line interface.
