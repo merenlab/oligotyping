@@ -135,16 +135,22 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
                 entropy_tpls.append((position, e),)
 
     sorted_entropy_tpls = sorted(entropy_tpls, key=operator.itemgetter(1), reverse=True)
-    entropy_components_larger_than_0 = [e[1] for e in entropy_tpls if e[1] > 0]
 
     progress.end()
+
+
     if verbose:
-        run.info('Entropy analysis', 'Done (total of %d components greater than 0, mean: %.2f, max: %.2f, min: %.2f).' \
+        entropy_components_larger_than_0 = [e[1] for e in entropy_tpls if e[1] > 0]
+        if entropy_components_larger_than_0:
+            run.info('Entropy analysis', 'Done (total of %d components greater than 0, mean: %.2f, max: %.2f, min: %.2f).' \
                                                         % (len(entropy_components_larger_than_0),
                                                            numpy.mean(entropy_components_larger_than_0),
                                                            numpy.max(entropy_components_larger_than_0),
                                                            numpy.min(entropy_components_larger_than_0)))
-   
+        else:
+            run.info('Entropy analysis', 'None of the nucleotide positions posessed any entropy!')
+
+
     if output_file:
         entropy_output = open(output_file, 'w')
         for _component, _entropy in sorted_entropy_tpls:

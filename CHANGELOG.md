@@ -7,6 +7,9 @@ A simple change log file to keep track on what is new.
 Versions
 ========
 
+* 2.1 (NOT RELASED YET)
+    * Proper handling of files with 0 entropy.
+
 * 2.0 (2015-05-22)
     * Fixing a ancient bug: remove carriage return characters from sample mapping files (so people who export their mapping files from EXCEL on Mac computers can get nice figures as well).
 
