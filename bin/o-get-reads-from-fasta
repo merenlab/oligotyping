@@ -11,15 +11,14 @@
 # Please read the COPYING file.
 
 import sys
-import random
 
-from Oligotyping.utils.utils import get_sample_name_from_defline, Run, Progress
+from Oligotyping.utils.utils import Run, Progress
 import Oligotyping.lib.fastalib as u
 
 run = Run()
 progress = Progress()
 
-def main(input_fasta, ids_file_path, output_fasta, run=run, progress=progress):
+def main(input_fasta, ids_file_path, output_fasta, compare_up_to_the_first_space = False, run=run, progress=progress):
     fasta = u.SequenceSource(input_fasta)
     output = u.FastaOutput(output_fasta)
 
@@ -36,9 +35,11 @@ def main(input_fasta, ids_file_path, output_fasta, run=run, progress=progress):
         if fasta.pos % 1000 == 0:
             progress.update('%d processed; %d ids matched' % (fasta.pos, num_ids_found))
 
-        if fasta.id in read_ids:
+        fasta_id = fasta.id.split(' ')[0] if compare_up_to_the_first_space else fasta.id
+
+        if fasta_id in read_ids:
             output.store(fasta, split=False)
-            read_ids.remove(fasta.id)
+            read_ids.remove(fasta_id)
             num_ids_found += 1
 
     progress.end()
@@ -56,8 +57,10 @@ if __name__ == '__main__':
                         help = 'Text file with read IDs in each line to sample from the input file')
     parser.add_argument('output_fasta',
                         help = 'Output FASTA file path')
+    parser.add_argument('-S', '--compare-up-to-the-first-space', action='store_true', default=False,
+                        help = 'Compare IDs in the file only up to the first space in the IDs in the FASTA file')
 
     args = parser.parse_args()
 
 
-    sys.exit(main(args.input_fasta, args.ids_file, args.output_fasta))
+    sys.exit(main(args.input_fasta, args.ids_file, args.output_fasta, args.compare_up_to_the_first_space))
