@@ -14,15 +14,22 @@ import argparse
 
 import Oligotyping.lib.fastalib as u
 
+def get_ids (taxon, otu_id_to_greengenes):
+    ids = []
+
+    otu = open(otu_id_to_greengenes)
+    for line in otu.readlines():
+        try:
+            id, tax in line.strip().split('\t')
+            if tax.find (taxon) > 0:
+                ids.append(id)
+        except ValueError:
+            print (line)
+    return ids
 
 def gen_tmpl(taxon, otu_id_to_greengenes, greengenes_alignment, output_file_path = None):
-    ids = []
-    
-    for id, tax in [line.strip().split('\t') for line in open(otu_id_to_greengenes).readlines()]:
-        if tax.find(taxon) > 0:
-            ids.append(id)
-    
-    ids = list(set(ids))
+    ids = list(set(get_ids(taxon, otu_id_to_greengenes)))
+
     print '%d ids found for %s.' % (len(ids), taxon)
     
     template = u.FastaOutput('%s.tmpl' % taxon)
