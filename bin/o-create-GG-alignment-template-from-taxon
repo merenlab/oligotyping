@@ -20,7 +20,7 @@ def get_ids (taxon, otu_id_to_greengenes):
     otu = open(otu_id_to_greengenes)
     for line in otu.readlines():
         try:
-            id, tax in line.strip().split('\t')
+            id, tax = line.strip().split('\t')
             if tax.find (taxon) > 0:
                 ids.append(id)
         except ValueError:
