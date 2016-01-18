@@ -10,9 +10,6 @@
 #
 # Please read the COPYING file.
 
-import pkg_resources
-__version__ = pkg_resources.require("oligotyping")[0].version
-
 import os
 import sys
 import copy
@@ -22,6 +19,7 @@ import shutil
 import cPickle
 import logging
 
+import Oligotyping as o
 from Oligotyping.lib import fastalib as u
 from Oligotyping.lib.topology import Topology
 from Oligotyping.lib.shared import generate_default_figures
@@ -274,7 +272,7 @@ class Decomposer:
         # we're in business.
         self.run.info('project', self.project)
         self.run.info('run_date', utils.get_date())
-        self.run.info('version', __version__)
+        self.run.info('version', o.__version__)
         self.run.info('cmd_line', ' '.join(sys.argv).replace(', ', ','))
         self.run.info('multi_threaded', not self.no_threading)
         self.run.info('info_file_path', self.info_file_path)

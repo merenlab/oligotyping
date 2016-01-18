@@ -10,8 +10,6 @@
 #
 # Please read the COPYING file.
 
-import pkg_resources
-__version__ = pkg_resources.require("oligotyping")[0].version
 
 import os
 import sys
@@ -22,6 +20,7 @@ import logging
 import itertools
 import math
 
+import Oligotyping as o
 from Oligotyping.utils import utils
 from Oligotyping.utils import blast
 from Oligotyping.utils.random_colors import random_colors
@@ -338,7 +337,7 @@ class Oligotyping:
 
         self.run.info('project', self.project)
         self.run.info('run_date', utils.get_date())
-        self.run.info('version', __version__)
+        self.run.info('version', o.__version__)
         self.run.info('multi_threaded', not self.no_threading)
         self.run.info('alignment', self.alignment)
         self.run.info('entropy', self.entropy)
@@ -1166,7 +1165,7 @@ class Oligotyping:
         self._get_purity_score()
         self._get_total_purity_score()
 
-        
+
         self.progress.new('Generating Entropy Figures')
         if (not self.quick) and (not self.no_figures):
             if self.no_threading:

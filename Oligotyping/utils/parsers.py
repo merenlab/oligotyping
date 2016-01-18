@@ -11,12 +11,11 @@
 # Please read the COPYING file.
 
 import argparse
-import Oligotyping.lib.oligotyping
+import Oligotyping as o
 
-version = Oligotyping.lib.oligotyping.__version__
 
 def decomposer():
-    parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition (version: %s)' % version)
+    parser = argparse.ArgumentParser(description='Minimum Entropy Decomposition (version: %s)' % o.__version__)
     parser.add_argument('alignment', metavar = 'FILEPATH',
                         help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('-m', '--min-entropy', type=float, default=0.0965, metavar="FLOAT",
@@ -108,7 +107,7 @@ def decomposer():
 
 
 def oligotyping():
-    parser = argparse.ArgumentParser(description='Oligotyping (version: %s)' % version)
+    parser = argparse.ArgumentParser(description='Oligotyping (version: %s)' % o.__version__)
     parser.add_argument('alignment', metavar = 'INPUT ALIGNMENT',
                         help = 'Alignment file that contains all samples and sequences in FASTA format')
     parser.add_argument('entropy', metavar = 'ENTROPY',
@@ -240,7 +239,7 @@ def oligotyping():
 
 
 def entropy():
-    parser = argparse.ArgumentParser(description='Entropy Analysis (version: %s)' % version)
+    parser = argparse.ArgumentParser(description='Entropy Analysis (version: %s)' % o.__version__)
     parser.add_argument('alignment', metavar = 'ALIGNMENT', help = 'Alignment file\
                          that contains all samples and sequences in FASTA format')
     parser.add_argument('--qual-scores-file', metavar = 'QUAL SCORES FILE',
