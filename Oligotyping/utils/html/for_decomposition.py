@@ -25,7 +25,29 @@ from error import HTMLError
 try:
     from django.conf import settings
     absolute = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-    settings.configure(DEBUG=True, TEMPLATE_DEBUG=True, DEFAULT_CHARSET='utf-8', TEMPLATE_DIRS = (os.path.join(absolute, 'templates'),))
+
+    local_settings = {
+        'DEBUG': True,
+        'TEMPLATE_DEBUG': True,
+        'DEFAULT_CHARSET': 'utf-8'
+    }
+
+    try:
+        # Django 1.10+ will use TEMPLATES variable instead of TEMPLATE_DIRS.
+        from django.template.backends.django import DjangoTemplates
+        local_settings.update({
+            'TEMPLATES': [
+                {
+                    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                    'DIRS': (os.path.join(absolute, 'templates'),),
+                    'APP_DIRS': False,
+                }
+            ]
+        })
+    except ImportError:
+        local_settings.update({'TEMPLATE_DIRS': (os.path.join(absolute, 'templates'),)})
+
+    settings.configure(**local_settings)
 
     try:
         import django
