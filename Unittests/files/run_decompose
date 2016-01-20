@@ -1,6 +1,6 @@
 #!/bin/bash
 
-decompose clone43-v6v4.fa -M 1 -m 0.2 --number-of-discriminants 3 --output `pwd`/test-decomposition-output -F
+decompose clone43-v6v4.fa -M 1 -m 0.2 --number-of-discriminants 3 --output `pwd`/test-decomposition-output -F --gen-html --skip-check-input
 python ../../Oligotyping/visualization/decomposition_topology.py test-decomposition-output/TOPOLOGY.cPickle 
 python ../../Oligotyping/visualization/oligotype_distribution_stack_bar.py test-decomposition-output/ENVIRONMENT.txt
 #rm -rf test-decomposition-output
