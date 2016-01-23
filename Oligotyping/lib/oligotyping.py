@@ -58,8 +58,8 @@ class Oligotyping:
         self.no_display = False
         self.keep_tmp = False
         self.blast_ref_db = None
-        self.skip_blast_search = False
-        self.gen_html = False
+        self.do_blast_search = False
+        self.skip_gen_html = False
         self.colors_list_file = None
         self.generate_sets = False
         self.cosine_similarity_threshold = 0.1
@@ -95,8 +95,8 @@ class Oligotyping:
             self.no_display = args.no_display
             self.keep_tmp = args.keep_tmp
             self.blast_ref_db = Absolute(args.blast_ref_db) if args.blast_ref_db else None
-            self.skip_blast_search = args.skip_blast_search
-            self.gen_html = args.gen_html
+            self.do_blast_search = args.do_blast_search
+            self.skip_gen_html = args.skip_gen_html
             self.colors_list_file = args.colors_list_file
             self.cosine_similarity_threshold = args.cosine_similarity_threshold
             self.generate_sets = args.generate_sets
@@ -437,7 +437,7 @@ class Oligotyping:
 
         self.run.quit()
 
-        if self.gen_html:
+        if not self.skip_gen_html:
             self._generate_html_output()
 
     def _construct_samples_dict(self):
@@ -1192,7 +1192,7 @@ class Oligotyping:
         self.progress.end()
 
 
-        if (not self.quick) and (not self.skip_blast_search):
+        if (not self.quick) and self.do_blast_search:
             self.progress.new('Performing %s BLAST search for representative sequences'\
                                             % ('LOCAL' if self.blast_ref_db else 'REMOTE'))
 

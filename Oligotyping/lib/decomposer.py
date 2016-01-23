@@ -54,7 +54,7 @@ class Decomposer:
         self.number_of_threads = None
         self.log_file_path = None
         self.keep_tmp = False
-        self.gen_html = True
+        self.skip_gen_html = True
         self.skip_gen_figures = False
         self.skip_check_input_file = False
         self.skip_storing_final_nodes = False
@@ -86,7 +86,7 @@ class Decomposer:
             self.skip_basic_analyses = args.skip_gen_figures
             self.skip_check_input_file = args.skip_check_input_file
             self.sample_mapping = args.sample_mapping
-            self.gen_html = args.gen_html
+            self.skip_gen_html = args.skip_gen_html
             self.skip_gexf_files = args.skip_gexf_files
             self.quick = args.quick
 
@@ -100,7 +100,7 @@ class Decomposer:
             self.skip_refining_topology = True
             self.skip_removing_outliers = True
             self.skip_storing_final_nodes = True
-            self.gen_html = False
+            self.skip_gen_html = True
 
         # there is a difference between 'average read length' and 'alignment length',
         # therefore there are two different variables to keep that information. the first
@@ -381,7 +381,7 @@ class Decomposer:
         self.run.quit()
 
         # finally:
-        if self.gen_html:
+        if not self.skip_gen_html:
             self._generate_html_output()
 
 

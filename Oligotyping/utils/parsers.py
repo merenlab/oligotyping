@@ -88,7 +88,7 @@ def decomposer():
     parser.add_argument('-E', '--sample-mapping', metavar = 'FILEPATH', default = None,
                         help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
                                 visualizations. Refer to the tutorial for the file format')
-    parser.add_argument('--gen-html', action = 'store_true', default = False,
+    parser.add_argument('--skip-gen-html', action = 'store_true', default = False,
                         help = 'When set, decomposer will generate a static HTML output to browse analysis results')
     parser.add_argument('--skip-gen-figures', action = 'store_true', default = False,
                         help = 'When set, decomposer will not attempt to generate figures post analysis')
@@ -195,11 +195,11 @@ def oligotyping():
                         help = 'Optional file that contains HTML color codes in each line to color oligotypes. Number\
                                 of colors in the file has to be equal or greater than the number of abundant\
                                 oligotypes, for which colors are going to be used for.')
-    parser.add_argument('--skip-blast-search', action = 'store_true', default = False,
-                        help = 'When set, BLAST search step will not be performed.')
+    parser.add_argument('--do-blast-search', action = 'store_true', default = False,
+                        help = 'When set, representative sequences will be searched on NCBI.')
     parser.add_argument('--no-display', action = 'store_true', default = False,
                         help = 'When set, no figures will be shown.')
-    parser.add_argument('--gen-html', action = 'store_true', default = False,
+    parser.add_argument('--skip-gen-html', action = 'store_true', default = False,
                         help = 'Generate static HTML output to browse analysis results.')
     parser.add_argument('--generate-sets', action = 'store_true', default = False,
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
