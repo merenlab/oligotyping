@@ -89,7 +89,8 @@ def decomposer():
                         help = 'TAB delimited categorical mapping of samples to be used for post-analysis\
                                 visualizations. Refer to the tutorial for the file format')
     parser.add_argument('--skip-gen-html', action = 'store_true', default = False,
-                        help = 'When set, decomposer will generate a static HTML output to browse analysis results')
+                        help = 'By default, the process will end by generating a static HTML page to browse the analysis\
+                                results. The use of this flag will skip that')
     parser.add_argument('--skip-gen-figures', action = 'store_true', default = False,
                         help = 'When set, decomposer will not attempt to generate figures post analysis')
     parser.add_argument('--skip-check-input-file', action = 'store_true', default = False,
@@ -200,7 +201,8 @@ def oligotyping():
     parser.add_argument('--no-display', action = 'store_true', default = False,
                         help = 'When set, no figures will be shown.')
     parser.add_argument('--skip-gen-html', action = 'store_true', default = False,
-                        help = 'Generate static HTML output to browse analysis results.')
+                        help = 'By default, the process will end by generating a static HTML page to browse the analysis\
+                                results. The use of this flag will skip that')
     parser.add_argument('--generate-sets', action = 'store_true', default = False,
                         help = 'Agglomerate oligotypes into oligotype sets when their frequency patterns across\
                         samples are similar. Oligotype sets simply put oligotypes into the same set if they \
