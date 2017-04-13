@@ -12,7 +12,7 @@ de facto 3% similarity threshold that is being used by OTU clustering methods.
 
 For installation and usage instructions, please see the project web page:
 
-* https://meren.github.io/projects/oligotyping/
+* http://merenlab.org/software/oligotyping/
 
 
 Licence
