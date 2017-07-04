@@ -1,3 +1,4 @@
+numpy
 Matplotlib
 BioPython
 SciPy
