@@ -12,7 +12,7 @@
 import os
 import time
 import copy
-import cStringIO
+import io
 
 import Oligotyping.lib.fastalib as u
 import Oligotyping.lib.b6lib as b6lib
@@ -97,7 +97,7 @@ try:
     from Bio.Blast import NCBIWWW
     from Bio.Blast import NCBIXML
 except:
-    raise MissingModuleError, biopython_error_text
+    raise MissingModuleError(biopython_error_text)
 
 
 class LocalBLAST:
@@ -140,11 +140,11 @@ class LocalBLAST:
 
     def binary_check(self):
         if (not is_program_exist(self.binary)) or (not is_program_exist(self.makeblastdb)):
-            raise ModuleBinaryError, missing_binary_error_text
+            raise ModuleBinaryError(missing_binary_error_text)
 
 
     def version_check(self):
-        version_text = check_command_output('%(binary)s -version' % self.get_cmd_line_params_dict())
+        version_text = check_command_output('%(binary)s -version' % self.get_cmd_line_params_dict()).decode("utf-8") 
         # we expect to see an output like this:
         #
         #    blastn: 2.2.26+
@@ -153,7 +153,7 @@ class LocalBLAST:
         major_blastn_version = version_text.strip().split()[1].split('.')[0]
         
         if major_blastn_version != '2':
-            raise ModuleVersionError, version_error_text
+            raise ModuleVersionError(version_error_text)
 
 
     def search_parallel(self, num_processes, num_reads_per_process = 2000, keep_parts = False):
@@ -222,7 +222,7 @@ class LocalBLAST:
         b6 = b6lib.B6Source(self.output)
 
         ids_with_hits = set()
-        while b6.next():
+        while next(b6):
             if b6.entry.query_id == b6.entry.subject_id:
                 continue
 
@@ -292,8 +292,8 @@ class LocalBLAST:
         query_counts = {}
         fancy_results_dict = {}
 
-        while b6.next():
-            if not query_counts.has_key(b6.entry.query_id):
+        while next(b6):
+            if b6.entry.query_id not in query_counts:
                 query_counts[b6.entry.query_id] = 1
 
             if query_counts[b6.entry.query_id] - 1 == max_per_query:
@@ -301,7 +301,7 @@ class LocalBLAST:
             else:
                 query_counts[b6.entry.query_id] += 1
 
-            if not fancy_results_dict.has_key(b6.entry.query_id):
+            if b6.entry.query_id not in fancy_results_dict:
                 fancy_results_dict[b6.entry.query_id] = []
 
             query_seq = input_fasta.get_seq_by_read_id(b6.entry.query_id).replace('-', '')
@@ -344,7 +344,7 @@ class RemoteBLAST:
         if output_file:
             open(output_file, "w").write(result)
  
-        return cStringIO.StringIO(result)
+        return io.StringIO(result)
 
 
     def get_fancy_results_list(self, blast_results, num_results = 20):
@@ -386,5 +386,5 @@ if __name__ == "__main__":
     try:
         u = LocalBLAST(None, None)
     except ModuleVersionError:
-        raise ModuleVersionError, version_error_text
+        raise ModuleVersionError(version_error_text)
     

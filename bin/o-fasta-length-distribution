@@ -27,7 +27,7 @@ def length_distribution(fasta, output = None, title = None):
     
     fasta.reset()
     
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 1000 == 0 or fasta.pos == 1:
             sys.stderr.write('\r[fastalib] Reading: %s' % (fasta.pos))
             sys.stderr.flush()
@@ -72,14 +72,14 @@ def length_distribution(fasta, output = None, title = None):
     plt.subplots_adjust(left=0.05, bottom = 0.01, top = 0.95, right = 0.98)
     
     plt.plot(seq_len_distribution, color = 'black', alpha = 0.3)
-    plt.fill_between(range(0, max_seq_len + 1), seq_len_distribution, y2 = 0, color = 'black', alpha = 0.30)
+    plt.fill_between(list(range(0, max_seq_len + 1)), seq_len_distribution, y2 = 0, color = 'black', alpha = 0.30)
     plt.ylabel('number of sequences')
     
     xtickstep = (max_seq_len / 50) or 1
     ytickstep = max(seq_len_distribution) / 20 or 1
     
-    plt.xticks(range(xtickstep, max_seq_len + 1, xtickstep), rotation=90, size='xx-small')
-    plt.yticks(range(0, max(seq_len_distribution) + 1, ytickstep),
+    plt.xticks(list(range(xtickstep, max_seq_len + 1, xtickstep)), rotation=90, size='xx-small')
+    plt.yticks(list(range(0, max(seq_len_distribution) + 1, ytickstep)),
                [y for y in range(0, max(seq_len_distribution) + 1, ytickstep)],
                size='xx-small')
     plt.xlim(xmin = 0, xmax = max_seq_len)
@@ -96,7 +96,7 @@ def length_distribution(fasta, output = None, title = None):
 
     length_abundance = {}
     for l in sequence_lengths:
-        if length_abundance.has_key(l):
+        if l in length_abundance:
             length_abundance[l] += 1
         else:
             length_abundance[l] = 1
@@ -104,15 +104,15 @@ def length_distribution(fasta, output = None, title = None):
     percentages = []
     total_percentage = 0
     for i in range(0, max_seq_len):
-        if length_abundance.has_key(i):
+        if i in length_abundance:
             total_percentage += length_abundance[i] * 100.0 / total_seqs
             percentages.append(total_percentage)
         else:
             percentages.append(total_percentage)
 
     xtickstep = (max_seq_len / 50) or 1
-    plt.xticks(range(xtickstep, max_seq_len + 1, xtickstep), rotation=90, size='xx-small')
-    plt.yticks(range(0, 101, 5),
+    plt.xticks(list(range(xtickstep, max_seq_len + 1, xtickstep)), rotation=90, size='xx-small')
+    plt.yticks(list(range(0, 101, 5)),
                ['%d%%' % y for y in range(0, 101, 5)],
                size='xx-small')
     plt.ylabel('percent of reads')
@@ -120,7 +120,7 @@ def length_distribution(fasta, output = None, title = None):
     plt.xlim(xmin = 0, xmax = max_seq_len)
     plt.ylim(ymin = 0, ymax = 100)
     plt.plot(percentages)
-    plt.fill_between(range(0, max_seq_len + 1), percentages + [100], y2 = 0, color = 'blue', alpha = 0.30)
+    plt.fill_between(list(range(0, max_seq_len + 1)), percentages + [100], y2 = 0, color = 'blue', alpha = 0.30)
     
  
     #############################################################################################################

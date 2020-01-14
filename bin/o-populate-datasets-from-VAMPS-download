@@ -18,7 +18,7 @@ def main(input_file, output_file, taxon = None):
     fasta = u.SequenceSource(input_file)
 
     VAMPS_output_type = None
-    fasta.next()
+    next(fasta)
     if len(fasta.id.split('|')) == 5:
         # >GR7EWKD02FPDXN|MBJ_GOS_Bv6v4|C65_5|1.7% from GASTtaxonomy|Count 
         VAMPS_output_type = 1
@@ -32,7 +32,7 @@ def main(input_file, output_file, taxon = None):
 
     output = u.FastaOutput(output_file)
 
-    while fasta.next():
+    while next(fasta):
         if taxon and fasta.id.find(taxon) == -1:
             continue
 

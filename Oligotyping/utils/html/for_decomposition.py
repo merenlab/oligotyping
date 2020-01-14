@@ -13,13 +13,13 @@
 import os
 import copy
 import shutil
-import cPickle
+import pickle
 
 from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
-from error import HTMLError
+from .error import HTMLError
 
 
 try:
@@ -59,7 +59,7 @@ try:
     from django.template.loader import render_to_string
     from django.template.defaultfilters import register
 except ImportError:
-    raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
+    raise HTMLError('You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.')
 
 @register.filter(name='diffs')
 def diffs(l, index):
@@ -99,7 +99,7 @@ def get_blast_hits(d, max_num = 8):
         
     ret_line = '<p><b>BLAST search results at a glance</b> (%d of %d total hits are shown):' %\
                                             (num_show, len(d))
-    for i in d.keys()[0:num_show]:
+    for i in list(d.keys())[0:num_show]:
         if d[i]['identity'] == 100.0:
             ret_line += '<p>* %s (<b><i>identity: %.2f%%, query coverage: %.2f%%</i></b>)' \
                                     % (d[i]['hit_def'].replace("'", '"'),
@@ -138,7 +138,7 @@ def get_colors(number_of_colors):
 
 @register.filter(name='values') 
 def values(d):
-    return d.values()
+    return list(d.values())
 
 @register.filter(name='mod') 
 def mod(value, arg):
@@ -164,7 +164,7 @@ def sumvals(arg, clean = None):
 
 @register.filter(name='mklist') 
 def mklist(arg):
-    return range(0, int(arg))
+    return list(range(0, int(arg)))
 
 t = get_template('index_for_decomposition.tmpl')
 
@@ -199,8 +199,8 @@ def generate_html_output(run_info_dict, html_output_directory = None):
 
     def get_figures_dict(html_dict_prefix):
         html_dict_key = '%s_file_path' % html_dict_prefix
-        if html_dict.has_key(html_dict_key):
-            figures_dict = cPickle.load(open(html_dict[html_dict_key]))
+        if html_dict_key in html_dict:
+            figures_dict = pickle.load(open(html_dict[html_dict_key]))
             for _map in figures_dict:
                 for _func in figures_dict[_map]:
                     for _op in figures_dict[_map][_func]:
@@ -219,12 +219,12 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     html_dict['exclusive_figures_dict'] = get_figures_dict('exclusive_figures_dict')
 
 
-    if html_dict.has_key('node_representatives_file_path'):
+    if 'node_representatives_file_path' in html_dict:
         html_dict['node_representatives_file_path'] = copy_as(run_info_dict['node_representatives_file_path'], 'node-representatives.fa.txt')
     else:
         html_dict['node_representatives_file_path'] = None
 
-    if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
+    if 'blast_ref_db' in run_info_dict and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
 
     if run_info_dict['sample_mapping']:
@@ -267,8 +267,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
    
-    run_info_dict = cPickle.load(open(args.run_info_dict_path))
+    run_info_dict = pickle.load(open(args.run_info_dict_path))
 
     index_page = generate_html_output(run_info_dict, args.output_directory) 
 
-    print '\n\tHTML output is ready: "%s"\n' % index_page
+    print('\n\tHTML output is ready: "%s"\n' % index_page)

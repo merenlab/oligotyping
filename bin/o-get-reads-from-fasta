@@ -31,7 +31,7 @@ def main(input_fasta, ids_file_path, output_fasta, compare_up_to_the_first_space
 
     num_ids_found = 0
     progress.new('Processing input FASTA')
-    while fasta.next() and len(read_ids):
+    while next(fasta) and len(read_ids):
         if fasta.pos % 1000 == 0:
             progress.update('%d processed; %d ids matched' % (fasta.pos, num_ids_found))
 

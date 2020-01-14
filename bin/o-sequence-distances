@@ -41,11 +41,11 @@ def main(input_file, output_file, align = False):
     similarities = {}
     fasta = u.SequenceSource(input_file)
 
-    while fasta.next():
+    while next(fasta):
         sequences[fasta.id] = fasta.seq
         similarities[fasta.id] = {}
 
-    keys = sequences.keys()
+    keys = list(sequences.keys())
 
     progress.new('Processing sequences')
     for i in range(0, len(keys)):

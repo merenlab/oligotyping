@@ -17,12 +17,12 @@ try:
     import Oligotyping
 except ImportError:
     import inspect
-    print '''
+    print('''
     Oligotyping package seems to be missing from your PYTHONPATH. Running this may help:
         
         export PYTHONPATH="$PYTHONPATH:%s"
 
-    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))))
     sys.exit()
 
 from Oligotyping.lib.decomposer import Decomposer
@@ -32,7 +32,7 @@ from Oligotyping.utils import parsers
 
 if __name__ == '__main__':
     if '--version' in sys.argv:
-        print parsers.version
+        print(parsers.version)
         sys.exit()
 
     parser = parsers.decomposer()
@@ -40,6 +40,6 @@ if __name__ == '__main__':
 
     try:
         decomposer.decompose()
-    except ConfigError, e:
-        print e
+    except ConfigError as e:
+        print(e)
         sys.exit(-1)

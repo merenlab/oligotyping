@@ -15,7 +15,7 @@ import os
 import sys
 import copy
 import shutil
-import cPickle
+import pickle
 import logging
 import itertools
 import math
@@ -32,6 +32,7 @@ from Oligotyping.visualization.frequency_curve_and_entropy import vis_freq_curve
 from Oligotyping.visualization.oligotype_sets_distribution import vis_oligotype_sets_distribution
 from Oligotyping.visualization.oligotype_distribution_stack_bar import oligotype_distribution_stack_bar
 from Oligotyping.visualization.oligotype_distribution_across_samples import oligotype_distribution_across_samples
+from functools import reduce
 
 
 class Oligotyping:
@@ -52,7 +53,7 @@ class Oligotyping:
         self.project = None
         self.output_directory = None
         self.sample_name_separator = '_'
-        self.limit_representative_sequences = sys.maxint
+        self.limit_representative_sequences = sys.maxsize
         self.quick = False
         self.no_figures = False
         self.no_display = False
@@ -89,7 +90,7 @@ class Oligotyping:
             self.project = args.project or os.path.basename(args.alignment).split('.')[0]
             self.output_directory = args.output_directory
             self.sample_name_separator = args.sample_name_separator
-            self.limit_representative_sequences = args.limit_representative_sequences or sys.maxint
+            self.limit_representative_sequences = args.limit_representative_sequences or sys.maxsize
             self.quick = args.quick
             self.no_figures = args.no_figures
             self.no_display = args.no_display
@@ -140,19 +141,19 @@ class Oligotyping:
         try:
             blast.LocalBLAST(None, None, None)
         except blast.ModuleVersionError:
-            raise utils.ConfigError, blast.version_error_text
+            raise utils.ConfigError(blast.version_error_text)
         except blast.ModuleBinaryError:
-            raise utils.ConfigError, blast.missing_binary_error_text
+            raise utils.ConfigError(blast.missing_binary_error_text)
 
         # FIXME: check R modules here.
 
 
     def check_dirs(self):
         if self.number_of_auto_components != None and self.selected_components != None:
-            raise utils.ConfigError, "You either have to declare 'auto components' (-c) or 'selected components' (-C)."
+            raise utils.ConfigError("You either have to declare 'auto components' (-c) or 'selected components' (-C).")
 
         if self.number_of_auto_components == None and self.selected_components == None:
-            raise utils.ConfigError, "Both 'auto components' (-c), and 'selected components' (-C) were declared."
+            raise utils.ConfigError("Both 'auto components' (-c), and 'selected components' (-C) were declared.")
 
         # check output associated stuff
         if not self.output_directory:
@@ -162,10 +163,10 @@ class Oligotyping:
             try:
                 os.makedirs(self.output_directory)
             except:
-                raise utils.ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
-                                                                (self.output_directory)
+                raise utils.ConfigError("Output directory does not exist (attempt to create one failed as well): '%s'" % \
+                                                                (self.output_directory))
         if not os.access(self.output_directory, os.W_OK):
-            raise utils.ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
+            raise utils.ConfigError("You do not have write permission for the output directory: '%s'" % self.output_directory)
 
         self.tmp_directory = self.generate_output_destination('TMP', directory = True)
         self.figures_directory = self.generate_output_destination('FIGURES', directory = True)
@@ -173,25 +174,25 @@ class Oligotyping:
 
     def check_input(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
-            raise utils.ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+            raise utils.ConfigError("Alignment file is not accessible: '%s'" % self.alignment)
         
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
-            raise utils.ConfigError, "Entropy file is not accessible: '%s'" % self.entropy
+            raise utils.ConfigError("Entropy file is not accessible: '%s'" % self.entropy)
 
         if self.sample_mapping:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
-                raise utils.ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+                raise utils.ConfigError("Sample mapping file is not accessible: '%s'" % self.sample_mapping)
 
         if self.colors_list_file:
             if not os.path.exists(self.colors_list_file):
-                raise utils.ConfigError, "Colors list file does not exist: '%s'" % self.colors_list_file
+                raise utils.ConfigError("Colors list file does not exist: '%s'" % self.colors_list_file)
             first_characters = list(set([c.strip()[0] for c in open(self.colors_list_file)]))
             if len(first_characters) != 1 or first_characters[0] != '#':
-                raise utils.ConfigError, "Colors list file does not seem to be correctly formatted"
+                raise utils.ConfigError("Colors list file does not seem to be correctly formatted")
 
         # set the alignment lentgh (it will be necessary to check certain params)
         alignment = u.SequenceSource(self.alignment)
-        alignment.next()
+        next(alignment)
         self.alignment_length = len(alignment.seq)
         alignment.close()
 
@@ -203,7 +204,7 @@ class Oligotyping:
             self.progress.new('Checking the input FASTA')
             samples = utils.check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
-                raise utils.ConfigError, 'Exiting.'
+                raise utils.ConfigError('Exiting.')
             self.progress.end()
 
         if self.sample_mapping:
@@ -218,44 +219,44 @@ class Oligotyping:
             try:
                 self.selected_components = [int(c) for c in self.selected_components.split(',')]
             except:
-                raise utils.ConfigError, "Selected components should be comma separated integer values (such as '4,8,15,25,47')."
+                raise utils.ConfigError("Selected components should be comma separated integer values (such as '4,8,15,25,47').")
         
             if max(self.selected_components) >= self.alignment_length:
-                raise utils.ConfigError, "There is at least one component ('%d') that is bigger than the alignment length."\
-                                                                        % max(self.selected_components) 
+                raise utils.ConfigError("There is at least one component ('%d') that is bigger than the alignment length."\
+                                                                        % max(self.selected_components)) 
         
             if min(self.selected_components) < 0:
-                raise utils.ConfigError, "Selected components can't be smaller than 0"
+                raise utils.ConfigError("Selected components can't be smaller than 0")
 
             components_declared_more_than_once = [c[0] for c in itertools.groupby(sorted(self.selected_components))\
                                                                         if len(list(c[1])) > 1]
             N = len(components_declared_more_than_once)
             if N:
-                raise utils.ConfigError, "You declared %s component%s (%s) more than once."\
+                raise utils.ConfigError("You declared %s component%s (%s) more than once."\
                                              % ('a' if N == 1 else '%s' % str(N), 
                                                 's' if N > 1 else '',
-                                                ', '.join([str(c) for c in components_declared_more_than_once]))
+                                                ', '.join([str(c) for c in components_declared_more_than_once])))
 
         if self.min_base_quality:
             try:
                 self.min_base_quality = int(self.min_base_quality)
                 assert(self.min_base_quality >= 0 and self.min_base_quality <= 40)
             except:
-                raise utils.ConfigError, "Minimum base quality must be an integer between 0 and 40."
+                raise utils.ConfigError("Minimum base quality must be an integer between 0 and 40.")
 
         if self.limit_oligotypes_to:
             self.limit_oligotypes_to = [o.strip().upper() for o in self.limit_oligotypes_to.split(',')]
             if len(self.limit_oligotypes_to) == 1:
-                raise utils.ConfigError, "There must be more than one oligotype for --limit-oligotypes parameter."
+                raise utils.ConfigError("There must be more than one oligotype for --limit-oligotypes parameter.")
 
             if len([n for n in ''.join(self.limit_oligotypes_to) if n not in ['A', 'T', 'C', 'G', '-']]):
-                raise utils.ConfigError, "Oligotypes defined by --limit-oligotypes parameter seems to have ambiguous characters."
+                raise utils.ConfigError("Oligotypes defined by --limit-oligotypes parameter seems to have ambiguous characters.")
 
         if self.exclude_oligotypes:
             self.exclude_oligotypes = [o.strip().upper() for o in self.exclude_oligotypes.split(',')]
             
             if len([n for n in ''.join(self.exclude_oligotypes) if n not in ['A', 'T', 'C', 'G', '-']]):
-                raise utils.ConfigError, "Oligotypes defined by --exclude-oligotypes parameter seems to have ambiguous characters."
+                raise utils.ConfigError("Oligotypes defined by --exclude-oligotypes parameter seems to have ambiguous characters.")
             
         return True
 
@@ -450,14 +451,14 @@ class Oligotyping:
             num_reads_eliminated_due_to_min_base_quality = 0
 
         self.fasta.reset()
-        while self.fasta.next():
+        while next(self.fasta):
             if self.fasta.pos % 1000 == 0:
                 self.progress.update('Analyzing: %s' \
                                     % (utils.pretty_print(self.fasta.pos)))
 
             sample = utils.get_sample_name_from_defline(self.fasta.id, self.sample_name_separator)
             
-            if not self.samples_dict.has_key(sample):
+            if sample not in self.samples_dict:
                 self.samples_dict[sample] = {}
                 self.samples.append(sample)
 
@@ -483,7 +484,7 @@ class Oligotyping:
                 # checking the base qualities
                 oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
         
-            if self.samples_dict[sample].has_key(oligo):
+            if oligo in self.samples_dict[sample]:
                 self.samples_dict[sample][oligo] += 1
             else:
                 self.samples_dict[sample][oligo] = 1
@@ -495,16 +496,16 @@ class Oligotyping:
         if self.quals_dict:
             self.run.info('num_reads_eliminated_due_to_min_base_quality', num_reads_eliminated_due_to_min_base_quality)
             if self.fasta.total_seq == num_reads_eliminated_due_to_min_base_quality:
-                raise utils.ConfigError, "All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality
+                raise utils.ConfigError("All reads were eliminated due to --min-base-quality (%d) rule" % self.min_base_quality)
         
 
     def _register_removal(self, oligo, reason = 'unknown'):
-        if not self.excluded_read_ids_tracker.has_key(reason):
+        if reason not in self.excluded_read_ids_tracker:
             self.excluded_read_ids_tracker[reason] = {}
             
         for sample in self.samples:
-            if self.samples_dict[sample].has_key(oligo):
-                if not self.excluded_read_ids_tracker[reason].has_key(sample):
+            if oligo in self.samples_dict[sample]:
+                if sample not in self.excluded_read_ids_tracker[reason]:
                     self.excluded_read_ids_tracker[reason][sample] = self.samples_dict[sample][oligo]
                 else:
                     self.excluded_read_ids_tracker[reason][sample] += self.samples_dict[sample][oligo]
@@ -569,7 +570,7 @@ class Oligotyping:
         # for each sample. computing it here once is more optimized.
         sample_sums = {}
         SUM = lambda sample: sum([self.samples_dict[sample][o] for o in non_singleton_oligos \
-                                                                if self.samples_dict[sample].has_key(o)])
+                                                                if o in self.samples_dict[sample]])
         for sample in self.samples:
             sample_sums[sample] = SUM(sample)
 
@@ -583,7 +584,7 @@ class Oligotyping:
             
             percent_abundances = []
             for sample in self.samples:
-                if self.samples_dict[sample].has_key(oligo):
+                if oligo in self.samples_dict[sample]:
                     percent_abundances.append((self.samples_dict[sample][oligo] * 100.0 / sample_sums[sample],
                                                self.samples_dict[sample][oligo],
                                                sample_sums[sample],
@@ -625,7 +626,7 @@ class Oligotyping:
                     self.progress.update(utils.P(i, len(non_singleton_oligos)))
 
                 oligo_actual_abundance = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
-                                                        if self.samples_dict[sample].has_key(oligo)])
+                                                        if oligo in self.samples_dict[sample]])
                 if self.min_actual_abundance > oligo_actual_abundance:
                     oligos_for_removal.append(oligo)
 
@@ -695,8 +696,8 @@ class Oligotyping:
             
             self.run.info('num_oligos_after_l_elim', len(self.abundant_oligos))
             if len(self.abundant_oligos) == 0:
-                raise utils.ConfigError, "\n\n\t--limit-oligotypes parameter eliminated all oligotypes.\
-                                          \n\tPlease make sure --limit-oligotypes matches with actual oligotypes.\n\n\tQuiting.\n"
+                raise utils.ConfigError("\n\n\t--limit-oligotypes parameter eliminated all oligotypes.\
+                                          \n\tPlease make sure --limit-oligotypes matches with actual oligotypes.\n\n\tQuiting.\n")
 
         # if 'exclude_oligotypes' is defined, remove them from analysis if they are present
         if self.exclude_oligotypes:
@@ -711,12 +712,12 @@ class Oligotyping:
         # storing final counts
         for oligo in self.abundant_oligos:
             self.final_oligo_counts_dict[oligo] = sum([self.samples_dict[sample][oligo] for sample in self.samples_dict\
-                                                        if self.samples_dict[sample].has_key(oligo)])
+                                                        if oligo in self.samples_dict[sample]])
 
         # in case no oligos left
         if not len(self.abundant_oligos):
-            raise utils.ConfigError, "\n\n\tAll oligotypes were discarded during the noise removal step.\
-                                      \n\tPlease check your parameters.\n\n\tQuiting.\n"
+            raise utils.ConfigError("\n\n\tAll oligotypes were discarded during the noise removal step.\
+                                      \n\tPlease check your parameters.\n\n\tQuiting.\n")
 
         # if there is only one oligotype left, skip basic analyses
         if len(self.abundant_oligos) == 1:
@@ -892,7 +893,7 @@ class Oligotyping:
         
         self.progress.update('Processing reads that were represented in results')
         for sample in self.samples_dict:
-            if not read_distribution_dict.has_key(sample):
+            if sample not in read_distribution_dict:
                 read_distribution_dict[sample] = get_dict_entry_tmpl()
 
             read_distribution_dict[sample]['represented_reads'] = sum(self.samples_dict[sample].values())
@@ -900,7 +901,7 @@ class Oligotyping:
         for reason in self.excluded_read_ids_tracker:
             self.progress.update('Processing excluded oligos (%s)' % (reason))
             for sample in self.excluded_read_ids_tracker[reason]:
-                if not read_distribution_dict.has_key(sample):
+                if sample not in read_distribution_dict:
                     read_distribution_dict[sample] = get_dict_entry_tmpl()
                         
                 read_distribution_dict[sample][reason] = self.excluded_read_ids_tracker[reason][sample]
@@ -921,9 +922,9 @@ class Oligotyping:
             # it means user provided a list of colors to be used for oligotypes
             colors = [c.strip() for c in open(self.colors_list_file).readlines()]
             if len(colors) < len(self.abundant_oligos):
-                raise utils.ConfigError, "Number of colors defined in colors file (%d),\
+                raise utils.ConfigError("Number of colors defined in colors file (%d),\
                                           is smaller than the number of abundant oligotypes (%d)" % \
-                                                        (len(colors), len(self.abundant_oligos))
+                                                        (len(colors), len(self.abundant_oligos)))
             colors_dict = {}
             for i in range(0, len(self.abundant_oligos)):
                 colors_dict[self.abundant_oligos[i]] = colors[i]
@@ -959,7 +960,7 @@ class Oligotyping:
 
         self.progress.new('Generating data objects for newly generated oligotype sets')
         self.progress.update('New Colors')
-        self.oligotype_set_ids = range(0, len(self.oligotype_sets))
+        self.oligotype_set_ids = list(range(0, len(self.oligotype_sets)))
         
         self.colors_dict_for_oligotype_sets = {}
         for set_id in self.oligotype_set_ids:
@@ -996,7 +997,7 @@ class Oligotyping:
             counts = []
             percents = []
             for sample in self.samples:
-                if d[sample].has_key(oligotype_set_id):
+                if oligotype_set_id in d[sample]:
                     counts.append(d[sample][oligotype_set_id])
                     percents.append(d[sample][oligotype_set_id] * 100.0 / sum(d[sample].values()))
                 else:
@@ -1031,10 +1032,10 @@ class Oligotyping:
         # listed in this dictionary MAY NOT be the final oligos once the noise
         # filtering step has ended.
 
-        temp_unique_distributions = dict(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))]))
+        temp_unique_distributions = dict(list(zip(self.abundant_oligos, [{} for x in range(0, len(self.abundant_oligos))])))
 
         self.fasta.reset()
-        while self.fasta.next():
+        while next(self.fasta):
             if self.progress and self.fasta.pos % 1000 == 0:
                 self.progress.update('Computing sequence distributions: %.2f%%' \
                                                 % (self.fasta.pos * 100.0 / self.fasta.total_seq))
@@ -1046,7 +1047,7 @@ class Oligotyping:
                     temp_unique_distributions[oligo][self.fasta.seq] = 1
 
         for oligo in self.abundant_oligos:
-            temp_unique_distributions[oligo] = sorted(temp_unique_distributions[oligo].values(), reverse = True)
+            temp_unique_distributions[oligo] = sorted(list(temp_unique_distributions[oligo].values()), reverse = True)
 
 
         return temp_unique_distributions
@@ -1073,7 +1074,7 @@ class Oligotyping:
                     unique_files_dict[oligo] = {'file': open(fasta_file_path + '_unique', 'w'),
                                                 'path': fasta_file_path + '_unique'}
                 except IOError:
-                    print '\n\t'.join(['',
+                    print('\n\t'.join(['',
                                        'WARNING: Oligotyping process has reached the maximum number of open files',
                                        'limit defined by the operating system. There are "%d" oligotypes to be'\
                                                                  % len(self.abundant_oligos),
@@ -1085,15 +1086,15 @@ class Oligotyping:
                                        '',
                                        'Until this issue is solved, representative sequences are not going to be',
                                        'computed.',
-                                       ''])
+                                       '']))
 
                     # clean after yourself. close every file, delete directory, exit.
-                    [map(lambda x: x.close(), [g[o]['file'] for o in g]) for g in [fasta_files_dict, unique_files_dict]]
+                    [[x.close() for x in [g[o]['file'] for o in g]] for g in [fasta_files_dict, unique_files_dict]]
                     shutil.rmtree(output_directory_for_reps)
                     sys.exit()
 
         self.fasta.reset()
-        while self.fasta.next():
+        while next(self.fasta):
             if self.fasta.pos % 1000 == 0:
                 self.progress.update('Generating Individual FASTA Files: %.2f%%' \
                                                 % (self.fasta.pos * 100.0 / self.fasta.total_seq))
@@ -1120,7 +1121,7 @@ class Oligotyping:
             # is distributed among samples:
             distribution_among_samples = {}
 
-            fasta.next()
+            next(fasta)
             # this is the first read in the unique reads list, which is the most abundant unique sequence
             # for the oligotype. so we are going to store it in a dict to generate
             # representative sequences FASTA file:
@@ -1131,7 +1132,7 @@ class Oligotyping:
             # FIXME: I am going to come back to this and fix it at some point. Storing 'distribution_among_samples'
             # information in separate cPickle files per oligo is not the smartest thing to do.
             self.final_oligo_unique_distribution_dict[oligo] = []
-            while fasta.next() and fasta.pos <= self.limit_representative_sequences:
+            while next(fasta) and fasta.pos <= self.limit_representative_sequences:
                 unique_files_dict[oligo]['file'].write('>%s_%d|freq:%d\n'\
                                                                      % (oligo,
                                                                         fasta.pos,
@@ -1144,10 +1145,10 @@ class Oligotyping:
 
                 for sample_id in fasta.ids:
                     sample_name = utils.get_sample_name_from_defline(sample_id, self.sample_name_separator)
-                    if not distribution_among_samples.has_key(sample_name):
+                    if sample_name not in distribution_among_samples:
                         distribution_among_samples[sample_name] = {}
                     d = distribution_among_samples[sample_name]
-                    if not d.has_key(fasta.pos):
+                    if fasta.pos not in d:
                         d[fasta.pos] = 1
                     else:
                         d[fasta.pos] += 1
@@ -1157,7 +1158,7 @@ class Oligotyping:
 
             unique_fasta_path = unique_files_dict[oligo]['path']
             distribution_among_samples_dict_path = unique_fasta_path + '_distribution.cPickle'
-            cPickle.dump(distribution_among_samples, open(distribution_among_samples_dict_path, 'w'))
+            pickle.dump(distribution_among_samples, open(distribution_among_samples_dict_path, 'wb'))
 
         self.progress.end()
         
@@ -1249,7 +1250,7 @@ class Oligotyping:
             self.progress.update('Storing representative sequences for "%s" ...' % oligo)
             unique_fasta_path = unique_files_dict[oligo]['path']
             unique_fasta = u.SequenceSource(unique_fasta_path)
-            unique_fasta.next()
+            next(unique_fasta)
             representative_fasta_entries.append((oligo, unique_fasta.seq),)
             unique_fasta.close()
         utils.append_reads_to_FASTA(representative_fasta_entries, query)
@@ -1284,10 +1285,10 @@ class Oligotyping:
         for oligo in self.abundant_oligos:
             unique_fasta_path = unique_files_dict[oligo]['path']
             fancy_blast_result_output_path = unique_fasta_path + '_BLAST.cPickle'
-            if fancy_results_dict.has_key(oligo):
-                cPickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
+            if oligo in fancy_results_dict:
+                pickle.dump(fancy_results_dict[oligo], open(fancy_blast_result_output_path, 'w'))
             else:
-                cPickle.dump([], open(fancy_blast_result_output_path, 'w'))
+                pickle.dump([], open(fancy_blast_result_output_path, 'w'))
 
 
     def _perform_remote_BLAST_search_for_oligo_representative(self, oligo, unique_files_dict):
@@ -1296,7 +1297,7 @@ class Oligotyping:
         
         unique_fasta_path = unique_files_dict[oligo]['path']
         unique_fasta = u.SequenceSource(unique_fasta_path)
-        unique_fasta.next()
+        next(unique_fasta)
         blast_output_xml = unique_fasta_path + '_BLAST.xml'
         blast_output_dict = unique_fasta_path + '_BLAST.cPickle'
 
@@ -1307,7 +1308,7 @@ class Oligotyping:
             try:
                 results = r.search(seq, xml_path)
                 results_list = r.get_fancy_results_list(results)
-                cPickle.dump(results_list, open(pickle_path, 'w'))
+                pickle.dump(results_list, open(pickle_path, 'w'))
                 return True
             except:
                 return False
@@ -1348,7 +1349,7 @@ class Oligotyping:
         for i in range(0, self.alignment_length):
             color_per_column[i] = color_shade_dict[entropy_values_per_column[i]]        
 
-        cPickle.dump(color_per_column, open(color_per_column_path, 'w'))
+        pickle.dump(color_per_column, open(color_per_column_path, 'wb'))
     
 
     def _generate_oligos_across_samples_figure(self):
@@ -1393,7 +1394,7 @@ class Oligotyping:
         figures_dict = generate_default_figures(self)
 
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
-        cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+        pickle.dump(figures_dict, open(figures_dict_file_path, 'wb'))
         self.progress.end()
         self.run.info('figures_dict_file_path', figures_dict_file_path)
 
@@ -1407,7 +1408,7 @@ class Oligotyping:
         exclusive_figures_dict = generate_exclusive_figures(self)
     
         exclusive_figures_dict_file_path = self.generate_output_destination("EXCLUSIVE-FIGURES.cPickle")
-        cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
+        pickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
         self.progress.end()
         self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)
 
@@ -1440,7 +1441,7 @@ class Oligotyping:
         from Oligotyping.utils.html.error import HTMLError
         try:
             from Oligotyping.utils.html.for_oligotyping import generate_html_output
-        except HTMLError, e:
+        except HTMLError as e:
             sys.stdout.write('\n\n\t%s\n\n' % e)
             sys.exit()
 

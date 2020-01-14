@@ -20,14 +20,14 @@ run = utils.Run()
 
 # get read length
 fasta = u.SequenceSource(sys.argv[1], lazy_init = False)
-fasta.next()
+next(fasta)
 len_fasta_entry = len(fasta.seq)
 
 # reset fasta.
 fasta.reset()
 
 # make sure all reads have equal length
-while fasta.next():
+while next(fasta):
     if len(fasta.seq) != len_fasta_entry:
         sys.stderr.write('All reads must have equal number of characters, but it is not the case. Sorry and bye.\n')
         sys.exit()
@@ -39,7 +39,7 @@ nucleotide_positions = set(range(0, len_fasta_entry))
 invalid_columns = set(range(0, len_fasta_entry))
 
 progress.new('Step 1')
-while fasta.next():
+while next(fasta):
     if fasta.pos % 100 == 1:
         progress.update('%.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
 
@@ -57,7 +57,7 @@ columns_to_keep = [x for x in range(0, len_fasta_entry) if x not in invalid_colu
 f = open(sys.argv[1] + '-TRIMMED', 'w')
 
 progress.new('Step 2')
-while fasta.next():
+while next(fasta):
     if fasta.pos % 100 == 1:
         progress.update('%.2d%% -- pos: %d' % (fasta.pos * 100 / fasta.total_seq, fasta.pos))
 

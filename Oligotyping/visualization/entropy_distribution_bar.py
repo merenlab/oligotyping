@@ -49,7 +49,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
       
         colors_dict = NUCL_COLORS
         
-        missing_chars = [char for char in chars if char not in NUCL_COLORS.keys()]
+        missing_chars = [char for char in chars if char not in list(NUCL_COLORS.keys())]
             
         if missing_chars:
             colors_for_missing_chars = get_list_of_colors(len(missing_chars), colormap="RdYlGn")
@@ -81,7 +81,7 @@ def entropy_distribution_bar(alignment, entropy_values, output_file, quick = Fal
                                     fontsize = 5, color = colors_dict[unique_sequence[i]])
 
             percent = int(round(frequency * len(unique_sequence))) or 1
-            plt.fill_between(range(0, percent), (y + 1.15) / 100.0, (y - 0.85) / 100.0, color="green", alpha = 0.2)
+            plt.fill_between(list(range(0, percent)), (y + 1.15) / 100.0, (y - 0.85) / 100.0, color="green", alpha = 0.2)
             plt.text(percent + 0.8, (y - 1.2) / 100.0, count, fontsize = 5, color = 'gray')
 
             current += 1

@@ -116,11 +116,11 @@ def generate_exclusive_figures(_object):
         
     for category in sample_mapping_dict:
         exclusive_figures_dict[category] = {}
-        samples = sample_mapping_dict[category].keys()
+        samples = list(sample_mapping_dict[category].keys())
             
         # double filter: first makes sure sample was not removed from the analysis due to losing all its reads during the
         #¬†refinement, second makes sure that sample was actually mapped to something in the sample mapping file.
-        samples = filter(lambda s: sample_mapping_dict[category][s], filter(lambda s: s in _object.samples, samples))
+        samples = [s for s in [s for s in samples if s in _object.samples] if sample_mapping_dict[category][s]]
         samples.sort()
 
         mapping_file_path = get_temporary_file_name('%s-' % category, '-mapping.txt', _object.tmp_directory)

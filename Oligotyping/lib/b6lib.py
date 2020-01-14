@@ -25,7 +25,7 @@ from Oligotyping.utils.utils import pretty_print
 
 QUERY_ID, SUBJECT_ID, IDENTITY, ALIGNMENT_LENGTH,\
 MISMATCHES, GAPS, Q_START, Q_END, S_START, S_END,\
-E_VALUE, BIT_SCORE, Q_LEN, S_LEN = range(0, 14)
+E_VALUE, BIT_SCORE, Q_LEN, S_LEN = list(range(0, 14))
 
 
 class B6Entry:
@@ -167,11 +167,11 @@ class B6Source:
                                      numpy.min(self.matrix[x]),
                                      numpy.max(self.matrix[x]))
      
-        print
+        print()
         TABULAR('Total Hits', pretty_print(len(self.matrix[IDENTITY])))
-        print
-        print '                        mean       std         min         max'
-        print
+        print()
+        print('                        mean       std         min         max')
+        print()
         TABULAR('Identity', INFO(IDENTITY))
         TABULAR('Alignment Length', INFO(ALIGNMENT_LENGTH))
         TABULAR('Mismatches', INFO(MISMATCHES))
@@ -182,7 +182,7 @@ class B6Source:
         TABULAR('Target End', INFO(S_END))
         TABULAR('E-Value', INFO(E_VALUE))
         TABULAR('Bit Score', INFO(BIT_SCORE))
-        print
+        print()
  
     def visualize_b6_output(self, title_hint, Q_LENGTH = 101):
         if self.matrix == []:
@@ -236,12 +236,12 @@ class B6Source:
         ax1.plot(p1, c = 'green', label = 'Alignment Start Position')
         ax1.plot(p2, c = 'black', linewidth = 3)
         ax1.plot(p2, c = 'red', label = 'Alignment End Position')
-        plt.fill_between(range(0, len(p1)), p1, y2 = 0, color = 'black', alpha = 0.5)
-        plt.fill_between(range(0, len(p2)), p2, y2 = 0, color = 'black', alpha = 0.5)
+        plt.fill_between(list(range(0, len(p1))), p1, y2 = 0, color = 'black', alpha = 0.5)
+        plt.fill_between(list(range(0, len(p2))), p2, y2 = 0, color = 'black', alpha = 0.5)
         
         plt.ylabel('Percent of Hits')
         plt.xlabel('Position')
-        plt.xticks(range(0, Q_LENGTH, Q_LENGTH / 100), range(1, Q_LENGTH + 1, Q_LENGTH / 100), rotation=90, size='xx-small')
+        plt.xticks(list(range(0, Q_LENGTH, Q_LENGTH / 100)), list(range(1, Q_LENGTH + 1, Q_LENGTH / 100)), rotation=90, size='xx-small')
         plt.yticks([t for t in range(0, 101, 10)], ['%s%%' % t for t in range(0, 101, 10)], size='xx-small')
         plt.ylim(ymin = 0, ymax = 100)
         plt.xlim(xmin = 0, xmax = Q_LENGTH - 1)

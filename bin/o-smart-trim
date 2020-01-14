@@ -25,9 +25,9 @@ def smart_trim(fasta_file_path, min_percent = 95.0, output_file_path = None, fro
     run.info('Input File', fasta_file_path)
 
     progress.new('Sanity check')
-    fasta.next()
+    next(fasta)
     alignment_length = len(fasta.seq)
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 100 == 0:
             progress.update(fasta.pos)
         if len(fasta.seq) != alignment_length:
@@ -44,7 +44,7 @@ def smart_trim(fasta_file_path, min_percent = 95.0, output_file_path = None, fro
     positions = dict([(i, 0) for i in range(0, alignment_length)])
 
     progress.new('First pass')
-    while fasta.next():
+    while next(fasta):
         if not from_start:
             fasta.seq = fasta.seq[::-1]
 
@@ -96,7 +96,7 @@ def smart_trim(fasta_file_path, min_percent = 95.0, output_file_path = None, fro
 
     fasta.reset()
     progress.new('Storing trimmed reads')
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 100 == 0:
             progress.update('%d' % fasta.pos)
 
@@ -135,10 +135,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.from_start and args.from_end:
-        print "Error: You have to use either --from-start flag, or --from-end flag for each run. Sorry!"
+        print("Error: You have to use either --from-start flag, or --from-end flag for each run. Sorry!")
         sys.exit()
     if (not args.from_start) and (not args.from_end):
-        print "Error: You must choose the appropriate flag to declare from where the trimming should start (--from-start or --from-end)."
+        print("Error: You must choose the appropriate flag to declare from where the trimming should start (--from-start or --from-end).")
         sys.exit()
 
     smart_trim(args.fasta_file, args.min_percent, args.output, from_start = args.from_start)

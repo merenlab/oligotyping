@@ -56,7 +56,7 @@ def get_oligotype_sets_greedy(oligos, vectors, cosine_similarity_threshold, outp
         vector = vectors[oligo]
         
         shortest_distance_set_ID = None
-        shortest_distance = sys.maxint
+        shortest_distance = sys.maxsize
         for set_representative in set_representatives:
             distance = cosine_distance(set_representatives[set_representative], vector)
             
@@ -93,16 +93,16 @@ def get_oligotype_sets(oligos, vectors, cosine_similarity_threshold, output_file
     distances = {}
     
     for i in range(0, len(oligos)):
-        if not distances.has_key(oligos[i]):
+        if oligos[i] not in distances:
             distances[oligos[i]] = {}
         for j in range(i, len(oligos)):
-            if not distances.has_key(oligos[j]):
+            if oligos[j] not in distances:
                 distances[oligos[j]] = {}
             
             distances[oligos[i]][oligos[j]] = cosine_distance(vectors[oligos[i]], vectors[oligos[j]])
             distances[oligos[j]][oligos[i]] = cosine_distance(vectors[oligos[i]], vectors[oligos[j]])
     
-    ids = range(0, len(oligos))
+    ids = list(range(0, len(oligos)))
     while 1:
         if not len(ids):
             break
@@ -161,11 +161,11 @@ if __name__ == '__main__':
     samples = get_samples()
 
 
-    print '\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n'\
-                        % (len(oligos), len(partitions), args.cosine_similarity_threshold)
+    print('\n\t%d oligotypes split into %d partitions based on cosine similarity of %f. Here how they were distributed:\n'\
+                        % (len(oligos), len(partitions), args.cosine_similarity_threshold))
     
     for partition in partitions:
-        print '    - %s\n' % (', '.join(partition))
+        print('    - %s\n' % (', '.join(partition)))
 
     vis_oligotype_sets_distribution(partitions, vectors, samples, legend = True,\
         project_title = 'Cosine Similarity Threshold %.4f' % args.cosine_similarity_threshold)

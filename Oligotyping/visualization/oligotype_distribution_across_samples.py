@@ -19,7 +19,7 @@ from Oligotyping.utils.utils import get_oligos_sorted_by_abundance
 
 
 def oligotype_distribution_across_samples(samples_dict, colors_dict, output_file = None, legend = False, project_title = None, display = True, oligos = None):
-    samples = samples_dict.keys()
+    samples = list(samples_dict.keys())
     samples.sort()
    
     if oligos == None:
@@ -38,7 +38,7 @@ def oligotype_distribution_across_samples(samples_dict, colors_dict, output_file
     for oligo in oligos:
         percents = []
         for sample in samples:
-            if samples_dict[sample].has_key(oligo):
+            if oligo in samples_dict[sample]:
                 percents.append(samples_dict[sample][oligo] * 100.0 / sum(samples_dict[sample].values()))
             else:
                 percents.append(0.0)
@@ -163,8 +163,8 @@ if __name__ == '__main__':
 
     samples_dict = {}
     for oligotype, sample, count in [line.strip().split('\t') for line in open(args.environment_file).readlines()]:
-        if samples_dict.has_key(sample):
-            if samples_dict[sample].has_key(oligotype):
+        if sample in samples_dict:
+            if oligotype in samples_dict[sample]:
                 samples_dict[sample][oligotype] += int(count)
             else:
                 samples_dict[sample][oligotype] = int(count)
