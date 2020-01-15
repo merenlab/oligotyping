@@ -1376,5 +1376,5 @@ class UniqueFASTAEntry:
     def __init__(self, seq, ids):
         self.seq = seq
         self.ids = ids
-        self.md5id = hashlib.md5(self.seq).hexdigest()
+        self.md5id = hashlib.md5(self.seq.encode('utf-8')).hexdigest()
         self.frequency = len(ids)
