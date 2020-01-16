@@ -222,7 +222,7 @@ class LocalBLAST:
         b6 = b6lib.B6Source(self.output)
 
         ids_with_hits = set()
-        while next(b6):
+        while b6.next():
             if b6.entry.query_id == b6.entry.subject_id:
                 continue
 

@@ -21,7 +21,7 @@ from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
-from .error import HTMLError
+from Oligotyping.utils.html.error import HTMLError
 
 
 try:

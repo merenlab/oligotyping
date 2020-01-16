@@ -19,7 +19,7 @@ from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
-from .error import HTMLError
+from Oligotyping.utils.html.error import HTMLError
 
 
 try:
@@ -253,7 +253,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     index_page = os.path.join(html_output_directory, 'index.html')
     rendered = render_to_string('index_for_decomposition.tmpl', html_dict)
 
-    open(index_page, 'w').write(rendered.encode("utf-8"))
+    open(index_page, 'wb').write(rendered.encode("utf-8"))
 
     return index_page
 
