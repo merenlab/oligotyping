@@ -11,7 +11,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle
+import pickle
 
 from Oligotyping.utils.random_colors import get_list_of_colors
 from Oligotyping.utils.utils import HTMLColorToRGB
@@ -43,7 +43,7 @@ def vis_oligotype_sets_distribution(partitions, vectors, samples, colors_dict = 
     ind = np.arange(N)
     width = 0.75
     
-    number_of_dimensions = len(vectors.values()[0])
+    number_of_dimensions = len(list(vectors.values())[0])
 
     for i in range(0, len(partitions)):
         group = partitions[i]
@@ -61,7 +61,7 @@ def vis_oligotype_sets_distribution(partitions, vectors, samples, colors_dict = 
         except:
             color = 'black'
 
-        plt.fill_between(range(0, len(vector)), maxs, mins, color=color, alpha = 0.1)
+        plt.fill_between(list(range(0, len(vector))), maxs, mins, color=color, alpha = 0.1)
         plt.plot(vector, color=color, linewidth = 1, alpha = 0.95, label = 'Set #%d' % i)
         if len(vector) < 50:
             plt.plot(vector, color=color, linewidth = 3, alpha = 0.7, label = '_nolegend_')
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     else:
         colors_dict = None
 
-    partitions = cPickle.load(open(args.partitions_file))
+    partitions = pickle.load(open(args.partitions_file))
 
     oligos, vectors = get_vectors_from_oligotypes_across_samples_matrix(args.oligotypes_across_samples)
 

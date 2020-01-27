@@ -22,7 +22,7 @@ def main(input_fasta_path, output_fasta_path=None, reverse=False):
     fasta = u.SequenceSource(input_fasta_path)
     output = u.FastaOutput(output_fasta_path)
 
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 1000 == 0:
             sys.stderr.write('\rreads processed so far: %d' % (fasta.pos))
             sys.stderr.flush()

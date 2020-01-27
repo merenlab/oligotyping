@@ -16,7 +16,7 @@ import copy
 import time
 import numpy
 import shutil
-import cPickle
+import pickle
 import logging
 
 import Oligotyping as o
@@ -140,9 +140,9 @@ class Decomposer:
         try:
             blast.LocalBLAST(None, None, None)
         except blast.ModuleVersionError:
-            raise utils.ConfigError, blast.version_error_text
+            raise utils.ConfigError(blast.version_error_text)
         except blast.ModuleBinaryError:
-            raise utils.ConfigError, blast.missing_binary_error_text
+            raise utils.ConfigError(blast.missing_binary_error_text)
 
         # FIXME: check R modules here.
 
@@ -156,10 +156,10 @@ class Decomposer:
             try:
                 os.makedirs(self.output_directory)
             except:
-                raise utils.ConfigError, "Output directory does not exist (attempt to create one failed as well): '%s'" % \
-                                                                          (self.output_directory)
+                raise utils.ConfigError("Output directory does not exist (attempt to create one failed as well): '%s'" % \
+                                                                          (self.output_directory))
         if not os.access(self.output_directory, os.W_OK):
-            raise utils.ConfigError, "You do not have write permission for the output directory: '%s'" % self.output_directory
+            raise utils.ConfigError("You do not have write permission for the output directory: '%s'" % self.output_directory)
 
         self.tmp_directory = self.generate_output_destination('TMP', directory = True)
         self.nodes_directory = self.generate_output_destination('NODES', directory = True)
@@ -169,18 +169,18 @@ class Decomposer:
 
     def check_input_files(self):
         if (not os.path.exists(self.alignment)) or (not os.access(self.alignment, os.R_OK)):
-            raise utils.ConfigError, "Alignment file is not accessible: '%s'" % self.alignment
+            raise utils.ConfigError("Alignment file is not accessible: '%s'" % self.alignment)
 
         if self.sample_mapping:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
-                raise utils.ConfigError, "Sample mapping file is not accessible: '%s'" % self.sample_mapping
+                raise utils.ConfigError("Sample mapping file is not accessible: '%s'" % self.sample_mapping)
 
         samples = None
         if not self.skip_check_input_file:
             self.progress.new('Checking the input FASTA')
             samples = utils.check_input_alignment(self.alignment, self.sample_name_separator, self.progress)
             if not samples:
-                raise utils.ConfigError, 'Exiting.'
+                raise utils.ConfigError('Exiting.')
             self.progress.end()
 
         if self.sample_mapping:
@@ -220,8 +220,8 @@ class Decomposer:
         self.root = self.topology.add_new_node('root', reads, root = True)
         
         if self.root.size < self.min_actual_abundance:
-            raise utils.ConfigError, "The number of reads in alignment file (%d) is smaller than --min-actual-abundance (%d)" % \
-                                                                (self.root.size, self.min_actual_abundance)
+            raise utils.ConfigError("The number of reads in alignment file (%d) is smaller than --min-actual-abundance (%d)" % \
+                                                                (self.root.size, self.min_actual_abundance))
 
         self.node_ids_to_analyze = ['root']
 
@@ -420,9 +420,9 @@ class Decomposer:
                 if node.reads[0].frequency < self.min_substantive_abundance:
                     if node.node_id == 'root':
                         self.progress.end()
-                        raise utils.ConfigError, "Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
+                        raise utils.ConfigError("Number of unique reads in the root node (%d) is less than the declared minimum (%d)." \
                                                 % (node.reads[0].frequency,
-                                                   self.min_substantive_abundance)
+                                                   self.min_substantive_abundance))
 
                     else:
                         # remove the node and store its content.
@@ -536,7 +536,7 @@ class Decomposer:
 
                     oligo = ''.join([read.seq[d] for d in node.discriminants])
                    
-                    if new_nodes_dict.has_key(oligo):
+                    if oligo in new_nodes_dict:
                         new_nodes_dict[oligo]['reads'].append(read)
                     else:
                         new_node_id = self.topology.get_new_node_id()
@@ -546,7 +546,7 @@ class Decomposer:
                 
                 
                 # all reads in the parent node are analyzed. time to add spawned nodes into the topology.
-                oligos = new_nodes_dict.keys()
+                oligos = list(new_nodes_dict.keys())
                 len_oligos = len(oligos)
                 for i in range(0, len_oligos):
                     self.progress.update(p + ' / new nodes %d of %d ' % (i + 1, len_oligos))
@@ -678,7 +678,7 @@ class Decomposer:
                 
                 abundant_reads_in_outlier_bin = []
                 
-                if self.topology.outliers.has_key('maximum_variation_allowed_reason'):    
+                if 'maximum_variation_allowed_reason' in self.topology.outliers:    
                     abundant_reads_in_outlier_bin = [read_object for read_object in \
                                                         self.topology.outliers['maximum_variation_allowed_reason'] \
                                                             if read_object.frequency > self.min_substantive_abundance]
@@ -1075,7 +1075,7 @@ class Decomposer:
         
         self.progress.update('Processing reads that were represented in results')
         for sample in self.samples_dict:
-            if not read_distribution_dict.has_key(sample):
+            if sample not in read_distribution_dict:
                 read_distribution_dict[sample] = get_dict_entry_tmpl()
 
             read_distribution_dict[sample]['represented_reads'] = sum(self.samples_dict[sample].values())
@@ -1086,7 +1086,7 @@ class Decomposer:
                 for read_id in read_object.ids:
                     sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
                     
-                    if not read_distribution_dict.has_key(sample):
+                    if sample not in read_distribution_dict:
                         read_distribution_dict[sample] = get_dict_entry_tmpl()
                 
                     read_distribution_dict[sample][reason] += 1
@@ -1166,11 +1166,11 @@ class Decomposer:
                 for read_id in read.ids:
                     sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
             
-                    if not self.samples_dict.has_key(sample):
+                    if sample not in self.samples_dict:
                         self.samples_dict[sample] = {}
                         self.samples.append(sample)
     
-                    if self.samples_dict[sample].has_key(node_id):
+                    if node_id in self.samples_dict[sample]:
                         self.samples_dict[sample][node_id] += 1
                     else:
                         self.samples_dict[sample][node_id] = 1
@@ -1238,7 +1238,7 @@ class Decomposer:
         self.progress.end()
         
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY-LIGHT.cPickle')
-        cPickle.dump(topology_dict, open(topology_dict_file_path, 'w'))
+        pickle.dump(topology_dict, open(topology_dict_file_path, 'w'))
         self.run.info('topology_light_dict', topology_dict_file_path)
 
 
@@ -1347,7 +1347,7 @@ class Decomposer:
         from Oligotyping.utils.html.error import HTMLError
         try:
             from Oligotyping.utils.html.for_decomposition import generate_html_output
-        except HTMLError, e:
+        except HTMLError as e:
             sys.stdout.write('\n\n\t%s\n\n' % e)
             sys.exit()
 
@@ -1383,7 +1383,7 @@ class Decomposer:
 
         figures_dict = generate_default_figures(self)
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
-        cPickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+        pickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
 
         self.progress.end()
         self.run.info('figures_dict_file_path', figures_dict_file_path)
@@ -1397,7 +1397,7 @@ class Decomposer:
 
         exclusive_figures_dict = generate_exclusive_figures(self)
         exclusive_figures_dict_file_path = self.generate_output_destination("EXCLUSIVE-FIGURES.cPickle")
-        cPickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
+        pickle.dump(exclusive_figures_dict, open(exclusive_figures_dict_file_path, 'w'))
 
         self.progress.end()
         self.run.info('exclusive_figures_dict_file_path', exclusive_figures_dict_file_path)

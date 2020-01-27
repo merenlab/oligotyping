@@ -10,7 +10,7 @@
 #
 # Please read the COPYING file.
 
-import cPickle
+import pickle
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -23,7 +23,7 @@ parent_nodes = []
 def topology_graph(topology_dict_path, match_levels = False):
     G = nx.MultiDiGraph()
     
-    topology = cPickle.load(open(topology_dict_path))
+    topology = pickle.load(open(topology_dict_path))
    
     nodes = {}
     levels = []
@@ -40,7 +40,7 @@ def topology_graph(topology_dict_path, match_levels = False):
             parent_nodes.append(node_id)
 
         nodes[node_id] = {'size': node.size, 'parent': node.parent, 'level': node.level,
-                          'children': [child_node_id for child_node_id in node.children if topology.has_key(child_node_id) and not topology[child_node_id].killed], 'type': 'node'}
+                          'children': [child_node_id for child_node_id in node.children if child_node_id in topology and not topology[child_node_id].killed], 'type': 'node'}
         if node.freq_curve_img_path:
             nodes[node_id]['freq_curve_img_path'] = node.freq_curve_img_path
         levels.append(int(node.level))
@@ -52,7 +52,7 @@ def topology_graph(topology_dict_path, match_levels = False):
         for node_id in nodes:
             node = nodes[node_id]
             if node['level'] < max_level and not node['children']:
-                levels_to_cover = range(node['level'] + 1, max_level + 1)
+                levels_to_cover = list(range(node['level'] + 1, max_level + 1))
                 for level in levels_to_cover:
                     if levels_to_cover.index(level) == 0:
                         new_nodes[node_id + ':l%d' % level] = {'size': node['size'], 'parent': node_id, 
@@ -76,17 +76,17 @@ def topology_graph(topology_dict_path, match_levels = False):
                     else:
                         break
                 G.add_edge(node_id, node['parent'], size = int(node['size']), label = label,\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           image = node['freq_curve_img_path'] if 'freq_curve_img_path' in node else None,\
                            final_node = True if not node['children'] else False)
             else:
                 G.add_edge(node_id, node['parent'], size = int(node['size']), label = '',\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           image = node['freq_curve_img_path'] if 'freq_curve_img_path' in node else None,\
                            final_node = True if not node['children'] else False)
    
     for node_id in nodes['root']['children']:
         node = nodes['root']
         G.add_edge('root', node_id, size = int(nodes['root']['size']), label = 'root',\
-                           image = node['freq_curve_img_path'] if node.has_key('freq_curve_img_path') else None,\
+                           image = node['freq_curve_img_path'] if 'freq_curve_img_path' in node else None,\
                            final_node = False)
    
     return (G, nodes)
@@ -98,7 +98,7 @@ def topology(topology_dict_path, output_file = None, title = None):
     number_of_edges = G.number_of_edges()
     number_of_nodes = G.number_of_nodes()
 
-    print("Loaded %d edges and %d nodes." % (number_of_edges, number_of_nodes))
+    print(("Loaded %d edges and %d nodes." % (number_of_edges, number_of_nodes)))
 
     plt.figure(figsize=(24, 16))
     
@@ -133,8 +133,8 @@ def topology(topology_dict_path, output_file = None, title = None):
     nx.draw_networkx_labels(G, pos, font_size=8, font_weight = 'bold', labels = dict([(u, '%s\n(%s)' % (d['label'], pretty_print(d['size']))) for u, v, d in G.edges(data=True)]))
     
     # adjust the plot limits
-    xmax = 1.02 * max(x for x, y in pos.values())
-    ymax = 1.02 * max(y for x, y in pos.values())
+    xmax = 1.02 * max(x for x, y in list(pos.values()))
+    ymax = 1.02 * max(y for x, y in list(pos.values()))
     plt.xlim(0, xmax)
     plt.ylim(0, ymax)
     plt.xticks([])
@@ -149,15 +149,15 @@ def topology(topology_dict_path, output_file = None, title = None):
     plt.setp(ax, frame_on=False)
     #plt.axis('off')
 
-    if nodes_dict['root'].has_key('freq_curve_img_path'):
+    if 'freq_curve_img_path' in nodes_dict['root']:
         AX=plt.gca()
         f=plt.gcf()
 
-        for node in nodes_dict.keys():
+        for node in list(nodes_dict.keys()):
             (x, y) = pos[node]
             xt,yt = AX.transData.transform((x, y)) # figure coordinates
             xf, yf = f.transFigure.inverted().transform((xt, yt)) # axes coordinates
-            print xf, yf
+            print(xf, yf)
             if node == 'root':
                 imsize = 0.04
             else:

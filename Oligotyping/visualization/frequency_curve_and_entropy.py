@@ -24,11 +24,11 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
     fasta = u.SequenceSource(fasta_file_path)
 
     frequency_list = []
-    while fasta.next():
+    while next(fasta):
         try:
             frequency_list.append(freq_from_defline(fasta.id)) 
         except:
-            print 'frequency info can not be read from defline.'
+            print('frequency info can not be read from defline.')
             sys.exit()
 
     frequency_list_to_plot = frequency_list[0:x_limit] + [0] * (x_limit - len(frequency_list) \
@@ -72,7 +72,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
         plt.grid(True) 
         plt.rcParams.update({'axes.linewidth' : 0.9})
         plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
-        plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
+        plt.xticks( list(range(0, len(entropy_values), 5)), rotation=90, size = 'x-small')
       
         plt.plot(frequency_list_to_plot, lw = 3, c = 'black')
      
@@ -84,7 +84,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
             plt.title('Frequency Distribution of Unique Sequences in %s' % os.path.basename(fasta_file_path))
         plt.ylim(ymin = -max(frequency_list_to_plot) * 0.05, ymax = max(frequency_list_to_plot) * 1.05)
         plt.xlim(xmin = -0.05, xmax = x_limit - 1)
-        plt.xticks(range(0, x_limit), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
+        plt.xticks(list(range(0, x_limit)), [str(i) for i in range(1, x_limit + 1)], rotation=90, size='small')
         
     
         plt.subplot(2, 1, 2)
@@ -103,7 +103,7 @@ def vis_freq_curve(fasta_file_path, output_file = None, x_limit = 20, display = 
         plt.bar(ind, entropy_values, color = 'black', lw = 0.5)
         plt.xlim([0, len(entropy_values)])
         plt.ylim([0, y_maximum])
-        plt.xticks( range(0, len(entropy_values), 5), rotation=90, size = 'x-small')
+        plt.xticks( list(range(0, len(entropy_values), 5)), rotation=90, size = 'x-small')
         
         plt.xlabel('Position in the Alignment', size = 'x-large')
         plt.ylabel('Shannon Entropy', size = 'x-large')

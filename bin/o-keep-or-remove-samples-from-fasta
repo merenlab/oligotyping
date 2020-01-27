@@ -37,7 +37,7 @@ def main(fasta_file_path, samples_file_path, retain_samples = False, output_file
                                                           fasta_file_path,
                                                           ', '.join(samples_list[0:3])))
 
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 1000 == 0:
             sys.stderr.write('\rreads processed so far: %s' % (pp(fasta.pos)))
             sys.stderr.flush()

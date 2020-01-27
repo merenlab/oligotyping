@@ -165,18 +165,18 @@ if __name__ == '__main__':
     
     if os.path.exists(args.output_fasta):
         sys.stderr.write('Output file ("%s") exists. Overwrite? [Y|n] ' % args.output_fasta)
-        response = raw_input()
+        response = input()
         if response == '' or response.lower() == 'y':
             output_fasta = open(args.output_fasta, 'w')
         else:
-            print 'Exiting.'
+            print('Exiting.')
             sys.exit(1)
     else:
         output_fasta = open(args.output_fasta, 'w')
 
     if args.log:
         if os.path.exists(args.log):
-            print 'Log file ("%s") exists. Exting.' % args.log
+            print('Log file ("%s") exists. Exting.' % args.log)
             sys.exit(1)
         else:
             log = open(args.log, 'w')
@@ -184,11 +184,11 @@ if __name__ == '__main__':
         log = sys.stdout
 
     
-    while input_alignment.next():
+    while next(input_alignment):
         target_id = input_alignment.id
         target_seq = input_alignment.seq
 
-        input_alignment.next()
+        next(input_alignment)
 
         query_id = input_alignment.id
         query_seq = input_alignment.seq

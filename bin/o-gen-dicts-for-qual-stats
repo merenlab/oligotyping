@@ -16,7 +16,7 @@
 #
 
 import sys
-import cPickle
+import pickle
 
 from Oligotyping.utils.utils import get_quals_dict
 
@@ -26,7 +26,7 @@ quals_file = sys.argv[2]
 
 quals_dict = get_quals_dict(quals_file, alignment_file)
 
-cPickle.dump(quals_dict, open(alignment_file + '-QUALS-DICT', 'w'))
+pickle.dump(quals_dict, open(alignment_file + '-QUALS-DICT', 'w'))
 
-print 'output file:'
-print '  - "%s"' % (alignment_file + '-QUALS-DICT')
+print('output file:')
+print('  - "%s"' % (alignment_file + '-QUALS-DICT'))

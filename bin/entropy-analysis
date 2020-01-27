@@ -16,26 +16,26 @@ try:
     import Oligotyping
 except ImportError:
     import inspect
-    print '''
+    print('''
     Oligotyping package seems to be missing from your PYTHONPATH. Running this may help:
 
         export PYTHONPATH="$PYTHONPATH:%s"
 
-    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))))
     sys.exit()
 
 from Oligotyping.utils.utils import import_error
 
 try:
     import matplotlib
-except ImportError, e:
+except ImportError as e:
     import_error(e)
     sys.exit()
 
 try:
     import matplotlib.pyplot as plt
 except RuntimeError:
-    print '''
+    print('''
     matplotlib is failing to connect to any X server for its GTK display. Please
     add the following directive into the 'matplotlibrc' file (which should be
     under '~/.matplotlib/' directory, if there is no such file, you should
@@ -43,7 +43,7 @@ except RuntimeError:
 
     backend: Agg
 
-    '''
+    ''')
     sys.exit()
 
 try:
@@ -52,13 +52,13 @@ try:
     from Oligotyping.lib.entropy import EntropyError
     from Oligotyping.utils.utils import process_command_line_args_for_quality_files
     from Oligotyping.visualization.entropy_distribution_bar import entropy_distribution_bar
-except ImportError, e:
+except ImportError as e:
     import_error(e)
     sys.exit()
 
 if __name__ == '__main__':
     if '--version' in sys.argv:
-        print parsers.version
+        print(parsers.version)
         sys.exit()
 
     parser = parsers.entropy()
@@ -78,8 +78,8 @@ if __name__ == '__main__':
                                           weighted = args.weighted,
                                           qual_stats_dict = qual_stats_dict,
                                           amino_acid_sequences = args.amino_acid_sequences)
-    except EntropyError, e:
-        print "Something went wrong. Here is what we know:\n\n\t%s\n\n" % e
+    except EntropyError as e:
+        print("Something went wrong. Here is what we know:\n\n\t%s\n\n" % e)
         sys.exit(-1)
 
     entropy_distribution_bar(args.alignment,

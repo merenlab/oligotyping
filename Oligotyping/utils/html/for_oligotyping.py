@@ -14,14 +14,14 @@ import os
 import sys
 import copy
 import shutil
-import cPickle
+import pickle
 
 from Oligotyping.lib import fastalib as u
 from Oligotyping.utils.constants import pretty_names
 from Oligotyping.utils.utils import pretty_print
 from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 from Oligotyping.utils.random_colors import get_list_of_colors
-from error import HTMLError
+from Oligotyping.utils.html.error import HTMLError
 
 
 try:
@@ -61,7 +61,7 @@ try:
     from django.template.loader import render_to_string
     from django.template.defaultfilters import register
 except ImportError:
-    raise HTMLError, 'You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.'
+    raise HTMLError('You need to have Django module (http://djangoproject.com) installed on your system to generate HTML output.')
 
 @register.filter(name='diffs')
 def diffs(l, index):
@@ -150,7 +150,7 @@ def get_colors(number_of_colors):
 
 @register.filter(name='values') 
 def values(d):
-    return d.values()
+    return list(d.values())
 
 @register.filter(name='mod') 
 def mod(value, arg):
@@ -180,7 +180,7 @@ def sumvals(arg, clean = None):
 
 @register.filter(name='mklist') 
 def mklist(arg):
-    return range(0, int(arg))
+    return list(range(0, int(arg)))
 
 t = get_template('index_for_oligo.tmpl')
 
@@ -254,8 +254,8 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
 
     def get_figures_dict(html_dict_prefix):
         html_dict_key = '%s_file_path' % html_dict_prefix
-        if html_dict.has_key(html_dict_key):
-            figures_dict = cPickle.load(open(html_dict[html_dict_key]))
+        if html_dict_key in html_dict:
+            figures_dict = pickle.load(open(html_dict[html_dict_key], 'rb'))
             for _map in figures_dict:
                 for _func in figures_dict[_map]:
                     for _op in figures_dict[_map][_func]:
@@ -285,11 +285,11 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
         html_dict['oligotype_sets_file'] = copy_as(run_info_dict['oligotype_sets_file_path'], 'oligotype_sets.txt')
         html_dict['oligotype_sets'] = [l.strip().split('\t')[1].split(',') for l in open(run_info_dict['oligotype_sets_file_path'])]
  
-    if html_dict.has_key('representative_seqs_fasta_file_path'):
+    if 'representative_seqs_fasta_file_path' in html_dict:
         html_dict['representative_seqs_fasta_file_path'] = copy_as(run_info_dict['representative_seqs_fasta_file_path'], 'oligo-representatives.fa.txt')
     else:
         html_dict['representative_seqs_fasta_file_path'] = None
-    if run_info_dict.has_key('blast_ref_db') and os.path.exists(run_info_dict['blast_ref_db']):
+    if 'blast_ref_db' in run_info_dict and os.path.exists(run_info_dict['blast_ref_db']):
         html_dict['blast_ref_db_path'] = copy_as(run_info_dict['blast_ref_db'], 'reference_db.fa')
     html_dict['entropy_components'] = [int(x) for x in html_dict['bases_of_interest_locs'].split(',')]
     html_dict['samples_dict'] = get_samples_dict_from_environment_file(run_info_dict['environment_file_path'])
@@ -314,13 +314,13 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     # get oligo frequencies
     html_dict['frequency'] = {}
     for oligo in html_dict['oligos']:
-        html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in html_dict['samples_dict'].values() if d.has_key(oligo)]))
+        html_dict['frequency'][oligo] = pretty_print(sum([d[oligo] for d in list(html_dict['samples_dict'].values()) if oligo in d]))
     # get purity score
     html_dict['purity_score'] = run_info_dict['final_purity_score_dict']
     # get total purity score
     html_dict['total_purity_score'] = run_info_dict['total_purity_score_dict']
     # get unique sequence dict (which will contain the most frequent unique sequence for given oligotype)
-    if html_dict.has_key('output_directory_for_reps'):
+    if 'output_directory_for_reps' in html_dict:
         html_dict['rep_oligo_seqs_clean_dict'], html_dict['rep_oligo_seqs_fancy_dict'] = get_unique_sequences_dict(html_dict)
         html_dict['oligo_reps_dict'] = get_oligo_reps_dict(html_dict, html_output_directory)
         html_dict['component_reference'] = ''.join(['<a onmouseover="popup(\'\#%d\', 50)" href="">|</a>' % i for i in range(0, html_dict['alignment_length'])])
@@ -331,7 +331,7 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
     # FIXME: code below is very inefficient and causes a huge
     # memory issue. fix it by not using deepcopy.
     # generate individual oligotype pages
-    if html_dict.has_key('output_directory_for_reps'):
+    if 'output_directory_for_reps' in html_dict:
         for i in range(0, len(html_dict['oligos'])):
             oligo = html_dict['oligos'][i]
             tmp_dict = copy.deepcopy(html_dict)
@@ -350,14 +350,14 @@ def generate_html_output(run_info_dict, html_output_directory = None, entropy_fi
             
             rendered = render_to_string('single_oligo.tmpl', tmp_dict)
     
-            open(oligo_page, 'w').write(rendered.encode("utf-8"))
+            open(oligo_page, 'wb').write(rendered.encode("utf-8"))
 
 
     # generate index
     index_page = os.path.join(html_output_directory, 'index.html')
     rendered = render_to_string('index_for_oligo.tmpl', html_dict)
 
-    open(index_page, 'w').write(rendered.encode("utf-8"))
+    open(index_page, 'wb').write(rendered.encode("utf-8"))
 
     return index_page
 
@@ -370,21 +370,21 @@ def get_colors_dict(colors_file_path):
 def get_oligos_list(oligos_file_path):
     oligos_list = []
     fasta = u.SequenceSource(oligos_file_path)
-    while fasta.next():
+    while next(fasta):
         oligos_list.append(fasta.seq)
     return oligos_list
 
 def get_oligo_distribution_dict(oligo, html_dict):
     rep_dir = html_dict['output_directory_for_reps']
-    oligo_distribution_dict = cPickle.load(open(os.path.join(rep_dir, '%.5d_'\
-        % html_dict['oligos'].index(oligo) + oligo + '_unique_distribution.cPickle')))
+    oligo_distribution_dict = pickle.load(open(os.path.join(rep_dir, '%.5d_'\
+        % html_dict['oligos'].index(oligo) + oligo + '_unique_distribution.cPickle'), 'rb'))
     
     ret_dict = {}
 
     for sample in oligo_distribution_dict:
         ret_dict[sample] = [0] * 20
         for i in range(0, 20):
-            if oligo_distribution_dict[sample].has_key(i + 1):
+            if i + 1 in oligo_distribution_dict[sample]:
                 ret_dict[sample][i] = oligo_distribution_dict[sample][i + 1]
 
     return ret_dict
@@ -416,7 +416,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         oligo_reps_dict['fancy_seqs'][oligo] = []
         oligo_reps_dict['clear_seqs'][oligo] = []
         oligo_reps_dict['frequency'][oligo] = []
-        while uniques.next() and uniques.pos <= 20:
+        while next(uniques) and uniques.pos <= 20:
             oligo_reps_dict['clear_seqs'][oligo].append(uniques.seq)
             oligo_reps_dict['fancy_seqs'][oligo].append(get_decorated_sequence(uniques.seq, html_dict['entropy_components']))
             oligo_reps_dict['frequency'][oligo].append(pretty_print(uniques.id.split('|')[1].split(':')[1]))
@@ -426,13 +426,13 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
         for column, entropy in [x.strip().split('\t') for x in open(entropy_file_path)]:
             entropy_values_per_column[int(column)] = float(entropy)
 
-        color_per_column = cPickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle'))
+        color_per_column = pickle.load(open(alignment_base_path + '_unique_color_per_column.cPickle', 'rb'))
         oligo_reps_dict['component_references'][oligo] = ''.join(['<span style="background-color: %s;"><a onmouseover="popup(\'\column: %d<br />entropy: %.4f\', 100)" href="">|</a></span>' % (color_per_column[i], i, entropy_values_per_column[i]) for i in range(0, html_dict['alignment_length'])])
 
         blast_results_dict = alignment_base_path + '_unique_BLAST.cPickle'
         if os.path.exists(blast_results_dict):
             html_dict['blast_results_found'] = True
-            oligo_reps_dict['blast_results'][oligo] = cPickle.load(open(blast_results_dict))
+            oligo_reps_dict['blast_results'][oligo] = pickle.load(open(blast_results_dict))
         else:
             oligo_reps_dict['blast_results'][oligo] = None
 
@@ -440,7 +440,7 @@ def get_oligo_reps_dict(html_dict, html_output_directory):
 
 def get_alignment_length(alignment_path):
     alignment = u.SequenceSource(alignment_path)
-    alignment.next()
+    next(alignment)
     return len(alignment.seq)
 
 def get_unique_sequences_dict(html_dict):
@@ -452,7 +452,7 @@ def get_unique_sequences_dict(html_dict):
     for i in range(0, len(oligos)):
         unique_file_path = os.path.join(rep_dir, '%.5d_' % i + oligos[i] + '_unique')
         f = u.SequenceSource(unique_file_path)
-        f.next()
+        next(f)
         rep_oligo_seqs_clean_dict[oligos[i]] = f.seq
         rep_oligo_seqs_fancy_dict[oligos[i]] = get_decorated_sequence(f.seq, html_dict['entropy_components'])
         f.close()
@@ -460,7 +460,7 @@ def get_unique_sequences_dict(html_dict):
 
 def get_decorated_sequence(seq, components):
     """returns sequence with html decorations"""
-    return ''.join(map(lambda j: '<span class="c">%s</span>' % seq[j] if j in components else seq[j], [j for j in range(len(seq))]))
+    return ''.join(['<span class="c">%s</span>' % seq[j] if j in components else seq[j] for j in [j for j in range(len(seq))]])
 
 if __name__ == '__main__':
     import argparse
@@ -475,8 +475,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
    
-    run_info_dict = cPickle.load(open(args.run_info_dict_path))
+    run_info_dict = pickle.load(open(args.run_info_dict_path))
 
     index_page = generate_html_output(run_info_dict, args.output_directory, args.entropy_figure) 
 
-    print '\n\tHTML output is ready: "%s"\n' % index_page
+    print('\n\tHTML output is ready: "%s"\n' % index_page)

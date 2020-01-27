@@ -23,13 +23,13 @@ def main(input_fasta_path, output_fasta_path=None, reverse=False):
     output = u.FastaOutput(output_fasta_path)
 
     longest_read = 0
-    while fasta.next():
+    while next(fasta):
         if len(fasta.seq) > longest_read:
             longest_read = len(fasta.seq)
     
     fasta.reset()
     
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 10000 == 0:
             sys.stderr.write('\rreads processed so far: %d' % (fasta.pos))
             sys.stderr.flush()

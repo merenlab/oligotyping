@@ -12,7 +12,7 @@
 
 import os
 import sys
-import cPickle
+import pickle
 import argparse
 
 parser = argparse.ArgumentParser(description='Generate Static HTML Output from MED or Oligotyping runs')
@@ -27,14 +27,14 @@ parser.add_argument('--entropy-figure', default = None, metavar = 'ENTROPY_FIGUR
 args = parser.parse_args()
 
 if args.type not in ['oligotyping', 'med']:
-    print "Run type must be either 'oligotyping' or 'med'"
+    print("Run type must be either 'oligotyping' or 'med'")
     sys.exit()
 
 if not os.path.exists(args.run_info_dict_path):
-    print "Runinfo file is not where you said it would be: '%s'" % args.run_info_dict_path
+    print("Runinfo file is not where you said it would be: '%s'" % args.run_info_dict_path)
     sys.exit()
 
-run_info_dict = cPickle.load(open(args.run_info_dict_path))
+run_info_dict = pickle.load(open(args.run_info_dict_path))
 
 if args.type == 'oligotyping':
     from Oligotyping.utils.html.for_oligotyping import generate_html_output
@@ -44,4 +44,4 @@ else:
     index_page = generate_html_output(run_info_dict, args.output_directory) 
 
 
-print '\n\tHTML output is ready: "%s"\n' % index_page
+print('\n\tHTML output is ready: "%s"\n' % index_page)

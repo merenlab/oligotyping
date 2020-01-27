@@ -31,7 +31,7 @@ def get_ids (taxon, otu_id_to_greengenes):
 def gen_tmpl(taxon, otu_id_to_greengenes, greengenes_alignment, output_file_path = None):
     ids = list(set(get_ids(taxon, otu_id_to_greengenes)))
 
-    print '%d ids found for %s.' % (len(ids), taxon)
+    print('%d ids found for %s.' % (len(ids), taxon))
     o_path = '%s.tmpl' % taxon
 
     if output_file_path:
@@ -39,7 +39,7 @@ def gen_tmpl(taxon, otu_id_to_greengenes, greengenes_alignment, output_file_path
 
     template = u.FastaOutput(o_path)
     fasta = u.SequenceSource(greengenes_alignment)
-    while fasta.next():
+    while next(fasta):
         if fasta.id in ids:
             template.store(fasta, split = False)
             ids.remove(fasta.id)

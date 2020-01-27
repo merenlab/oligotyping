@@ -17,7 +17,7 @@
 #
 
 import sys
-import cPickle
+import pickle
 from scipy import log2 as log
 
 import matplotlib.pyplot as plt
@@ -33,12 +33,12 @@ COLORS = {'A': 'red',
           'N': 'white'}
 
 alignment = u.SequenceSource(sys.argv[1])
-quals_dict = cPickle.load(open(sys.argv[2]))
+quals_dict = pickle.load(open(sys.argv[2]))
 
 quals_dict_filtered = {}
 
 ids_in_alignment_file = []
-while alignment.next():
+while next(alignment):
     ids_in_alignment_file.append(alignment.id)
 ids_in_alignment_file = set(ids_in_alignment_file)
 
@@ -53,7 +53,7 @@ colors = get_list_of_colors(21, colormap="RdYlGn")
 colors = [colors[0] for _ in range(0, 20)] + colors
 max_count = max([qual_stats_dict[q]['count'] for q in qual_stats_dict if qual_stats_dict[q]])
 
-alignment_length = len(quals_dict.values()[0])
+alignment_length = len(list(quals_dict.values())[0])
 
 fig = plt.figure(figsize = (25, 8))
 plt.rc('grid', color='0.50', linestyle='-', linewidth=0.1)
@@ -62,7 +62,7 @@ plt.grid(True)
 plt.subplots_adjust(left=0.02, bottom = 0.09, top = 0.95, right = 0.98)
 
 for position in range(0, alignment_length):
-    print position
+    print(position)
     
     if not qual_stats_dict[position]:
         continue

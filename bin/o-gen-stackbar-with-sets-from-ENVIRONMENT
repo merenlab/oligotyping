@@ -35,15 +35,15 @@ environ_output_file_name = input_file_path + '-cos-%s-SETS-ENVIRON' % cosine_sim
 samples_dict = get_samples_dict_from_environment_file(input_file_path)
 oligos = get_oligos_sorted_by_abundance(samples_dict)
 unit_counts, unit_percents = get_unit_counts_and_percents(oligos, samples_dict)
-samples = samples_dict.keys()
+samples = list(samples_dict.keys())
 
-across_samples_sum_normalized, across_samples_max_normalized = get_units_across_samples_dicts(oligos, samples_dict.keys(), unit_percents) 
+across_samples_sum_normalized, across_samples_max_normalized = get_units_across_samples_dicts(oligos, list(samples_dict.keys()), unit_percents) 
 oligotype_sets = get_oligotype_sets_greedy(oligos,
                                     across_samples_sum_normalized,
                                     cosine_similarity_value,
                                     sets_output_file_name)
 
-print '%d sets from %d units' % (len(oligotype_sets), len(oligos))
+print('%d sets from %d units' % (len(oligotype_sets), len(oligos)))
 
 samples_dict_with_agglomerated_oligos = {}
 

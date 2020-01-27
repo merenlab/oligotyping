@@ -82,4 +82,4 @@ if __name__ == '__main__':
 
     if not args.output_file:
         for oligo in colors_dict:
-            print '%s: %s' % (oligo, colors_dict[oligo])
+            print('%s: %s' % (oligo, colors_dict[oligo]))

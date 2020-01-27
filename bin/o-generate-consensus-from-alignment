@@ -19,7 +19,7 @@ import Oligotyping.lib.fastalib as u
 consensus_sequence = ''
 
 fasta = u.SequenceSource(sys.argv[1])
-fasta.next()
+next(fasta)
 alignment_length = len(fasta.seq)
 consensus_dict = {}
 for i in range(0, alignment_length):
@@ -27,12 +27,12 @@ for i in range(0, alignment_length):
 
 fasta.reset()
 
-while fasta.next():
+while next(fasta):
     for pos in range(0, alignment_length):
         consensus_dict[pos][fasta.seq[pos]] += 1
 
 for pos in range(0, alignment_length):
-    consensus_sequence += sorted(consensus_dict[pos].iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
+    consensus_sequence += sorted(iter(consensus_dict[pos].items()), key=operator.itemgetter(1), reverse=True)[0][0]
 
-print '>' + os.path.basename(sys.argv[1])
-print consensus_sequence
+print('>' + os.path.basename(sys.argv[1]))
+print(consensus_sequence)

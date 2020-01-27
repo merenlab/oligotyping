@@ -79,11 +79,11 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
     progress.new('Processing the Alignment')
 
     # processing the alignment file..
-    while alignment.next():
+    while next(alignment):
         # check the alignment lengths along the way:
         if previous_alignment_length:
             if previous_alignment_length != len(alignment.seq):
-                raise EntropyError, "Not all reads have the same length."
+                raise EntropyError("Not all reads have the same length.")
 
         # print out process info
         if alignment.pos % 10000 == 0:
@@ -96,7 +96,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
             try:
                 frequency = freq_from_defline(alignment.id)
             except IndexError:
-                raise EntropyError, "Reads declared as unique, but they do not have proper deflines. See help for --uniqued."
+                raise EntropyError("Reads declared as unique, but they do not have proper deflines. See help for --uniqued.")
                 
             for i in range(0, frequency):
                 lines.append(alignment.seq)
@@ -124,7 +124,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
             if weighted:
                 if not qual_stats_dict: 
-                    raise EntropyError, "Weighted entropy is selected, but no qual stats are provided"
+                    raise EntropyError("Weighted entropy is selected, but no qual stats are provided")
                 e = entropy(column, l_qual = qual_stats_dict[position], amino_acid_sequences = amino_acid_sequences)
             else:
                 e = entropy(column, amino_acid_sequences = amino_acid_sequences)
@@ -164,7 +164,7 @@ def entropy_analysis(alignment_path, output_file = None, verbose = True, uniqued
 
 def quick_entropy(l, amino_acid_sequences = False):
     if len(set([len(x) for x in l])) != 1:
-        raise EntropyError, "Not all vectors have the same length."
+        raise EntropyError("Not all vectors have the same length.")
     
     entropy_tpls = []
     for position in range(0, len(l[0])):

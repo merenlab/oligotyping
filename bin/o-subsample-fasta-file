@@ -22,14 +22,14 @@ def main(input_fasta, subsample_to, output_fasta):
 
     fasta_content = {}
 
-    while fasta.next():
+    while next(fasta):
         if fasta.pos % 1000 == 0:
             sys.stderr.write('\r[Reading FASTA into memory] reads processed so far: %d' % (fasta.pos))
             sys.stderr.flush()
 
         sample_name = get_sample_name_from_defline(fasta.id)
         
-        if not fasta_content.has_key(sample_name):
+        if sample_name not in fasta_content:
             fasta_content[sample_name] = []
 
         fasta_content[sample_name].append((fasta.id, fasta.seq),)

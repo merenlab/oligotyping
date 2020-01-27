@@ -15,7 +15,7 @@ import sys
 
 def remove(matrix_file, cols_to_remove = None, rows_to_remove = None, output_file = None):
     if cols_to_remove == None and rows_to_remove == None:
-        print 'Error: both cols and rows to remove are empty. Exiting.'
+        print('Error: both cols and rows to remove are empty. Exiting.')
         sys.exit()
     
     matrix = open(matrix_file)
@@ -25,8 +25,8 @@ def remove(matrix_file, cols_to_remove = None, rows_to_remove = None, output_fil
     for line in matrix.readlines():
         rows.append(line.strip().split('\t'))
    
-    cols_to_keep = range(0, len(header))
-    rows_to_keep = range(0, len(rows))
+    cols_to_keep = list(range(0, len(header)))
+    rows_to_keep = list(range(0, len(rows)))
     
     if cols_to_remove:
         for i in range(0, len(header)):
@@ -49,7 +49,7 @@ def remove(matrix_file, cols_to_remove = None, rows_to_remove = None, output_fil
 
 def keep(matrix_file, cols_to_keep = None, rows_to_keep = None, output_file = None):
     if cols_to_keep == None and rows_to_keep == None:
-        print 'Error: both cols and rows to keep are empty. Exiting.'
+        print('Error: both cols and rows to keep are empty. Exiting.')
         sys.exit()
     
     matrix = open(matrix_file)
@@ -59,8 +59,8 @@ def keep(matrix_file, cols_to_keep = None, rows_to_keep = None, output_file = No
     for line in matrix.readlines():
         rows.append(line.strip().split('\t'))
    
-    col_ids_to_keep = range(0, len(header))
-    row_ids_to_keep = range(0, len(rows))
+    col_ids_to_keep = list(range(0, len(header)))
+    row_ids_to_keep = list(range(0, len(rows)))
     
     if cols_to_keep:
         for i in range(0, len(header)):
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     if args.cols_to_keep or args.rows_to_keep:
         mode = 'keep'
     if (args.cols_to_keep or args.rows_to_keep) and (args.cols_to_remove or args.rows_to_remove):
-        print "Sorry, you can't mix -c and -r with -C and -R parameters..."
+        print("Sorry, you can't mix -c and -r with -C and -R parameters...")
         sys.exit()
         
     if mode == 'remove':

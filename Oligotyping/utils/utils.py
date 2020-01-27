@@ -20,7 +20,7 @@ import hashlib
 import random
 import string
 import termios 
-import cPickle
+import pickle
 import textwrap
 import tempfile
 import subprocess
@@ -91,7 +91,7 @@ def get_unit_counts_and_percents(units, samples_dict):
         counts = []
         percents = []
         for unit in units:
-            if samples_dict[sample].has_key(unit):
+            if unit in samples_dict[sample]:
                 counts.append(samples_dict[sample][unit])
                 percents.append(samples_dict[sample][unit] * 100.0 / sample_totals[sample])
             else:
@@ -105,7 +105,7 @@ def get_unit_counts_and_percents(units, samples_dict):
 
 
 def import_error(e):
-    print '''
+    print('''
     Sorry. It seems you are missing a module that is required by
     the oligotyping pipeline. Here is the original import error:
 
@@ -117,7 +117,7 @@ def import_error(e):
 
     https://meren.github.io/2012/05/11/oligotyping-pipeline-explained/
 
-    \n''' % e
+    \n''' % e)
     sys.exit()
 
 
@@ -174,7 +174,7 @@ def generate_MATRIX_files_for_units_across_samples(units, samples, MN_fp, SN_fp,
 
 def get_num_nt_diff_between_two_aligned_sequences(seq1, seq2):
     if len(seq1) != len(seq2):
-        raise LibError, "Two sequences are not equal in length:\n\t%s\n\t%s" % (seq1, seq2)
+        raise LibError("Two sequences are not equal in length:\n\t%s\n\t%s" % (seq1, seq2))
 
     return len(["diff" for i in range(0, len(seq1)) if seq1[i] != seq2[i]])
 
@@ -209,7 +209,7 @@ def homopolymer_indel_exists(seq1, seq2):
         return False
 
     isHP = lambda x: len(set(x)) == 1
-    isHPindel = lambda (s, e): seq1[s:e] == seq2[s:e] and isHP(seq1[s:e]) == 1 and seq2[gap_index] == seq2[s]
+    isHPindel = lambda s_e: seq1[s_e[0]:s_e[1]] == seq2[s_e[0]:s_e[1]] and isHP(seq1[s_e[0]:s_e[1]]) == 1 and seq2[gap_index] == seq2[s_e[0]]
     
     def DownStream(sequence):
         i = 3
@@ -279,7 +279,7 @@ def mask_defline_whitespaces_in_FASTA(fasta_file_path, defline_white_space_mask 
     fasta = u.SequenceSource(fasta_file_path)
     output = u.FastaOutput(fasta_file_path + '.tmp')
     
-    while fasta.next():
+    while next(fasta):
         output.write_id(fasta.id.replace(' ', defline_white_space_mask))
         output.write_seq(fasta.seq, split = False)
 
@@ -289,13 +289,13 @@ def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
     alignment = u.SequenceSource(alignment_path, unique = True)
         
-    alignment.next()
+    next(alignment)
     most_abundant_unique_read = alignment.seq
     alignment.reset()
  
     read_ids = []
     unique_read_counts = []
-    while alignment.next():
+    while next(alignment):
         read_ids += alignment.ids
         unique_read_counts.append(len(alignment.ids))
         output.store(alignment, split = False)
@@ -313,7 +313,7 @@ def generate_TAB_delim_file_from_dict(data_dict, output_file_path, order, first_
     for item in data_dict:
         line = [item]
         for column in order:
-            if not data_dict[item].has_key(column):
+            if column not in data_dict[item]:
                 line.append('')
             else:
                 line.append(str(data_dict[item][column]))
@@ -336,19 +336,19 @@ def get_unique_sequences_from_FASTA(alignment, limit = 10):
 
     fasta = u.SequenceSource(alignment, unique = True, lazy_init = False)
 
-    while fasta.next() and fasta.pos < limit:
+    while next(fasta) and fasta.pos < limit:
         unique_sequences.append((fasta.seq, len(fasta.ids), len(fasta.ids) / float(fasta.total_seq)))
 
     return unique_sequences
 
 
 def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 0):
-    samples = samples_dict.keys()
+    samples = list(samples_dict.keys())
     samples.sort()
 
     if oligos == None:
         oligos = []
-        map(lambda o: oligos.extend(o), [v.keys() for v in samples_dict.values()])
+        list(map(lambda o: oligos.extend(o), [list(v.keys()) for v in list(samples_dict.values())]))
         oligos = list(set(oligos))
 
     abundant_oligos = []
@@ -358,7 +358,7 @@ def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 
 
         for sample in samples:
             sum_sample = sum(samples_dict[sample].values())
-            if samples_dict[sample].has_key(oligo):
+            if oligo in samples_dict[sample]:
                 percent_abundances.append((samples_dict[sample][oligo] * 100.0 / sum_sample,\
                                            samples_dict[sample][oligo], sum_sample, sample))
 
@@ -394,8 +394,8 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     output = open(output_file, 'w')
 
     samples = sorted(samples_dict.keys())
-    sample_mapping_categories = sorted([k for k in sample_mapping_dict.keys() if k != 'colors']) if sample_mapping_dict else None
-    unit_mapping_categories = sorted([k for k in unit_mapping_dict.keys() if k not in ['colors', 'labels']]) if unit_mapping_dict else None
+    sample_mapping_categories = sorted([k for k in list(sample_mapping_dict.keys()) if k != 'colors']) if sample_mapping_dict else None
+    unit_mapping_categories = sorted([k for k in list(unit_mapping_dict.keys()) if k not in ['colors', 'labels']]) if unit_mapping_dict else None
     
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
@@ -428,7 +428,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         else:
             output.write('''    <node id="%s" label="%s">\n''' % (sample, sample))
         output.write('''        <viz:size value="%d"/>\n''' % sample_size)
-        if sample_mapping_dict and sample_mapping_dict.has_key('colors'):
+        if sample_mapping_dict and 'colors' in sample_mapping_dict:
             output.write('''        <viz:color r="%d" g="%d" b="%d" a="1"/>\n''' %\
                                              HTMLColorToRGB(sample_mapping_dict['colors'][sample], scaled = False))
 
@@ -445,7 +445,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         if skip_unit_labels:
             output.write('''    <node id="%s">\n''' % (unit))
         else:
-            if unit_mapping_dict and unit_mapping_dict.has_key('labels'):
+            if unit_mapping_dict and 'labels' in unit_mapping_dict:
                 output.write('''    <node id="%s" label="%s">\n''' % (unit, unit_mapping_dict['labels'][unit]))
             else:
                 output.write('''    <node id="%s">\n''' % (unit))
@@ -492,7 +492,7 @@ def generate_gexf_network_file_for_nodes_topology(nodes_dict, output_file, attri
     output = open(output_file, 'w')
 
     nodes = sorted(nodes_dict.keys())
-    nodes_mapping_categories = sorted([k for k in nodes_dict[nodes[0]].keys() if k not in ['children', 'parent']]) if nodes_dict else None
+    nodes_mapping_categories = sorted([k for k in list(nodes_dict[nodes[0]].keys()) if k not in ['children', 'parent']]) if nodes_dict else None
 
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
@@ -507,7 +507,7 @@ def generate_gexf_network_file_for_nodes_topology(nodes_dict, output_file, attri
         output.write('''<attributes class="node" type="static">\n''')
         for i in range(0, len(nodes_mapping_categories)):
             category = nodes_mapping_categories[i]
-            attr_type = attribute_types_dict[category] if attribute_types_dict.has_key(category) else "string"
+            attr_type = attribute_types_dict[category] if category in attribute_types_dict else "string"
             output.write('''    <attribute id="%d" title="%s" type="%s" />\n''' % (i, category, attr_type))
         output.write('''</attributes>\n\n''')
 
@@ -564,12 +564,12 @@ def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     progress.new('Summary of quality scores per column is being computed')
     
     qual_stats_dict = {}
-    alignment_length = len(quals_dict[quals_dict.keys()[0]])
+    alignment_length = len(quals_dict[list(quals_dict.keys())[0]])
     for pos in range(0, alignment_length):
         progress.update('Position: %d of %d' % (pos + 1, alignment_length))
 
         qual_stats_dict[pos] = {}
-        quals_for_pos = [q[pos] for q in quals_dict.values() if q[pos]]
+        quals_for_pos = [q[pos] for q in list(quals_dict.values()) if q[pos]]
         if not quals_for_pos:
             qual_stats_dict[pos] = None
             continue
@@ -580,7 +580,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
         qual_stats_dict[pos]['count'] = len(quals_for_pos)
     
     if output_file_path:
-        cPickle.dump(quals_dict, open(output_file_path, 'w'))
+        pickle.dump(quals_dict, open(output_file_path, 'w'))
 
     progress.end()
     return qual_stats_dict
@@ -602,12 +602,12 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose 
     alignment = u.SequenceSource(alignment_file)
     qual = u.QualSource(quals_file)
 
-    while qual.next():
+    while next(qual):
         if qual.pos % 1000 == 0:
             progress.update('Step 1 of 2 :: Quality scores read: %s' % (pretty_print(qual.pos)))
         quals_dict[qual.id] = qual.quals_int
 
-    while alignment.next():
+    while next(alignment):
         if alignment.pos % 1000 == 0:
             progress.update('Step 2 of 2 :: Alignments matched: %s' % (pretty_print(alignment.pos)))
             sys.stderr.flush()
@@ -625,7 +625,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose 
     progress.end()
 
     if output_file_path:
-        cPickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
+        pickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
 
     return quals_aligned_dict
 
@@ -658,7 +658,7 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_scores_dict:
-        quals_dict = cPickle.load(open(args.qual_scores_dict))
+        quals_dict = pickle.load(open(args.qual_scores_dict))
 
         if _return == 'quals_dict':
             return quals_dict
@@ -670,7 +670,7 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_stats_dict:
-        qual_stats_dict = cPickle.load(open(args.qual_stats_dict))
+        qual_stats_dict = pickle.load(open(args.qual_stats_dict))
         
         if _return == 'qual_stats_dict':
             return qual_stats_dict
@@ -685,7 +685,7 @@ def get_filtered_samples_dict(units, samples, samples_dict):
     for sample in samples:
         filtered_samples_dict[sample] = {}
         for unit in units:
-            if samples_dict[sample].has_key(unit):
+            if unit in samples_dict[sample]:
                 filtered_samples_dict[sample][unit] = samples_dict[sample][unit]
 
     return filtered_samples_dict
@@ -694,8 +694,8 @@ def get_filtered_samples_dict(units, samples, samples_dict):
 def get_samples_dict_from_environment_file(environment_file_path):
     samples_dict = {}
     for oligo, sample, count in [l.strip().split('\t') for l in open(environment_file_path).readlines()]:
-        if samples_dict.has_key(sample):
-            if samples_dict[sample].has_key(oligo):
+        if sample in samples_dict:
+            if oligo in samples_dict[sample]:
                 samples_dict[sample][oligo] += int(count)
             else:
                 samples_dict[sample][oligo] = int(count)
@@ -726,7 +726,7 @@ def pretty_print(n):
 
 def same_but_gaps(sequence1, sequence2):
     if len(sequence1) != len(sequence2):
-        raise ValueError, "Alignments have different lengths"
+        raise ValueError("Alignments have different lengths")
     
     for i in range(0, len(sequence1)):
         if sequence1[i] == '-' or sequence2[i] == '-':
@@ -738,7 +738,7 @@ def same_but_gaps(sequence1, sequence2):
 
 def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
     if len(sequence1) != len(sequence2):
-        raise ValueError, "Alignments have different lengths"
+        raise ValueError("Alignments have different lengths")
     
     columns_to_discard = []
     
@@ -789,12 +789,12 @@ def is_program_exist(program):
 
 def trim_uninformative_columns_from_alignment(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, lazy_init = False)
-    input_fasta.next()
+    next(input_fasta)
     fasta_read_len = len(input_fasta.seq)
-    invalid_columns = range(0, fasta_read_len)
+    invalid_columns = list(range(0, fasta_read_len))
     input_fasta.reset()
     
-    while input_fasta.next():
+    while next(input_fasta):
         cols_not_invalid = []
         for i in invalid_columns:
             if input_fasta.seq[i] != '-':
@@ -811,7 +811,7 @@ def trim_uninformative_columns_from_alignment(input_file_path):
 
     temp_file = u.FastaOutput(temp_file_path)
 
-    while input_fasta.next():
+    while next(input_fasta):
         new_seq = ''
         for i in columns_to_keep:
             new_seq += input_fasta.seq[i]
@@ -871,7 +871,7 @@ def HTMLColorToRGB(colorstring, scaled = True):
     colorstring = colorstring.strip()
     if colorstring[0] == '#': colorstring = colorstring[1:]
     if len(colorstring) != 6:
-        raise ValueError, "input #%s is not in #RRGGBB format" % colorstring
+        raise ValueError("input #%s is not in #RRGGBB format" % colorstring)
     r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
     r, g, b = [int(n, 16) for n in (r, g, b)]
 
@@ -884,9 +884,9 @@ def HTMLColorToRGB(colorstring, scaled = True):
 def run_command(cmdline):
     try:
         if subprocess.call(cmdline, shell = True) < 0:
-            raise ConfigError, "command was terminated: '%s'" % (cmdline)
-    except OSError, e:
-        raise ConfigError, "command was failed for the following reason: '%s' ('%s')" % (e, cmdline) 
+            raise ConfigError("command was terminated: '%s'" % (cmdline))
+    except OSError as e:
+        raise ConfigError("command was failed for the following reason: '%s' ('%s')" % (e, cmdline)) 
 
 
 def check_command_output(cmdline):
@@ -916,7 +916,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
     samples = set([])
     previous_alignment_length = None
 
-    while alignment.next():
+    while next(alignment):
         if progress_func and alignment.pos % 5000 == 0:
             progress_func.update('Reading input; %s, %s samples found'\
                                         % (pretty_print(alignment.pos),
@@ -929,7 +929,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         # check the alignment lengths along the way:
         if previous_alignment_length:
             if previous_alignment_length != len(alignment.seq):
-                raise ConfigError, "Not all reads have the same length."
+                raise ConfigError("Not all reads have the same length.")
 
         previous_alignment_length = len(alignment.seq)
 
@@ -984,16 +984,16 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
     header_line = mapping_file.readline()
     
     if header_line.find('\t') < 0:
-        raise ConfigError, "Mapping file doesn't seem to be a TAB delimited file"
+        raise ConfigError("Mapping file doesn't seem to be a TAB delimited file")
 
     header_fields = header_line.strip('\n').split('\t')
 
     if len(header_fields) < 2:
-        raise ConfigError, "No categories were found in the mapping file"
+        raise ConfigError("No categories were found in the mapping file")
     if header_fields[0] != 'samples':
-        raise ConfigError, "First column of the first row of mapping file must be 'samples'"
+        raise ConfigError("First column of the first row of mapping file must be 'samples'")
     if len(header_fields) != len(set(header_fields)):
-        raise ConfigError, "In the mapping file, every category must be unique"
+        raise ConfigError("In the mapping file, every category must be unique")
 
     samples_found = []
     num_entries = 0
@@ -1005,13 +1005,13 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
         samples_found.append(fields[0])
  
         if len(fields) != len(header_fields):
-            raise ConfigError, "Not every line in the mapping file has the same number of fields " +\
-                                "(line %d has %d columns)" % (num_entries + 1, len(fields))
+            raise ConfigError("Not every line in the mapping file has the same number of fields " +\
+                                "(line %d has %d columns)" % (num_entries + 1, len(fields)))
         for field in fields[1:]:
             if field == "":
                 continue
             if field[0] in '0123456789':
-                raise ConfigError, "Categories in the mapping file cannot start with digits: '%s'" % field
+                raise ConfigError("Categories in the mapping file cannot start with digits: '%s'" % field)
 
     if samples_expected:
         samples_missing = [] 
@@ -1020,11 +1020,11 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
                 samples_missing.append(sample)
         
         if samples_missing:
-            raise ConfigError, "Mapping file seems to be missing %d sample(s) that appear in the FASTA file:\n\n- %s\n\n"\
-                                      % (len(samples_missing), ', '.join(samples_missing))
+            raise ConfigError("Mapping file seems to be missing %d sample(s) that appear in the FASTA file:\n\n- %s\n\n"\
+                                      % (len(samples_missing), ', '.join(samples_missing)))
 
     if num_entries < 3:
-        raise ConfigError, "Mapping file seems to have less than three samples"
+        raise ConfigError("Mapping file seems to have less than three samples")
 
     mapping_file.close()
     return True
@@ -1095,7 +1095,7 @@ class Progress:
 
     def new(self, pid):
         if self.pid:
-            raise LibError, "Progress.new() can't be called before ending the previous one (Existing: '%s', Competing: '%s')." % (self.pid, pid)
+            raise LibError("Progress.new() can't be called before ending the previous one (Existing: '%s', Competing: '%s')." % (self.pid, pid))
 
         if not self.verbose:
             return
@@ -1153,7 +1153,7 @@ class Progress:
 
 
 def get_pretty_name(key):
-    if pretty_names.has_key(key):
+    if key in pretty_names:
         return pretty_names[key]
     else:
         return key
@@ -1250,7 +1250,7 @@ class Run:
 
 
     def store_info_dict(self, destination):
-        cPickle.dump(self.info_dict, open(destination, 'w'))
+        pickle.dump(self.info_dict, open(destination, 'wb'))
 
 
     def quit(self):
@@ -1261,7 +1261,7 @@ def get_read_objects_from_file(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, unique = True)
     read_objects = []
     
-    while input_fasta.next():
+    while next(input_fasta):
         read_objects.append(UniqueFASTAEntry(input_fasta.seq, input_fasta.ids))
 
     input_fasta.close()
@@ -1275,12 +1275,12 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_f
     next_part = 1
     part_obj = None
 
-    while input_fasta.next():
+    while next(input_fasta):
         if (input_fasta.pos - 1) % num_reads_per_file == 0:
             if part_obj:
                 part_obj.close()
 
-            rand_bit = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(8)])
+            rand_bit = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
             file_path = os.path.join(dest_dir, '%s-%d-%s.fa' % (prefix, next_part, rand_bit))
             parts.append(file_path)
             next_part += 1
@@ -1376,5 +1376,5 @@ class UniqueFASTAEntry:
     def __init__(self, seq, ids):
         self.seq = seq
         self.ids = ids
-        self.md5id = hashlib.md5(self.seq).hexdigest()
+        self.md5id = hashlib.md5(self.seq.encode('utf-8')).hexdigest()
         self.frequency = len(ids)

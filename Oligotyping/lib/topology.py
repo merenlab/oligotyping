@@ -54,7 +54,7 @@ class Topology:
 
     def add_new_node(self, node_id, unique_read_objects_list, root = False, parent_id = None):
         if not self.nodes_output_directory:
-            raise ConfigError, "Nodes output directory has to be declared before adding new nodes"
+            raise ConfigError("Nodes output directory has to be declared before adding new nodes")
 
         node = Node(node_id, self.nodes_output_directory)
 
@@ -103,15 +103,15 @@ class Topology:
 
     def print_node(self, node_id):
         node = self.nodes[node_id]
-        print
-        print 'Node "%s"' % node
-        print '---------------------------------'
-        print 'Alive     : %s' % (not node.killed)
-        print 'Dirty     : %s' % node.dirty
-        print 'Size      : %d' % node.size
-        print 'Parent    : %s' % node.parent
-        print 'Children  :', node.children
-        print
+        print()
+        print('Node "%s"' % node)
+        print('---------------------------------')
+        print('Alive     : %s' % (not node.killed))
+        print('Dirty     : %s' % node.dirty)
+        print('Size      : %d' % node.size)
+        print('Parent    : %s' % node.parent)
+        print('Children  :', node.children)
+        print()
 
 
     def get_final_count(self):

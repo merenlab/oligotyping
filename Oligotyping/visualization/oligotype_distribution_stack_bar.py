@@ -22,7 +22,7 @@ from Oligotyping.utils.utils import get_samples_dict_from_environment_file
 
 def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = None, legend = False,\
                                      colors_export = None, project_title = None, display = True, oligos = None):
-    samples = samples_dict.keys()
+    samples = list(samples_dict.keys())
     samples.sort()
    
     if oligos == None:
@@ -37,7 +37,7 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
     for sample in samples:
         vector = []
         for oligo in oligos:
-            if samples_dict[sample].has_key(oligo):
+            if oligo in samples_dict[sample]:
                 vector.append(samples_dict[sample][oligo])
             else:
                 vector.append(0)
