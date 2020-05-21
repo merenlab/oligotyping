@@ -41,4 +41,4 @@ Bay Paul Center for Comparative Molecular Biology and Evolution](http://jbpc.mbl
 Massachusetts, studying microbial ecology.
 
 
-http://meren.org
+http://merenlab.org
