@@ -3,3 +3,5 @@ Matplotlib
 BioPython
 SciPy
 Django
+illumina-utils
+networkx
