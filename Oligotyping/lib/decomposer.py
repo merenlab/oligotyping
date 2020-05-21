@@ -1238,7 +1238,7 @@ class Decomposer:
         self.progress.end()
         
         topology_dict_file_path = self.generate_output_destination('TOPOLOGY-LIGHT.cPickle')
-        pickle.dump(topology_dict, open(topology_dict_file_path, 'w'))
+        pickle.dump(topology_dict, open(topology_dict_file_path, 'wb'))
         self.run.info('topology_light_dict', topology_dict_file_path)
 
 
