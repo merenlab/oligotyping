@@ -24,12 +24,12 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
                                      colors_export = None, project_title = None, display = True, oligos = None):
     samples = list(samples_dict.keys())
     samples.sort()
-   
+
     if oligos == None:
         oligos = get_oligos_sorted_by_abundance(samples_dict, oligos)
     else:
         oligos.reverse()
- 
+
     if colors_dict == None:
         colors_dict = random_colors(copy.deepcopy(oligos))
 
@@ -42,7 +42,7 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
             else:
                 vector.append(0)
         samples_oligo_vectors[sample] = vector
-    
+
     samples_oligo_vectors_percent_normalized = {}
     for sample in samples:
         total_oligos_in_sample = sum(samples_oligo_vectors[sample])
@@ -50,20 +50,20 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
         for oligo_abundance in samples_oligo_vectors[sample]:
             vector.append(oligo_abundance * 100.0 / total_oligos_in_sample)
         samples_oligo_vectors_percent_normalized[sample] = vector
-   
-    # figure.. 
+
+    # figure..
     fig = plt.figure(figsize=(20, 10))
-    
+
     if legend:
         plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.90)
     else:
         plt.subplots_adjust(left=0.03, bottom = 0.15, top = 0.97, right = 0.99)
-    
-    
+
+
     N = len(samples)
     ind = np.arange(N)
     width = 0.75
-    
+
     bars = []
     colors_list = []
 
@@ -76,7 +76,7 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
         except:
             color = 'black'
             colors_list.append('#000000')
-   
+
 
         p = plt.bar(ind, values, width, bottom=bottom, color=color)
         bars.append(p)
@@ -96,19 +96,19 @@ def oligotype_distribution_stack_bar(samples_dict, colors_dict, output_file = No
     plt.yticks([])
     plt.ylim(ymax = 100)
     plt.xlim(xmin = -(width) / 2, xmax = len(samples))
-    
+
     if legend:
         plt.legend([b[0] for b in bars][::-1], oligos[::-1], bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0.0, shadow=True, fancybox=True)
-        
+
         leg = plt.gca().get_legend()
         ltext  = leg.get_texts()
         llines = leg.get_lines()
         frame  = leg.get_frame()
-        
+
         frame.set_facecolor('0.80')
         plt.setp(ltext, fontsize='small', fontname='arial', family='monospace')
         plt.setp(llines, linewidth=1.5)
-    
+
     if output_file:
         plt.savefig(output_file)
     if display:
