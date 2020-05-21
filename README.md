@@ -30,15 +30,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-
-Author
-===============================================================================
-
-I am an assistant research scientist at the [Marine Biological Laboratory](http://mbl.edu), [The Josephine
-Bay Paul Center for Comparative Molecular Biology and Evolution](http://jbpc.mbl.edu/), in Woods Hole
-Massachusetts, studying microbial ecology.
-
-
-http://merenlab.org
