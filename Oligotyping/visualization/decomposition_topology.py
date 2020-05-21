@@ -15,6 +15,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+from networkx.drawing.nx_agraph import graphviz_layout
+
 from Oligotyping.utils.utils import pretty_print
 
 final_nodes = []
@@ -23,7 +25,7 @@ parent_nodes = []
 def topology_graph(topology_dict_path, match_levels = False):
     G = nx.MultiDiGraph()
     
-    topology = pickle.load(open(topology_dict_path))
+    topology = pickle.load(open(topology_dict_path, 'rb'))
    
     nodes = {}
     levels = []
@@ -104,7 +106,7 @@ def topology(topology_dict_path, output_file = None, title = None):
     
     # use graphviz to find radial layout
     # twopi, gvcolor, wc, ccomps, tred, sccmap, fdp, circo, neato, acyclic, nop, gvpr, dot
-    pos=nx.graphviz_layout(G, prog="fdp")
+    pos=graphviz_layout(G, prog="fdp")
 
     # node size is proportional to number of reads went into it
     sizes = dict.fromkeys(G.nodes(), 0.0)
