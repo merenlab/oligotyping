@@ -389,11 +389,11 @@ class Decomposer:
         self.progress.new('Raw Topology')
         # main loop
         while 1:
-            self.decomposition_depth += 1
+
             if not len(self.node_ids_to_analyze):
                 self.progress.end()
                 break
-            
+            self.decomposition_depth += 1
             # following for loop will go through all nodes that are stored in
             # self.node_ids_to_analyze list. while those nodes are being decomposed,
             # new nodes will appear and need to be analyzed next round. following
@@ -564,7 +564,7 @@ class Decomposer:
         
         #finally:
         self.progress.end()
-        self.topology.update_final_nodes()
+        self.topology.update_final_nodes(decomposition_depth=self.decomposition_depth)
 
         self.run.info('num_raw_nodes', utils.pretty_print(len(self.topology.final_nodes)))
 
@@ -575,7 +575,7 @@ class Decomposer:
         self.progress.new('Refreshing the topology')
         self.progress.update('Updating final nodes...')
 
-        self.topology.update_final_nodes()
+        self.topology.update_final_nodes(decomposition_depth=self.decomposition_depth)
        
         dirty_nodes = []
         for node_id in self.topology.final_nodes:

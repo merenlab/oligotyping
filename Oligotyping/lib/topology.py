@@ -228,11 +228,14 @@ class Topology:
         return self.nodes[self.nodes[node_id].parent]
 
 
-    def update_final_nodes(self):
+    def update_final_nodes(self, decomposition_depth):
         self.alive_nodes = [n for n in sorted(self.nodes.keys()) if not self.nodes[n].killed]
 
         # get final nodes sorted by abundance        
-        final_nodes_tpls = [(self.nodes[n].size, n) for n in self.alive_nodes if not self.nodes[n].children]
+        final_nodes_tpls = [
+            (self.nodes[n].size, n) for n in self.alive_nodes if not self.nodes[n].children or (
+                    decomposition_depth == 0 and
+                    n == 'root')]
         final_nodes_tpls.sort(reverse = True)
         self.final_nodes = [n[1] for n in final_nodes_tpls]
 
