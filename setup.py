@@ -24,7 +24,7 @@ setup(
     version = open('VERSION').read().strip(),
     description = "The oligotyping and minimum entropy decomposition (MED) pipeline for the analysis of marker gene amplicons",
     author = "A. Murat Eren",
-    author_email = "meren@mbl.edu",
+    author_email = "a.murat.eren@gmail.com",
     license = "GPLv3+",
     url = "http://oligotyping.org",
     packages = find_packages(),
@@ -38,7 +38,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: MacOS',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering',
     ],
 
