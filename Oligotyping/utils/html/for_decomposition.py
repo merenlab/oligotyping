@@ -200,7 +200,7 @@ def generate_html_output(run_info_dict, html_output_directory = None):
     def get_figures_dict(html_dict_prefix):
         html_dict_key = '%s_file_path' % html_dict_prefix
         if html_dict_key in html_dict:
-            figures_dict = pickle.load(open(html_dict[html_dict_key]))
+            figures_dict = pickle.load(open(html_dict[html_dict_key], 'rb'), encoding='bytes')
             for _map in figures_dict:
                 for _func in figures_dict[_map]:
                     for _op in figures_dict[_map][_func]:

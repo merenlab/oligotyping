@@ -1383,7 +1383,7 @@ class Decomposer:
 
         figures_dict = generate_default_figures(self)
         figures_dict_file_path = self.generate_output_destination("FIGURES.cPickle")
-        pickle.dump(figures_dict, open(figures_dict_file_path, 'w'))
+        pickle.dump(figures_dict, open(figures_dict_file_path, 'wb'))
 
         self.progress.end()
         self.run.info('figures_dict_file_path', figures_dict_file_path)
