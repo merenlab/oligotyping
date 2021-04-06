@@ -10,19 +10,9 @@
 #
 # Please read the COPYING file.
 
-import sys 
+import sys
 
-try:
-    import Oligotyping
-except ImportError:
-    import inspect
-    print('''
-    Oligotyping package seems to be missing from your PYTHONPATH. Running this may help:
-
-        export PYTHONPATH="$PYTHONPATH:%s"
-
-    ''' % (os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))))
-    sys.exit()
+import Oligotyping
 
 from Oligotyping.utils.utils import import_error
 
@@ -65,7 +55,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # process qual scores if provided
-    qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')       
+    qual_stats_dict = process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict')
 
     # the same file path is also used for the figure (e.g. output_file_path + '.png' or
     # output_file_path + '.pdf')
