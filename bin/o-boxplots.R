@@ -72,7 +72,7 @@ for(i in 1:length(nodes)){
 ord <- order(sums, decreasing = TRUE)
 
 get_first_two_factors_and_effect_size <- function(d, mapping_variable, node){
-	#Êperform lda on the node with respect to classes
+	# perform lda on the node with respect to classes
 	lda_result <- suppressWarnings(lda(d[[mapping_variable]] ~ ., data = data.frame(d[[node]]), tol=0.00001))
 	# find the two factors with the highes mean for this node
 	factors_means_df <- data.frame(levels(factor(d[[mapping_variable]])), as.numeric(lda_result$means))
@@ -81,7 +81,7 @@ get_first_two_factors_and_effect_size <- function(d, mapping_variable, node){
 	factor_1 <- as.character(ordered_factors_means_df[1,]$factors)
 	factor_2 <- as.character(ordered_factors_means_df[2,]$factors)
 	
-	#Êlda scaling
+	# lda scaling
 	w <- lda_result$scaling[,1]
 	scaled_frequencies <- as.matrix(d[[node]])%*%w
 	effect_size <- abs(mean(scaled_frequencies[d[[mapping_variable]]==factor_1]) - mean(scaled_frequencies[d[[mapping_variable]]==factor_2]))
@@ -94,7 +94,7 @@ mapping <- factor(mapping, levels=levels(mapping))
 for (i in 1:length(nodes[ord])){
 	node <- nodes[ord][i]
 	
-	#Êget the subset of data with the mapping and node of interest i = 1
+	# get the subset of data with the mapping and node of interest i = 1
 	d <- data.frame(data[[node]], metadata[[mapping_variable]])
 	names(d) <- c(node, mapping_variable)
 	mapping <- d[[mapping_variable]]
@@ -122,7 +122,7 @@ for (i in 1:length(nodes[ord])){
 	factor_2 <- as.character(lda_result$factor_2)
 	lda_effect_size <- lda_result$effect_size
 	
-	#Êfactor 1 is the highest mean. lets proceed with that.
+	# factor 1 is the highest mean. lets proceed with that.
 	d.test <- d[which(d[[mapping_variable]] %in% factor_1), ][[node]]
 	d.ctrl <- d[which(d[[mapping_variable]] %in% factor_2), ][[node]]
 	d.mes_results <- mes(mean(d.test), mean(d.ctrl), sd(d.test), sd(d.ctrl), length(d.test), length(d.ctrl))
