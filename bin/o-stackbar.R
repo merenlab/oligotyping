@@ -44,7 +44,7 @@ if(length(arguments$args) != 1) {
 
 # check if the input file is accessible
 if(file.access(environment_file_path) == -1){
-	stop(sprintf("Specified file '%s' does not exist", input_file))
+	stop(sprintf("Specified file '%s' does not exist", environment_file_path))
 }
 
 

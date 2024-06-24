@@ -19,7 +19,7 @@ import struct
 import hashlib
 import random
 import string
-import termios 
+import termios
 import pickle
 import textwrap
 import tempfile
@@ -33,7 +33,7 @@ from Oligotyping.utils.aligner import nw_align
 
 P = lambda x, y: '%.2f%%' % (x * 100.0 / y)
 
-NUCL_COLORS = {'A': 'red', 'T': 'blue',  'C': 'green', 'G': 'purple', 
+NUCL_COLORS = {'A': 'red', 'T': 'blue',  'C': 'green', 'G': 'purple',
                'N': 'white', '-': '#CACACA', 'K': '#CACACA', 'R': '#CACACA',
                'Y': '#CACACA', 'W': '#CACACA', 'S': '#CACACA', 'M': '#CACACA'}
 
@@ -97,7 +97,7 @@ def get_unit_counts_and_percents(units, samples_dict):
             else:
                 counts.append(0)
                 percents.append(0.0)
-                
+
         unit_counts[sample] = counts
         unit_percents[sample] = percents
 
@@ -123,15 +123,15 @@ def import_error(e):
 
 def generate_MATRIX_files(units, samples, unit_counts, unit_percents, matrix_count_file_path, matrix_percent_file_path):
     count_file = open(matrix_count_file_path, 'w')
-    percent_file = open(matrix_percent_file_path, 'w')       
-    
+    percent_file = open(matrix_percent_file_path, 'w')
+
     count_file.write('\t'.join(['samples'] + units) + '\n')
     percent_file.write('\t'.join(['samples'] + units) + '\n')
 
     for sample in samples:
         count_file.write('\t'.join([sample] + [str(c) for c in unit_counts[sample]]) + '\n')
         percent_file.write('\t'.join([sample] + [str(p) for p in unit_percents[sample]]) + '\n')
-    
+
     count_file.close()
     percent_file.close()
 
@@ -139,7 +139,7 @@ def generate_MATRIX_files(units, samples, unit_counts, unit_percents, matrix_cou
 def get_units_across_samples_dicts(units, samples, unit_percents):
     across_samples_sum_normalized = {}
     across_samples_max_normalized = {}
-  
+
     for unit in units:
         across_samples_sum_normalized[unit] = []
         across_samples_max_normalized[unit] = []
@@ -148,7 +148,7 @@ def get_units_across_samples_dicts(units, samples, unit_percents):
         unit = units[i]
         sum_across_samples = sum([unit_percents[sample][i] for sample in samples])
         max_across_samples = max([unit_percents[sample][i] for sample in samples])
-            
+
         for sample in samples:
             across_samples_sum_normalized[unit].append(unit_percents[sample][i]  * 100.0 / sum_across_samples)
             across_samples_max_normalized[unit].append(unit_percents[sample][i]  * 100.0 / max_across_samples)
@@ -167,7 +167,7 @@ def generate_MATRIX_files_for_units_across_samples(units, samples, MN_fp, SN_fp,
             sample = samples[i]
             across_samples_MN_file.write('\t'.join([sample] + [str(MN_dict[unit][i]) for unit in units]) + '\n')
             across_samples_SN_file.write('\t'.join([sample] + [str(SN_dict[unit][i]) for unit in units]) + '\n')
-        
+
         across_samples_MN_file.close()
         across_samples_SN_file.close()
 
@@ -181,7 +181,7 @@ def get_num_nt_diff_between_two_aligned_sequences(seq1, seq2):
 
 def homopolymer_indel_exists(seq1, seq2):
     seq1, seq2 = trim_uninformative_gaps_from_sequences(seq1, seq2)
-    
+
     # sometimes alignments look like this:
     #
     #    CCCGAAAAAA--TAT
@@ -191,7 +191,7 @@ def homopolymer_indel_exists(seq1, seq2):
     #
     #    CCCGAAAAAATAT
     #    CCCGAAAAA-TAT
-    # 
+    #
     # causes this function to return false. in order to fix that problem
     # we perform needleman-wunch alignment here:
     if sum([seq1.count('-'), seq2.count('-')]) > 1:
@@ -200,17 +200,17 @@ def homopolymer_indel_exists(seq1, seq2):
     gap_index = seq1.find('-')
     if gap_index == -1:
         gap_index = seq2.find('-')
-        
+
         # so the gap is in seq2. replace seq1 and 2 so it would be certain
         # that the sequence with gap is seq1:
         seq1, seq2 = seq2, seq1
-        
+
     if gap_index == -1:
         return False
 
     isHP = lambda x: len(set(x)) == 1
     isHPindel = lambda s_e: seq1[s_e[0]:s_e[1]] == seq2[s_e[0]:s_e[1]] and isHP(seq1[s_e[0]:s_e[1]]) == 1 and seq2[gap_index] == seq2[s_e[0]]
-    
+
     def DownStream(sequence):
         i = 3
         while isHP(sequence[gap_index - i - 1:gap_index]):
@@ -227,36 +227,36 @@ def homopolymer_indel_exists(seq1, seq2):
     if gap_index >= 3:
         if isHPindel(DownStream(seq1)):
             return True
-        
+
     # check upstream of the gap
     if len(seq1) - gap_index > 3:
         if isHPindel(UpStream(seq1)):
             return True
-        
+
     return None
 
 
 def append_file(target_path, source_path, remove_source = True):
     target = open(target_path, 'a')
     source = open(source_path, 'r')
-    
+
     for line in source.readlines():
         target.write(line)
-    
+
     target.close()
     source.close()
-    
+
     if remove_source:
         os.remove(source_path)
 
 
 def append_reads_to_FASTA(read_id_sequence_tuples_list, fasta_file_path):
     fasta_file = open(fasta_file_path, 'a')
-    
+
     for read_id, sequence in read_id_sequence_tuples_list:
         fasta_file.write('>%s\n' % read_id)
         fasta_file.write('%s\n' % sequence)
-    
+
     fasta_file.close()
 
 
@@ -272,13 +272,13 @@ def remove_white_space_mask_from_B6_entry(entry, defline_white_space_mask = '<$!
 
     return entry
 
-    
+
 
 def mask_defline_whitespaces_in_FASTA(fasta_file_path, defline_white_space_mask = '<$!$>'):
     temp_file_path = fasta_file_path + '.tmp'
     fasta = u.SequenceSource(fasta_file_path)
     output = u.FastaOutput(fasta_file_path + '.tmp')
-    
+
     while next(fasta):
         output.write_id(fasta.id.replace(' ', defline_white_space_mask))
         output.write_seq(fasta.seq, split = False)
@@ -288,27 +288,27 @@ def mask_defline_whitespaces_in_FASTA(fasta_file_path, defline_white_space_mask 
 def unique_and_store_alignment(alignment_path, output_path):
     output = u.FastaOutput(output_path)
     alignment = u.SequenceSource(alignment_path, unique = True)
-        
+
     next(alignment)
     most_abundant_unique_read = alignment.seq
     alignment.reset()
- 
+
     read_ids = []
     unique_read_counts = []
     while next(alignment):
         read_ids += alignment.ids
         unique_read_counts.append(len(alignment.ids))
         output.store(alignment, split = False)
-            
+
     output.close()
     alignment.close()
-        
+
     return (read_ids, unique_read_counts, most_abundant_unique_read)
 
 
 def generate_TAB_delim_file_from_dict(data_dict, output_file_path, order, first_column = 'samples'):
     f = open(output_file_path, 'w')
-    
+
     f.write('%s\n' % ('\t'.join([first_column] + order)))
     for item in data_dict:
         line = [item]
@@ -352,7 +352,7 @@ def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 
         oligos = list(set(oligos))
 
     abundant_oligos = []
-    
+
     for oligo in oligos:
         percent_abundances = []
 
@@ -374,13 +374,13 @@ def get_oligos_sorted_by_abundance(samples_dict, oligos = None, min_abundance = 
 
 def get_vectors_from_oligotypes_across_samples_matrix(file_path):
     oligotypes_across_samples_file_obj = open(file_path)
-   
+
     oligos = []
     vectors = {}
 
     for line in oligotypes_across_samples_file_obj.readlines()[1:]:
         fields = line.strip().split('\t')
-        
+
         oligo = fields[0]
         oligos.append(oligo)
         vectors[oligo] = [float(c) for c in fields[1:]]
@@ -396,7 +396,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     samples = sorted(samples_dict.keys())
     sample_mapping_categories = sorted([k for k in list(sample_mapping_dict.keys()) if k != 'colors']) if sample_mapping_dict else None
     unit_mapping_categories = sorted([k for k in list(unit_mapping_dict.keys()) if k not in ['colors', 'labels']]) if unit_mapping_dict else None
-    
+
     output.write('''<?xml version="1.0" encoding="UTF-8"?>\n''')
     output.write('''<gexf xmlns:viz="http:///www.gexf.net/1.1draft/viz" xmlns="http://www.gexf.net/1.2draft" version="1.2">\n''')
     output.write('''<meta lastmodifieddate="2010-01-01+23:42">\n''')
@@ -461,7 +461,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
         output.write('''    </node>\n''')
 
     output.write('''</nodes>\n''')
-    
+
     edge_id = 0
     output.write('''<edges>\n''')
     for sample in samples:
@@ -484,7 +484,7 @@ def generate_gexf_network_file(units, samples_dict, unit_percents, output_file, 
     output.write('''</edges>\n''')
     output.write('''</graph>\n''')
     output.write('''</gexf>\n''')
-    
+
     output.close()
 
 
@@ -562,7 +562,7 @@ def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
     progress = Progress()
     progress.verbose = verbose
     progress.new('Summary of quality scores per column is being computed')
-    
+
     qual_stats_dict = {}
     alignment_length = len(quals_dict[list(quals_dict.keys())[0]])
     for pos in range(0, alignment_length):
@@ -578,13 +578,13 @@ def get_qual_stats_dict(quals_dict, output_file_path = None, verbose = True):
         qual_stats_dict[pos]['max']   = np.max(quals_for_pos)
         qual_stats_dict[pos]['min']   = np.min(quals_for_pos)
         qual_stats_dict[pos]['count'] = len(quals_for_pos)
-    
+
     if output_file_path:
-        pickle.dump(quals_dict, open(output_file_path, 'w'))
+        pickle.dump(quals_dict, open(output_file_path, 'wb'))
 
     progress.end()
     return qual_stats_dict
-  
+
 def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose = True):
     """This function takes qual scores file in FASTA format, expands each
        entry to match base calls in the corresponding aligned read in the
@@ -598,7 +598,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose 
     progress = Progress()
     progress.verbose = verbose
     progress.new('Quality scores dictionary is being generated')
- 
+
     alignment = u.SequenceSource(alignment_file)
     qual = u.QualSource(quals_file)
 
@@ -612,7 +612,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose 
             progress.update('Step 2 of 2 :: Alignments matched: %s' % (pretty_print(alignment.pos)))
             sys.stderr.flush()
 
-        matching_qual = quals_dict[alignment.id] 
+        matching_qual = quals_dict[alignment.id]
 
         qual_aligned = []
         for i in range(0, len(alignment.seq)):
@@ -625,7 +625,7 @@ def get_quals_dict(quals_file, alignment_file, output_file_path = None, verbose 
     progress.end()
 
     if output_file_path:
-        pickle.dump(quals_aligned_dict, open(output_file_path, 'w'))
+        pickle.dump(quals_aligned_dict, open(output_file_path, 'wb'))
 
     return quals_aligned_dict
 
@@ -633,7 +633,7 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
     """this function computes and returns the dictionary of interest (indicated
        with '_return' parameter if qual score files were provided via the command
        line interface.
-       
+
        _return value expected to be either 'qual_stats_dict', or 'quals_dict'.
 
        """
@@ -658,7 +658,7 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_scores_dict:
-        quals_dict = pickle.load(open(args.qual_scores_dict))
+        quals_dict = pickle.load(open(args.qual_scores_dict, 'rb'))
 
         if _return == 'quals_dict':
             return quals_dict
@@ -670,14 +670,14 @@ def process_command_line_args_for_quality_files(args, _return = 'qual_stats_dict
             return qual_stats_dict
 
     elif args.qual_stats_dict:
-        qual_stats_dict = pickle.load(open(args.qual_stats_dict))
-        
+        qual_stats_dict = pickle.load(open(args.qual_stats_dict, 'rb'))
+
         if _return == 'qual_stats_dict':
             return qual_stats_dict
-    
+
     else:
         return None
- 
+
 
 def get_filtered_samples_dict(units, samples, samples_dict):
     filtered_samples_dict = {}
@@ -727,30 +727,30 @@ def pretty_print(n):
 def same_but_gaps(sequence1, sequence2):
     if len(sequence1) != len(sequence2):
         raise ValueError("Alignments have different lengths")
-    
+
     for i in range(0, len(sequence1)):
         if sequence1[i] == '-' or sequence2[i] == '-':
             continue
         if sequence1[i] != sequence2[i]:
             return False
-    
+
     return True
 
 def trim_uninformative_gaps_from_sequences(sequence1, sequence2):
     if len(sequence1) != len(sequence2):
         raise ValueError("Alignments have different lengths")
-    
+
     columns_to_discard = []
-    
+
     for i in range(0, len(sequence1)):
         if set([sequence1[i], sequence2[i]]) == set(['-']):
             columns_to_discard.append(i)
         else:
             continue
-            
+
     s1 = ''.join([sequence1[i] for i in range(0, len(sequence1)) if i not in columns_to_discard])
     s2 = ''.join([sequence2[i] for i in range(0, len(sequence1)) if i not in columns_to_discard])
-    
+
     return (s1, s2)
 
 
@@ -758,7 +758,7 @@ def get_temporary_file_names_for_BLAST_search(prefix, directory):
     query  = get_temporary_file_name(prefix='%s' % prefix, suffix='.fa', directory=directory)
     target = get_temporary_file_name(prefix='%s' % prefix, suffix='.db', directory=directory)
     output = get_temporary_file_name(prefix='%s' % prefix, suffix='.b6', directory=directory)
-        
+
     return (query, target, output)
 
 
@@ -766,7 +766,7 @@ def get_percent_identity_for_N_base_difference(average_read_length, N = 1):
     percent_identity = (average_read_length - N) * 100.0 / average_read_length
     if float('%.2f' % percent_identity) == 1.00:
         percent_identity = 0.99
-        
+
     return percent_identity
 
 
@@ -793,7 +793,7 @@ def trim_uninformative_columns_from_alignment(input_file_path):
     fasta_read_len = len(input_fasta.seq)
     invalid_columns = list(range(0, fasta_read_len))
     input_fasta.reset()
-    
+
     while next(input_fasta):
         cols_not_invalid = []
         for i in invalid_columns:
@@ -817,7 +817,7 @@ def trim_uninformative_columns_from_alignment(input_file_path):
             new_seq += input_fasta.seq[i]
         temp_file.write_id(input_fasta.id)
         temp_file.write_seq(new_seq, split = False)
-    
+
     temp_file.close()
 
     # overwrite the original file with trimmed content
@@ -863,7 +863,7 @@ def estimate_expected_max_frequency_of_an_erronous_unique_sequence(number_of_rea
     # substitution probabilities are homogeneous and there are no systemmatical errors,
     # so it is a mere approximation, but for our purpose, it is going to be enough:
 
-    return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads) 
+    return round((expected_error * (1 / 3.0)) * ((1 - expected_error) ** (average_read_length - 1)) * number_of_reads)
 
 
 def HTMLColorToRGB(colorstring, scaled = True):
@@ -886,7 +886,7 @@ def run_command(cmdline):
         if subprocess.call(cmdline, shell = True) < 0:
             raise ConfigError("command was terminated: '%s'" % (cmdline))
     except OSError as e:
-        raise ConfigError("command was failed for the following reason: '%s' ('%s')" % (e, cmdline)) 
+        raise ConfigError("command was failed for the following reason: '%s' ('%s')" % (e, cmdline))
 
 
 def check_command_output(cmdline):
@@ -925,7 +925,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sample = get_sample_name_from_defline(alignment.id, sample_name_separator)
         if sample not in samples:
             samples.add(sample)
-    
+
         # check the alignment lengths along the way:
         if previous_alignment_length:
             if previous_alignment_length != len(alignment.seq):
@@ -942,7 +942,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("working properly. If you believe this is normal, and your sample names\n")
         sys.stderr.write("expected to look like these, you can bypass this check with --skip-check-input\n")
         sys.stderr.write("parameter:\n\n")
-                
+
         counter = 0
         for sample in samples:
             if counter == 10:
@@ -955,7 +955,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("If there is a problem with the recovery of sample names, please refer\n")
         sys.stderr.write("to the tutorial for the proper formatting of FASTA deflines.")
         sys.stderr.write("\n\n")
-            
+
         alignment.close()
         return None
     if len(samples) == 1:
@@ -963,7 +963,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("There is only one sample found in the alignment file during the initial check.\n")
         sys.stderr.write("If this is expected, and the following sample is the only sample in the file,\n")
         sys.stderr.write("please bypass this check by declaring --skip-check-input parameter:\n\n")
-                
+
         for sample in samples:
             sys.stderr.write('\t- %s\n' % sample)
 
@@ -971,7 +971,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
         sys.stderr.write("If there is a problem with the recovery of sample names, please refer\n")
         sys.stderr.write("to the tutorial for the proper formatting of FASTA deflines.")
         sys.stderr.write("\n\n")
-            
+
         alignment.close()
         return None
     else:
@@ -982,7 +982,7 @@ def check_input_alignment(alignment_path, sample_name_separator, progress_func =
 def mapping_file_simple_check(mapping_file_path, samples_expected = None):
     mapping_file = open(mapping_file_path)
     header_line = mapping_file.readline()
-    
+
     if header_line.find('\t') < 0:
         raise ConfigError("Mapping file doesn't seem to be a TAB delimited file")
 
@@ -999,11 +999,11 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
     num_entries = 0
     for line in mapping_file.readlines():
         num_entries += 1
-        
+
         fields = line.strip('\n').split('\t')
-        
+
         samples_found.append(fields[0])
- 
+
         if len(fields) != len(header_fields):
             raise ConfigError("Not every line in the mapping file has the same number of fields " +\
                                 "(line %d has %d columns)" % (num_entries + 1, len(fields)))
@@ -1014,11 +1014,11 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
                 raise ConfigError("Categories in the mapping file cannot start with digits: '%s'" % field)
 
     if samples_expected:
-        samples_missing = [] 
+        samples_missing = []
         for sample in samples_expected:
             if not sample in samples_found:
                 samples_missing.append(sample)
-        
+
         if samples_missing:
             raise ConfigError("Mapping file seems to be missing %d sample(s) that appear in the FASTA file:\n\n- %s\n\n"\
                                       % (len(samples_missing), ', '.join(samples_missing)))
@@ -1033,26 +1033,26 @@ def mapping_file_simple_check(mapping_file_path, samples_expected = None):
 def get_sample_mapping_dict(mapping_file_path):
     mapping_dict = {}
     mapping_file = open(mapping_file_path)
-    
+
     header_line = mapping_file.readline().replace('\r','')
     categories = header_line.strip('\n').split('\t')[1:]
     for category in categories:
         mapping_dict[category] = {}
-    
+
     for fields in [line.replace('\r','').strip('\n').split('\t') for line in mapping_file.readlines()]:
         sample = fields[0]
         mappings = fields[1:]
-        
+
         for i in range(0, len(categories)):
             category = categories[i]
             mapping = mappings[i]
-            
+
             if mapping == '':
                 mapping_dict[categories[i]][sample] = None
                 continue
             else:
-                mapping_dict[categories[i]][sample] = mapping        
-            
+                mapping_dict[categories[i]][sample] = mapping
+
     mapping_file.close()
     return mapping_dict
 
@@ -1060,13 +1060,13 @@ def store_filtered_matrix(old_matrix_path, new_matrix_path, samples):
     new_matrix = open(new_matrix_path, 'w')
     old_matrix = open(old_matrix_path, 'r')
 
-    num_lines_written = 0                
+    num_lines_written = 0
     new_matrix.write(old_matrix.readline())
     for line in old_matrix.readlines():
         if line.split('\t')[0] in samples:
             num_lines_written += 1
             new_matrix.write(line)
-    
+
     new_matrix.close()
     old_matrix.close()
 
@@ -1082,7 +1082,7 @@ class Progress:
         self.get_terminal_width()
         self.color_prefix = '\033[0;30m\033[46m'
         self.color_postfix = '\033[0m'
-        
+
         self.currently_shown = None
 
 
@@ -1090,7 +1090,7 @@ class Progress:
         try:
             self.terminal_width = get_terminal_size()[0]
         except:
-            self.terminal_width = 80 
+            self.terminal_width = 80
 
 
     def new(self, pid):
@@ -1107,7 +1107,7 @@ class Progress:
 
     def write(self, c):
         surpass = self.terminal_width - len(c)
-        
+
         if surpass < 0:
             c = c[0:-(-surpass + 4)] + ' (...)'
         else:
@@ -1117,7 +1117,7 @@ class Progress:
         if self.verbose:
             sys.stderr.write(self.color_prefix + c + self.color_postfix)
             sys.stderr.flush()
-            
+
 
     def reset(self):
         self.clear()
@@ -1125,7 +1125,7 @@ class Progress:
     def clear(self):
         if not self.verbose:
             return
-        null = '\r' + ' ' * (self.terminal_width) 
+        null = '\r' + ' ' * (self.terminal_width)
         sys.stderr.write(null)
         sys.stderr.write('\r')
         sys.stderr.flush()
@@ -1144,7 +1144,7 @@ class Progress:
         self.clear()
         self.write('\r[%s] %s' % (self.pid, msg))
 
-    
+
     def end(self):
         self.pid = None
         if not self.verbose:
@@ -1158,7 +1158,7 @@ def get_pretty_name(key):
     else:
         return key
 
-    
+
 def get_cmd_line(argv):
     c_argv = []
     for i in argv:
@@ -1260,7 +1260,7 @@ class Run:
 def get_read_objects_from_file(input_file_path):
     input_fasta = u.SequenceSource(input_file_path, unique = True)
     read_objects = []
-    
+
     while next(input_fasta):
         read_objects.append(UniqueFASTAEntry(input_fasta.seq, input_fasta.ids))
 
@@ -1270,7 +1270,7 @@ def get_read_objects_from_file(input_file_path):
 
 def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_file = 5000):
     input_fasta = u.SequenceSource(input_file_path)
-    
+
     parts = []
     next_part = 1
     part_obj = None
@@ -1287,7 +1287,7 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_f
             part_obj = u.FastaOutput(file_path)
 
         part_obj.store(input_fasta, split = False)
-  
+
     if part_obj:
         part_obj.close()
 
@@ -1306,14 +1306,14 @@ class Multiprocessing:
     def get_data_chunks(self, data_array, spiral = False):
         data_chunk_size = (len(data_array) / self.num_thread) or 1
         data_chunks = []
-        
+
         if len(data_array) <= self.num_thread:
             return [[chunk] for chunk in data_array]
 
         if spiral:
             for i in range(0, self.num_thread):
                 data_chunks.append([data_array[j] for j in range(i, len(data_array), self.num_thread)])
-            
+
             return data_chunks
         else:
             for i in range(0, self.num_thread):
@@ -1324,7 +1324,7 @@ class Multiprocessing:
 
         return data_chunks
 
-                
+
     def run(self, args, name = None):
         t = multiprocessing.Process(name = name,
                                     target = self.target_function,
@@ -1340,7 +1340,7 @@ class Multiprocessing:
     def get_empty_shared_dict(self):
         return self.manager.dict()
 
-    
+
     def get_shared_integer(self):
         return self.manager.Value('i', 0)
 
@@ -1350,7 +1350,7 @@ class Multiprocessing:
         sent_to_run = 0
         while 1:
             NumRunningProceses = lambda: len([p for p in self.processes if p.is_alive()])
-            
+
             if NumRunningProceses() < self.num_thread and processes_to_run:
                 for i in range(0, self.num_thread - NumRunningProceses()):
                     if len(processes_to_run):

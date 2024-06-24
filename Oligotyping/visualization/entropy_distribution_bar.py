@@ -11,7 +11,7 @@
 # Please read the COPYING file.
 
 import numpy as np
-from scipy import log2 as log
+from math import log2 as log
 import matplotlib.pyplot as plt
 
 from Oligotyping.utils.random_colors import get_list_of_colors

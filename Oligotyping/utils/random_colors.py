@@ -11,7 +11,7 @@
 
 import copy
 import random
-import matplotlib.cm as cm
+from matplotlib import pyplot
 
 #
 # all available colormaps in matplotlib can be seen via
@@ -19,7 +19,7 @@ import matplotlib.cm as cm
 #
 
 def getColor(name, n):
-    return cm.get_cmap(name, lut=n+2)
+    return pyplot.get_cmap(name, lut=n+2)
 
 def get_hex_color(rgba_color):
     hex_color = '#'
