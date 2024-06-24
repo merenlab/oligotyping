@@ -14,7 +14,7 @@ __version__ = '0.2' # Nov 08, 2012
 
 import numpy
 import operator
-from scipy import log2 as log
+from math import log2 as log
 from numpy import sqrt
 
 import Oligotyping.lib.fastalib as u

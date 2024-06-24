@@ -18,7 +18,7 @@
 
 import sys
 import pickle
-from scipy import log2 as log
+from math import log2 as log
 
 import matplotlib.pyplot as plt
 import Oligotyping.lib.fastalib as u
