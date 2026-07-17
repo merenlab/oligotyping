@@ -911,6 +911,28 @@ def get_sample_name_from_defline(defline, sample_name_separator = '_'):
         return sample_name_separator.join(defline.split(sample_name_separator)[0:-1])
 
 
+def get_frequency_from_defline(defline):
+    """Recover the frequency of a unique read from its defline.
+
+       When a FASTA file stores previously deduplicated (unique) reads, the number
+       of raw reads each unique represents must be encoded in the defline as a
+       pipe-delimited token that starts with 'freq', e.g.:
+
+            >Read_ID|freq:42            or        >sample-1_Read_ID|frequency:42
+
+       This is the same convention used by `entropy-analysis --uniqued` and the one
+       written back out by fastalib's FastaOutput (`|frequency:N`), so unique FASTA
+       files produced by this pipeline can be fed straight back into it."""
+    try:
+        return int([t.split(':')[1] for t in defline.split('|') if t.startswith('freq')][0])
+    except (IndexError, ValueError):
+        raise ConfigError("At least one read in the input FASTA was declared as unique (--uniqued), "
+                          "but its defline does not carry frequency information in the expected format. "
+                          "Every defline must present the frequency of the unique read as a pipe-delimited "
+                          "token, e.g. '>Read_ID|freq:42' or '>sample-1_Read_ID|frequency:42'. The "
+                          "offending defline was: '%s'" % defline)
+
+
 def check_input_alignment(alignment_path, sample_name_separator, progress_func = None):
     alignment = u.SequenceSource(alignment_path)
     samples = set([])
@@ -1257,12 +1279,12 @@ class Run:
         if self.info_file_obj:
             self.info_file_obj.close()
 
-def get_read_objects_from_file(input_file_path):
+def get_read_objects_from_file(input_file_path, uniqued = False):
     input_fasta = u.SequenceSource(input_file_path, unique = True)
     read_objects = []
 
     while next(input_fasta):
-        read_objects.append(UniqueFASTAEntry(input_fasta.seq, input_fasta.ids))
+        read_objects.append(UniqueFASTAEntry(input_fasta.seq, input_fasta.ids, uniqued = uniqued))
 
     input_fasta.close()
     return read_objects
@@ -1373,8 +1395,22 @@ class Multiprocessing:
 
 
 class UniqueFASTAEntry:
-    def __init__(self, seq, ids):
+    def __init__(self, seq, ids, uniqued = False):
         self.seq = seq
         self.ids = ids
         self.md5id = hashlib.md5(self.seq.encode('utf-8')).hexdigest()
-        self.frequency = len(ids)
+
+        # `ids` is the list of deflines that collapsed into this unique sequence. When the
+        # input FASTA holds raw reads (one entry per read), each defline represents exactly
+        # one read. When the input is a previously deduplicated FASTA (--uniqued), each
+        # defline instead carries a `freq:N` token declaring how many raw reads it stands
+        # for. `read_id_frequencies` maps every defline to the number of raw reads it
+        # represents, so downstream per-sample counting can weight each defline correctly.
+        if uniqued:
+            self.read_id_frequencies = dict([(read_id, get_frequency_from_defline(read_id)) for read_id in ids])
+            self.frequency = sum([get_frequency_from_defline(read_id) for read_id in ids])
+        else:
+            self.read_id_frequencies = dict([(read_id, 1) for read_id in ids])
+            # summing over `ids` rather than the dict so that any duplicate deflines are counted
+            # as many times as they appear (this preserves the historical `len(ids)` behavior).
+            self.frequency = len(ids)

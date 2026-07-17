@@ -62,9 +62,11 @@ class Decomposer:
         self.skip_gexf_files = False
         self.skip_basic_analyses = False
         self.quick = False
-         
+        self.uniqued = False
+
         if args:
             self.alignment = args.alignment
+            self.uniqued = args.uniqued
             self.min_entropy = args.min_entropy or 0.3
             self.normalize_m = not args.skip_m_normalization
             self.number_of_discriminants = args.number_of_discriminants or 3
@@ -215,7 +217,7 @@ class Decomposer:
 
         self.topology.nodes_output_directory = self.nodes_directory
         
-        reads = utils.get_read_objects_from_file(self.alignment)
+        reads = utils.get_read_objects_from_file(self.alignment, uniqued = self.uniqued)
         
         self.root = self.topology.add_new_node('root', reads, root = True)
         
@@ -278,6 +280,7 @@ class Decomposer:
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('log_file_path', self.log_file_path)
         self.run.info('root_alignment', self.alignment)
+        self.run.info('uniqued', self.uniqued)
         self.run.info('sample_mapping', self.sample_mapping)
         self.run.info('quick', self.quick)
         self.run.info('merge_homopolymer_splits', self.merge_homopolymer_splits)
@@ -1085,11 +1088,11 @@ class Decomposer:
             for read_object in self.topology.outliers[reason]:
                 for read_id in read_object.ids:
                     sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
-                    
+
                     if sample not in read_distribution_dict:
                         read_distribution_dict[sample] = get_dict_entry_tmpl()
-                
-                    read_distribution_dict[sample][reason] += 1
+
+                    read_distribution_dict[sample][reason] += read_object.read_id_frequencies[read_id]
         
         self.progress.update('Storing...')
         utils.generate_TAB_delim_file_from_dict(read_distribution_dict,
@@ -1165,15 +1168,16 @@ class Decomposer:
             for read in node.reads:
                 for read_id in read.ids:
                     sample = utils.get_sample_name_from_defline(read_id, self.sample_name_separator)
-            
+                    frequency = read.read_id_frequencies[read_id]
+
                     if sample not in self.samples_dict:
                         self.samples_dict[sample] = {}
                         self.samples.append(sample)
-    
+
                     if node_id in self.samples_dict[sample]:
-                        self.samples_dict[sample][node_id] += 1
+                        self.samples_dict[sample][node_id] += frequency
                     else:
-                        self.samples_dict[sample][node_id] = 1
+                        self.samples_dict[sample][node_id] = frequency
 
         self.samples.sort()
         self.progress.end()

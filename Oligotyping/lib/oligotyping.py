@@ -71,12 +71,14 @@ class Oligotyping:
         self.skip_gexf_network_file = False
         self.no_threading = False
         self.number_of_threads = None
+        self.uniqued = False
 
-        Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x 
+        Absolute = lambda x: os.path.join(os.getcwd(), x) if not x.startswith('/') else x
 
         if args:
             self.entropy = Absolute(args.entropy)
             self.alignment = Absolute(args.alignment)
+            self.uniqued = args.uniqued
             self.quals_dict = utils.process_command_line_args_for_quality_files(args, _return = 'quals_dict')
             self.min_base_quality = args.min_base_quality
             self.number_of_auto_components = args.number_of_auto_components
@@ -178,6 +180,12 @@ class Oligotyping:
         
         if (not os.path.exists(self.entropy)) or (not os.access(self.entropy, os.R_OK)):
             raise utils.ConfigError("Entropy file is not accessible: '%s'" % self.entropy)
+
+        if self.uniqued and self.quals_dict:
+            raise utils.ConfigError("You declared that your input FASTA holds previously deduplicated (unique) reads "
+                                    "(--uniqued), but you also provided quality scores. Per-base quality filtering "
+                                    "operates on individual raw reads, which are not available once reads have been "
+                                    "collapsed into uniques. Please use either --uniqued or the quality score files.")
 
         if self.sample_mapping:
             if (not os.path.exists(self.sample_mapping)) or (not os.access(self.sample_mapping, os.R_OK)):
@@ -348,6 +356,7 @@ class Oligotyping:
         self.run.info('info_file_path', self.info_file_path)
         self.run.info('quals_provided', True if self.quals_dict else False)
         self.run.info('cmd_line', utils.get_cmd_line(sys.argv))
+        self.run.info('uniqued', self.uniqued)
         self.run.info('total_seq', self.fasta.total_seq)
         self.run.info('alignment_length', self.alignment_length)
         self.run.info('number_of_auto_components', self.number_of_auto_components or 0)
@@ -457,7 +466,12 @@ class Oligotyping:
                                     % (utils.pretty_print(self.fasta.pos)))
 
             sample = utils.get_sample_name_from_defline(self.fasta.id, self.sample_name_separator)
-            
+
+            # when the input holds previously deduplicated (unique) reads, each entry stands
+            # for `frequency` raw reads, and that count is encoded in the defline (see
+            # utils.get_frequency_from_defline). Otherwise every entry is a single raw read.
+            frequency = utils.get_frequency_from_defline(self.fasta.id) if self.uniqued else 1
+
             if sample not in self.samples_dict:
                 self.samples_dict[sample] = {}
                 self.samples.append(sample)
@@ -485,13 +499,18 @@ class Oligotyping:
                 oligo = ''.join(self.fasta.seq[o] for o in self.bases_of_interest_locs)
         
             if oligo in self.samples_dict[sample]:
-                self.samples_dict[sample][oligo] += 1
+                self.samples_dict[sample][oligo] += frequency
             else:
-                self.samples_dict[sample][oligo] = 1
-       
+                self.samples_dict[sample][oligo] = frequency
+
         self.samples.sort()
         self.progress.end()
         self.run.info('num_samples_in_fasta', len(self.samples_dict))
+
+        if self.uniqued:
+            # `total_seq` reported earlier is the number of unique sequences in the input; here we
+            # report the actual number of raw reads they represent (the sum of their frequencies).
+            self.run.info('num_reads_in_fasta', sum([sum(self.samples_dict[sample].values()) for sample in self.samples_dict]))
 
         if self.quals_dict:
             self.run.info('num_reads_eliminated_due_to_min_base_quality', num_reads_eliminated_due_to_min_base_quality)

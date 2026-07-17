@@ -101,8 +101,17 @@ def decomposer():
                         help = 'When set, the pipeline will do only the essential steps, skipping anything\
                                 auxiliary, even if other parameters require otherwise. Please do not use it other than\
                                 benchmarking or testing purposes')
+    parser.add_argument('--uniqued', action = 'store_true', default = False,
+                        help = 'When set, the input FASTA is assumed to hold previously deduplicated (unique)\
+                                reads, rather than one entry per raw read. The number of raw reads each unique\
+                                sequence represents must be stored in the deflines as a pipe-delimited token that\
+                                starts with "freq", e.g. ">sample-1_Read_ID|freq:42" or\
+                                ">sample-1_Read_ID|frequency:42|X|Y". Note that reads must be deduplicated per\
+                                sample (the sample name is still parsed from the defline as usual), so that\
+                                per-sample abundances can be reconstructed from the frequencies. This is the same\
+                                defline convention used by "entropy-analysis --uniqued".')
     parser.add_argument('--version', action = 'store_true', default = False,
-                        help = 'Print version and exit.')    
+                        help = 'Print version and exit.')
 
     return parser
 
@@ -232,9 +241,19 @@ def oligotyping():
     parser.add_argument('-N', '--number-of-threads', type=int, default = None, metavar = "INTEGER",
                         help = 'Number of threads to use. It is a good idea to keep this number smaller than the number\
                                 of CPU cores available. If not set, this number will be set to 90%% of available cores,\
-                                or (available cores - 1) if 10%% of the cores is a number smaller than 1')    
+                                or (available cores - 1) if 10%% of the cores is a number smaller than 1')
+    parser.add_argument('--uniqued', action = 'store_true', default = False,
+                        help = 'When set, the input alignment is assumed to hold previously deduplicated (unique)\
+                                reads, rather than one entry per raw read. The number of raw reads each unique\
+                                sequence represents must be stored in the deflines as a pipe-delimited token that\
+                                starts with "freq", e.g. ">sample-1_Read_ID|freq:42" or\
+                                ">sample-1_Read_ID|frequency:42|X|Y". Note that reads must be deduplicated per\
+                                sample (the sample name is still parsed from the defline as usual), so that\
+                                per-sample abundances can be reconstructed from the frequencies. This is the same\
+                                defline convention used by "entropy-analysis --uniqued". Base quality scores can\
+                                not be used together with this flag.')
     parser.add_argument('--version', action = 'store_true', default = False,
-                        help = 'Print version and exit.')    
+                        help = 'Print version and exit.')
 
 
     return parser
