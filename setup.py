@@ -1,23 +1,18 @@
 import os
-import uuid
 import glob
 from setuptools import setup, find_packages
-
-try: # for pip >= 10
-    from pip._internal.req import parse_requirements
-except ImportError: # for pip <= 9.0.3
-    from pip.req import parse_requirements
 
 if os.environ.get('USER','') == 'vagrant':
     del os.link
 
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-install_reqs = parse_requirements('requirements.txt', session=uuid.uuid1())
-try:
-    reqs = [str(ir.requirement) for ir in install_reqs]
-except AttributeError:
-    reqs = [str(ir.req) for ir in install_reqs]
+# read the dependencies straight from requirements.txt. we deliberately avoid importing
+# anything from `pip` here: pip's internal API is unsupported and moves around between
+# releases, and it is not even importable inside the isolated build environment that
+# modern pip uses when building the package.
+with open('requirements.txt') as f:
+    reqs = [line.strip() for line in f if line.strip() and not line.startswith('#')]
 
 setup(
     name = "oligotyping",
@@ -41,6 +36,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering',
     ],
+
+    python_requires = '>=3.7',
 
     scripts = [script for script in glob.glob('bin/*') if not script.endswith('-OBSOLETE')],
 
