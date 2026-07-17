@@ -1355,6 +1355,7 @@ class Multiprocessing:
     def run(self, args, name = None):
         t = self.context.Process(name = name,
                                  target = self.target_function,
+                                 args = args)
         self.processes.append(t)
         t.start()
 
@@ -1374,16 +1375,37 @@ class Multiprocessing:
     def run_processes(self, processes_to_run, progress_obj = None):
         tot_num_processes = len(processes_to_run)
         sent_to_run = 0
+        num_finished = 0
         while 1:
-            NumRunningProceses = lambda: len([p for p in self.processes if p.is_alive()])
+            # Reap processes that have finished. Each live child keeps a sentinel pipe open
+            # in the parent, and that file descriptor is only released once the process is
+            # join()ed / close()d. Without reaping, the parent steadily accumulates open file
+            # descriptors -- one per node processed -- and crashes with "[Errno 24] Too many
+            # open files" on datasets with many nodes (how many are tolerated depends on the
+            # shell's `ulimit -n`). Reaping keeps the number of open descriptors bounded to
+            # roughly `num_thread` regardless of how many nodes are processed in total.
+            still_running = []
+            for p in self.processes:
+                if p.is_alive():
+                    still_running.append(p)
+                else:
+                    p.join()
+                    try:
+                        p.close()
+                    except (ValueError, AttributeError):
+                        # ValueError: not yet fully cleaned up; AttributeError: Process.close()
+                        # is unavailable on very old Pythons. join() above already reaped it.
+                        pass
+                    num_finished += 1
+            self.processes = still_running
 
-            if NumRunningProceses() < self.num_thread and processes_to_run:
-                for i in range(0, self.num_thread - NumRunningProceses()):
+            if len(self.processes) < self.num_thread and processes_to_run:
+                for i in range(0, self.num_thread - len(self.processes)):
                     if len(processes_to_run):
                         sent_to_run += 1
                         self.run(processes_to_run.pop())
 
-            if not NumRunningProceses() and not processes_to_run:
+            if not self.processes and not processes_to_run:
                 # let the blastn program finish writing all output files.
                 # FIXME: this is ridiculous. find a better solution.
                 time.sleep(1)
@@ -1391,10 +1413,10 @@ class Multiprocessing:
 
             if progress_obj:
                 progress_obj.update('%d of %d done in %d threads (currently running processes: %d)'\
-                                                         % (sent_to_run - NumRunningProceses(),
+                                                         % (num_finished,
                                                             tot_num_processes,
                                                             self.num_thread,
-                                                            NumRunningProceses()))
+                                                            len(self.processes)))
             time.sleep(1)
 
 
