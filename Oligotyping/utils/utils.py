@@ -1318,11 +1318,16 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', num_reads_per_f
 
 class Multiprocessing:
     def __init__(self, target_function, num_thread = None):
+        try:
+            self.context = multiprocessing.get_context('fork')
+        except ValueError:
+            self.context = multiprocessing.get_context()
+
         self.cpu_count = multiprocessing.cpu_count()
         self.num_thread = num_thread or (self.cpu_count - (int(round(self.cpu_count / 10.0)) or 1))
         self.target_function = target_function
         self.processes = []
-        self.manager = multiprocessing.Manager()
+        self.manager = self.context.Manager()
 
 
     def get_data_chunks(self, data_array, spiral = False):
@@ -1348,9 +1353,8 @@ class Multiprocessing:
 
 
     def run(self, args, name = None):
-        t = multiprocessing.Process(name = name,
-                                    target = self.target_function,
-                                    args = args)
+        t = self.context.Process(name = name,
+                                 target = self.target_function,
         self.processes.append(t)
         t.start()
 
